@@ -411,23 +411,122 @@ class gcs_gui(tk.Frame):
 
         self.l_filt = ttk.Label(root, text='Filter passes (15x default):')
         self.l_filt.grid(sticky=E, row=3, column=0, pady=pad)
-        self.e_filt = Entry(root)
+        self.e_filt = ttk.Entry(root)
         self.e_filt.grid(sticky=E, row=3, column=1, pady=pad)
         self.e_filt.insert(END, 15)
         self.e_filt.grid(row=3, column=1, pady=pad, padx=5)
 
         self.l_smooth = ttk.Label(root, text='Smoothing distance (DEM units):')
         self.l_smooth.grid(sticky=E, row=4, column=0, pady=pad)
-        self.e_smooth = Entry(root)
+        self.e_smooth = ttk.Entry(root)
         self.e_smooth.grid(sticky=E, row=4, column=1, pady=pad)
         self.e_smooth.insert(END, 20)
         self.e_smooth.grid(row=4, column=1, pady=pad, padx=5)
 
+        self.l_dem = ttk.Label(root, text='DEM:')
+        self.l_dem.grid(sticky=E, row=5, column=0, pady=pad)
+        self.e_dem = ttk.Entry(root)
+        self.e_dem.grid(row=5, column=1, pady=pad)
+        self.e_dem.insert(END, '')
+        self.e_dem.grid(row=5, column=1, pady=pad, padx=5)
+        self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem, select='file',
+                                                                               ftypes=[('TIFF', '*.tiff'),
+                                                                                       ('All files', '*')]))
+        self.b_extent.grid(sticky=W, row=5, column=2, pady=pad)
+
         # DUMMY VARIABLES IN FUNCTION JUST WORKING ON LAYOUT RN
         self.b_detrend_prep1 = ttk.Button(root, text='    Run    ',
-                                      command=lambda: detrend_prep(raster_name, flow_polygon=self.e_flow_poly.get(),
+                                      command=lambda: detrend_prep(raster_name=self.e_dem.get(), flow_polygon=self.e_flow_poly.get(),
                                                                    spatial_extent=self.e_extent.get(), ft_spatial_ref='', ft_spacing=3,
                                                                    use_filtered_ras=False, centerline_verified=False))
+        self.b_detrend_prep1.grid(sticky=W, row=6, column=1, pady=15)
+        root.grid_rowconfigure(6, minsize=50)
+
+        self.l_step = ttk.Label(root, text='Verify centerline quality (edit if necessary), then run below...')
+        self.l_step.grid(sticky=E, row=7, column=0)
+
+        self.b_detrend_prep2 = ttk.Button(root, text='    Generate thalweg profile    ',
+                                          command=lambda: detrend_prep(raster_name=self.e_dem.get(),
+                                                                       flow_polygon=self.e_flow_poly.get(),
+                                                                       spatial_extent=self.e_extent.get(),
+                                                                       ft_spatial_ref='', ft_spacing=3,
+                                                                       use_filtered_ras=False,
+                                                                       centerline_verified=True))
+        self.b_detrend_prep2.grid(sticky=E, row=8, column=0, pady=15)
+        root.grid_rowconfigure(6, minsize=50)
+
+        # Generate river builder inputs from harmonic decomposition
+        ######################################################################
+        root = self.tabs['River Builder']
+
+        def river_builder_harmonics(in_csv, index_field, units, field_names, r_2, n, methods):
+            """DUMMY FUNCTION FOR FORMATTING"""
+            print('In the RB function')
+
+        def string_to_list(string):
+            out_list = list(string.split(','))
+            return out_list
+
+        self.l_csv = Label(root, text='In csv:')
+        self.l_csv.grid(sticky=E, row=0, column=1)
+        self.e_csv = Entry(root, bd=5)
+        self.e_csv.insert(END, '')
+        self.e_csv.grid(row=0, column=2)
+        self.b_csv = Button(root, text='Browse', command=lambda: browse(root, self.b_csv, select='file',
+                                                                        ftypes=[('Comma-delimited text', '*.csv'),
+                                                                                ('All files', '*')]))
+        self.b_csv.grid(sticky=W, row=0, column=3)
+
+        self.l_field = Label(root, text='Index field:')
+        self.l_field.grid(sticky=E, row=1, column=1)
+        self.e_field = Entry(root, bd=5)
+        self.e_field.insert(END, '')
+        self.e_field.grid(row=1, column=2)
+
+        self.l_units = ttk.Label(root, text='Units:')
+        self.l_units.grid(sticky=W, row=2, column=2)
+        root.grid_rowconfigure(2, minsize=30)
+        self.e_units = StringVar()
+        self.r_meters = ttk.Radiobutton(root, text='Meters', variable=self.e_units, value='m')
+        self.r_meters.grid(sticky=E, row=12, column=1)
+        self.r_feet = ttk.Radiobutton(root, text='US Feet', variable=self.e_units,
+                                            value='ft')
+        self.r_feet.grid(row=12, column=2, pady=pad)
+
+        self.l_labels = Label(root, text='Add signal labels (optional, comma separated!)')
+        self.l_labels.grid(sticky=E, row=3, column=1)
+        self.e_labels = Entry(root, bd=5)
+        self.e_labels.insert(END, '')
+        self.e_labels.grid(row=3, column=2)
+
+        self.l_r2 = Label(root, text='R^2 threshold:')
+        self.l_r2.grid(sticky=E, row=4, column=1)
+        self.e_r2 = Entry(root, bd=5)
+        self.e_r2.insert(END, 0.90)
+        self.e_r2.grid(row=4, column=2)
+
+        self.l_harms = Label(root, text='N harmonics override (optional, leave at 0):')
+        self.l_harms.grid(sticky=E, row=5, column=1)
+        self.e_harms = Entry(root, bd=5)
+        self.e_harms.insert(END, 0)
+        self.e_harms.grid(row=5, column=2)
+
+        self.l_meth = ttk.Label(root, text='Select interpolation method:')
+        self.l_meth.grid(sticky=E, row=18, column=2)
+        # Linear and natural neighbors refer to TIN based methods, be sure to document
+        methods2 = ['by_fft', 'by_power', 'by_power_binned']
+        self.meth = StringVar()
+        self.e_meth = ttk.OptionMenu(root, self.meth, *methods2)
+        self.e_meth.grid(sticky=W, row=18, column=3)
+
+        b = Button(root, text='   Run    ',
+                   command=lambda: river_builder_harmonics(in_csv=str.replace(E1.get(), "\\", "\\\\"),
+                                                           index_field=E2.get(), units=self.e_units,
+                                                           field_names=string_to_list(str(E4.get())),
+                                                           r_2=float(self.e_r2.get()), n=int(self.e_harms.get()), methods=self.meth.get())
+                   )
+        b.grid(sticky=W, row=7, column=2)
+        root.grid_rowconfigure(4, minsize=80)
 
 
 
