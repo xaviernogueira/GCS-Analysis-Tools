@@ -457,7 +457,7 @@ class gcs_gui(tk.Frame):
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
-        root = self.tabs['River Builder']
+        root = self.tabs['River Builder prep']
 
         def river_builder_harmonics(in_csv, index_field, units, field_names, r_2, n, methods):
             """DUMMY FUNCTION FOR FORMATTING"""
@@ -467,62 +467,61 @@ class gcs_gui(tk.Frame):
             out_list = list(string.split(','))
             return out_list
 
-        self.l_csv = Label(root, text='In csv:')
-        self.l_csv.grid(sticky=E, row=0, column=1)
-        self.e_csv = Entry(root, bd=5)
+        self.l_csv = ttk.Label(root, text='In csv:')
+        self.l_csv.grid(sticky=E, row=0, column=1, pady=pad)
+        self.e_csv = ttk.Entry(root)
         self.e_csv.insert(END, '')
-        self.e_csv.grid(row=0, column=2)
-        self.b_csv = Button(root, text='Browse', command=lambda: browse(root, self.b_csv, select='file',
+        self.e_csv.grid(row=0, column=2, pady=pad)
+        self.b_csv = ttk.Button(root, text='Browse', command=lambda: browse(root, self.b_csv, select='file',
                                                                         ftypes=[('Comma-delimited text', '*.csv'),
                                                                                 ('All files', '*')]))
-        self.b_csv.grid(sticky=W, row=0, column=3)
+        self.b_csv.grid(sticky=W, row=0, column=3, pady=pad)
 
-        self.l_field = Label(root, text='Index field:')
-        self.l_field.grid(sticky=E, row=1, column=1)
-        self.e_field = Entry(root, bd=5)
+        self.l_field = ttk.Label(root, text='Index field:')
+        self.l_field.grid(sticky=E, row=1, column=1, pady=pad)
+        self.e_field = ttk.Entry(root)
         self.e_field.insert(END, '')
-        self.e_field.grid(row=1, column=2)
+        self.e_field.grid(row=1, column=2, pady=pad)
 
-        self.l_units = ttk.Label(root, text='Units:')
-        self.l_units.grid(sticky=W, row=2, column=2)
-        root.grid_rowconfigure(2, minsize=30)
+        self.l_units = ttk.Label(root, text='   Units:')
+        self.l_units.grid(sticky=E, row=2, column=1, pady=pad)
         self.e_units = StringVar()
         self.r_meters = ttk.Radiobutton(root, text='Meters', variable=self.e_units, value='m')
-        self.r_meters.grid(sticky=E, row=12, column=1)
+        self.r_meters.grid( row=2, column=2, pady=pad)
         self.r_feet = ttk.Radiobutton(root, text='US Feet', variable=self.e_units,
                                             value='ft')
-        self.r_feet.grid(row=12, column=2, pady=pad)
+        self.r_feet.grid(row=2, column=3, pady=pad)
 
-        self.l_labels = Label(root, text='Add signal labels (optional, comma separated!)')
-        self.l_labels.grid(sticky=E, row=3, column=1)
-        self.e_labels = Entry(root, bd=5)
+        self.l_labels = ttk.Label(root, text='Add signal labels (optional, comma separated!)')
+        self.l_labels.grid(sticky=E, row=3, column=1, pady=pad)
+        self.e_labels = ttk.Entry(root)
         self.e_labels.insert(END, '')
-        self.e_labels.grid(row=3, column=2)
+        self.e_labels.grid(row=3, column=2, pady=pad)
 
-        self.l_r2 = Label(root, text='R^2 threshold:')
-        self.l_r2.grid(sticky=E, row=4, column=1)
-        self.e_r2 = Entry(root, bd=5)
+        self.l_r2 = ttk.Label(root, text='R^2 threshold:')
+        self.l_r2.grid(sticky=E, row=4, column=1, pady=pad)
+        self.e_r2 = ttk.Entry(root)
         self.e_r2.insert(END, 0.90)
-        self.e_r2.grid(row=4, column=2)
+        self.e_r2.grid(row=4, column=2, pady=pad)
 
-        self.l_harms = Label(root, text='N harmonics override (optional, leave at 0):')
-        self.l_harms.grid(sticky=E, row=5, column=1)
-        self.e_harms = Entry(root, bd=5)
+        self.l_harms = ttk.Label(root, text='N harmonics override (optional, leave at 0):')
+        self.l_harms.grid(sticky=E, row=5, column=1, pady=pad)
+        self.e_harms = ttk.Entry(root)
         self.e_harms.insert(END, 0)
-        self.e_harms.grid(row=5, column=2)
+        self.e_harms.grid(row=5, column=2, pady=pad)
 
         self.l_meth = ttk.Label(root, text='Select interpolation method:')
-        self.l_meth.grid(sticky=E, row=18, column=2)
+        self.l_meth.grid(sticky=E, row=6, column=2, pady=pad)
         # Linear and natural neighbors refer to TIN based methods, be sure to document
         methods2 = ['by_fft', 'by_power', 'by_power_binned']
         self.meth = StringVar()
         self.e_meth = ttk.OptionMenu(root, self.meth, *methods2)
-        self.e_meth.grid(sticky=W, row=18, column=3)
+        self.e_meth.grid(sticky=W, row=6, column=3, pady=pad)
 
         b = Button(root, text='   Run    ',
-                   command=lambda: river_builder_harmonics(in_csv=str.replace(E1.get(), "\\", "\\\\"),
-                                                           index_field=E2.get(), units=self.e_units,
-                                                           field_names=string_to_list(str(E4.get())),
+                   command=lambda: river_builder_harmonics(in_csv=str.replace(self.e_csv.get(), "\\", "\\\\"),
+                                                           index_field=self.e_field.get(), units=self.e_units.get(),
+                                                           field_names=string_to_list(self.e_labels.get()),
                                                            r_2=float(self.e_r2.get()), n=int(self.e_harms.get()), methods=self.meth.get())
                    )
         b.grid(sticky=W, row=7, column=2)
