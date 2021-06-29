@@ -156,7 +156,7 @@ class gcs_gui(tk.Frame):
 
         self.l_ndvi = ttk.Label(root, text='NDVI vegetation threshold:')
         self.l_ndvi.grid(sticky=E, row=4, column=1, pady=pad)
-        self.e_ndvi = Entry(root)
+        self.e_ndvi = ttk.Entry(root)
         self.e_ndvi.grid(sticky=E, row=4, column=2, pady=pad)
         self.e_ndvi.insert(0, 0.40)
         self.e_ndvi.grid(sticky=E, row=4, column=2, pady=pad)
@@ -555,6 +555,51 @@ class gcs_gui(tk.Frame):
                                  command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem.get()))
         self.e_detrend.grid(sticky=E, row=5, column=0, pady=15)
         root.grid_rowconfigure(5, minsize=50)
+
+        # Flow-stage modeling
+        ######################################################################
+
+        root = self.tabs['Flow-stage modeling']
+
+        self.top_label = ttk.Label(root, text='Run')
+
+        class wetted_controller:
+            self.maxs = [0]
+            self.highest = max(self.maxs)
+            self.runs = 0
+
+            def __init__(self, max_stage):
+                self.maxs.append(max_stage)
+                self.runs += 1
+                self.switch = False
+                self.imgs = []
+
+                if self.highest > max_stage:
+                    self.switch = True
+
+            def run(self):
+                if self.runs == 0:
+                    # prep_small_inc(detrend_folder, interval=0.1, max_stage=max_stage)
+                    # imgs = pdf_cdf_plotting(in_folder, out_folder, channel_clip_poly, key_zs=[], max_stage=max_stage, small_increments=0)
+
+                    self.images.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
+
+                    for img in self.imgs:
+                        open_popup('Flow stage vs wetted area', img)
+
+                elif not self.switch:
+                    stages = range(self.highest, self.max_stage + 1)  # Use as input for prep_small_inc
+                    # prep_small_inc(detrend_folder, interval=0.1, max_stage=max_stage)
+                    # imgs = pdf_cdf_plotting(in_folder, out_folder, channel_clip_poly, key_zs=[], max_stage=max_stage, small_increments=0)
+
+                    self.imgs = []
+                    self.images.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
+
+                    for img in self.imgs:
+                        open_popup('Flow stage vs wetted area', img)
+                else:
+                    for img in self.imgs:
+                        open_popup('Flow stage vs wetted area', img)
 
 
 
