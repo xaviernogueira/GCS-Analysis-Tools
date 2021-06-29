@@ -75,6 +75,7 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
 
     # Initiate temp files folder
     temp_files = lidardir + '\\temp_files'
+
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
 
@@ -85,7 +86,8 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         naip_imagery = (naipdir + "\\%s" % naip_imagery[0])
 
     try:
-        naip_imagery = arcpy.ProjectRaster_management(naip_imagery, lidardir + "\\NAIP_prj.tif", spatial_ref)  # project the NAIP data and extract bands 1(red) and 4(NIR)
+        # Project the NAIP data and extract bands 1(red) and 4(NIR)
+        naip_imagery = arcpy.ProjectRaster_management(naip_imagery, lidardir + "\\NAIP_prj.tif", spatial_ref)
         red_lyr = arcpy.MakeRasterLayer_management(naip_imagery, temp_files + "\\rd_lyr", band_index=0)
         nir_lyr = arcpy.MakeRasterLayer_management(naip_imagery, temp_files + "\\nr_lyr", band_index=4)
 
@@ -123,30 +125,46 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         print(arcpy.GetMessages())
 
 
-def lidar_to_raster(las_folder, spatial_ref, las_dataset_name, ft_spatial_ref, m_cell_size=1):
+def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, m_cell_size=1):
     """Converts processed LAS files to a LAS dataset, and then to a raster with cell size of 1m
     Args: Folder containing LAS files, desired cell size in meters (default is 1m), and ft spatial reference
     Returns: Raster name for use in detrending """
-    las_files_folder = os.path.dirname(las_dataset_name)
-    raster_name = las_files_folder + "\\ls_nodt.tif"
+    # Create variables with relevant folders
+    lasdir = lidardir + '\\las_files'
+    ground_lasdir = lasdir + '\\09_ground_rm_duplicates'
 
-    if spatial_ref.linearUnitName == 'Meter':
+    # Create addresses for generated .lasd, .tiff files
+    out_dem = lidardir + "\\las_dem.tif"
+    out_las = lasdir = '\\las_dataset.lasd'
+
+    # Initiate temp files folder
+    temp_files = lidardir + '\\temp_files'
+
+    if not os.path.exists(temp_files):
+        os.makedirs(temp_files)
+
+    # Set up output spatial reference and convert units if necessary
+    in_spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
+    out_spatial_ref = arcpy.Describe(aoi_shp).spatialReference
+
+    if in_spatial_ref.linearUnitName == 'Meter':
         cell_size = m_cell_size
-        print("Cell size (unprojected) is 1 %s" % spatial_ref.linearUnitName)
+
     else:
         cell_size = (3.28 * m_cell_size)
-        print("Cell size (unprojected) is 3.28ft")
+
     try:
-        las_dataset = arcpy.CreateLasDataset_management(las_folder, las_dataset_name, spatial_reference=spatial_ref, compute_stats=True)
-        lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT', sampling_type="CELLSIZE", sampling_value=cell_size)
-        tiff_lidar_raster = arcpy.CopyRaster_management(lidar_raster, raster_name)
-        tiff_lidar_raster = arcpy.ProjectRaster_management(lidar_raster, out_raster=raster_name, out_coor_system=ft_spatial_ref)
+        no_prj_dem = temp_files + '\\noprj_dem.tif'
+        las_dataset = arcpy.CreateLasDataset_management(ground_lasdir, out_las, spatial_reference=in_spatial_ref, compute_stats=True)
+        lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT', sampling_type=sample_meth, sampling_value=cell_size)
+        tiff_lidar_raster = arcpy.CopyRaster_management(lidar_raster, out_dem)
+        tiff_lidar_raster = arcpy.ProjectRaster_management(lidar_raster, out_raster=out_dem, out_coor_system=out_spatial_ref)
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
-    print("las dataset at %s, raster at %s" % (las_dataset_name, raster_name))
+    print("LAS -> DEM output @ %s" % out_dem)
 
-    return raster_name
+    return out_dem
 
 
 def detrend_prep(raster_name, flow_polygon, spatial_extent, ft_spatial_ref, ft_spacing=3, use_filtered_ras=False, centerline_verified=False):

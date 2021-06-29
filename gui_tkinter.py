@@ -4,15 +4,12 @@ from tkinter import ttk
 from tkinter import filedialog
 import PIL
 from PIL import ImageTk, Image
+import lidar_to_DEM_functions
+from lidar_to_DEM_functions import *
+import lidar_processing_functions
+from lidar_processing_functions import *
 import warnings
 
-
-# warnings.filterwarnings("ignore")
-
-# def spatial_ref(in_file):
-# return arcpy.Describe(in_file).spatialReference
-
-####### LETS MOVE THIS TO THE PROCESSING ITSELF, TOO COMPLICATED TO INSERT A SPATIAL REFERENCE OBJECT WITHIN A TKINTER BOX
 
 class gcs_gui(tk.Frame):
     def __init__(self, master=None):  # Initialize the class, this allows the GUI to run when the code is ran
@@ -110,8 +107,11 @@ class gcs_gui(tk.Frame):
         def lidar_prep(lasbin, lidardir, spatial_shp, naip_folder, ndvi_thresh=0.4, aoi_shp=''):
             """This function is ran by the LiDAR Data prep tab.
              Outputs: A 1m (or other resolution) DEM modeling bare ground LiDAR returns """
-
-            print('Running, functions go here...')
+            print('unzipping LAZ files...')
+            foot = lidar_footptint(lasbin, lidardir, spatial_shp)
+            print('Generating inputs for LiDAR processing...')
+            define_ground_polygon(foot, lidardir, spatial_shp, naip_folder, ndvi_thresh, aoi_shp)
+            print('Done')
 
         self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')
         self.l_lasbin.grid(sticky=E, row=0, column=1, pady=pad)
@@ -188,14 +188,21 @@ class gcs_gui(tk.Frame):
         def dem_generation(lastoolsdir, lidardir, ground_poly, cores, units_code, keep_orig_pts, coarse_step,
                            coarse_bulge, coarse_spike, coarse_down_spike,
                            coarse_offset, fine_step, fine_bulge, fine_spike,
-                           fine_down_spike, fine_offset, out_spatialref,
-                           dem_resolution, dem_method, in_spatialref=input_ref_shp):
+                           fine_down_spike, fine_offset, aoi_shp,
+                           dem_resolution, dem_method, in_spatialref):
             """This function used LAStools to generate LAS file tiles prepresenitng bare ground, and then converts them
             to a high resolution DEM (1m resolution is default)"""
 
             # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
+            print('Processing LiDAR to remove vegetation points...')
+            process_lidar(lastoolsdir, lidardir, ground_poly, cores, units_code, keep_orig_pts, coarse_step,
+                           coarse_bulge, coarse_spike, coarse_down_spike,
+                           coarse_offset, fine_step, fine_bulge, fine_spike,
+                           fine_down_spike, fine_offset)
 
-            print('DEM generation function running...ADD interpolation optionality')
+            print('Generating a %sm resolution DEM...')
+            lidar_to_raster(lidardir, in_spatialref, aoi_shp, dem_method, m_cell_size=dem_resolution)
+            print('Done!')
 
         self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')
         self.l_lasbin.grid(sticky=E, row=0, column=1)
@@ -214,7 +221,7 @@ class gcs_gui(tk.Frame):
                                      command=lambda: browse(root, self.e_lidardir, select='folder'))
         self.b_lidardir.grid(sticky=W, row=1, column=3)
 
-        self.l_ground_shp = ttk.Label(root, text='Ground area .shp file (optional):')
+        self.l_ground_shp = ttk.Label(root, text='Lidar project spatial reference (.shp) (optional):')
         self.shp_var = StringVar()
         self.l_ground_shp.grid(sticky=E, row=2, column=1)
         self.e_ground_shp = ttk.Entry(root, textvariable=self.shp_var)
@@ -225,7 +232,7 @@ class gcs_gui(tk.Frame):
                                                                                            ('All files', '*')]))
         self.b_ground_shp.grid(sticky=W, row=2, column=3)
 
-        self.l_out_spatialref = ttk.Label(root, text='Output spatial reference (.shp)')
+        self.l_out_spatialref = ttk.Label(root, text='AOI w/ desired spatial reference (.shp)')
         self.l_out_spatialref.grid(sticky=E, row=3, column=1)
         self.e_out_spatialref = ttk.Entry(root)
         self.e_out_spatialref.insert(END, '')
@@ -385,9 +392,10 @@ class gcs_gui(tk.Frame):
                                                                      fine_spike=self.e_f_spike.get(),
                                                                      fine_down_spike=self.e_f_dspike.get(),
                                                                      fine_offset=self.e_f_offset.get(),
-                                                                     out_spatialref=self.e_out_spatialref.get(),
+                                                                     aoi_shp=self.e_out_spatialref.get(),
                                                                      dem_resolution=self.e_dem_res.get(),
-                                                                     dem_method=dem_meth.get()))
+                                                                     dem_method=self.e_dem_meth.get(),
+                                                                     in_spatialref=self.e_ground_shp.get()))
 
         self.b_lidar_run.grid(sticky=W, row=20, column=2)
         root.grid_rowconfigure(20, minsize=80)
