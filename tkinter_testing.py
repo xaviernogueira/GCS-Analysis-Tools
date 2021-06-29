@@ -507,6 +507,11 @@ class gcs_gui(tk.Frame):
             plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
             open_popup('Residual plot w/ breakpoints: %s' % breakpoint_list, plot)
 
+        def detrend(xyz, dem):
+            """Detrends the input raster based on .csv stored x, y, z, z_fit values for thalweg points"""
+
+            print('Detrending DEM...')
+
         self.l_xyz = ttk.Label(root, text='Thalweg profile csv:')
         self.l_xyz.grid(sticky=E, row=0, column=0)
         self.e_xyz = ttk.Entry(root)
@@ -533,6 +538,25 @@ class gcs_gui(tk.Frame):
         self.l_show.grid(stick=E, row=3, column=0, pady=pad)
         self.e_show = ttk.Button(root, text='Plot!', command=lambda: show_fit_plots(self.e_xyz.get(), self.e_breaks.get()))
         self.e_show.grid(stick=E, row=3, column=1, pady=pad)
+
+        self.l_dem = ttk.Label(root, text='DEM location:')
+        self.l_dem.grid(sticky=E, row=4, column=0, pady=pad)
+        self.e_dem = ttk.Entry(root)
+        self.e_dem.grid(sticky=E, row=4, column=1, pady=pad)
+        self.e_dem.insert(END, '')
+        self.e_dem.grid(sticky=E, row=4, column=1, pady=pad)
+        self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem, select='file',
+                                                                            ftypes=[('TIFF, .tiff',
+                                                                                     '*.tiff'),
+                                                                                    ('All files', '*')]))
+        self.b_dem.grid(sticky=W, row=4, column=2, pady=pad)
+
+        self.e_detrend = ttk.Button(root, text='Detrend DEM!',
+                                 command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem.get()))
+        self.e_detrend.grid(sticky=E, row=5, column=0, pady=15)
+        root.grid_rowconfigure(5, minsize=50)
+
+
 
 
 
