@@ -3,32 +3,13 @@ from pydoc import browse
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
-# from ttkthemes import ThemedTk
+import PIL
+from PIL import ImageTk, Image
 import warnings
 
 
 # warnings.filterwarnings("ignore")
 
-
-def browse(root, entry, select='file', ftypes=[('All files', '*')]):
-    """GUI button command: opens browser window and adds selected file/folder to entry"""
-    if select == 'file':
-        filename = filedialog.askopenfilename(parent=root, title='Choose a file', filetypes=ftypes)
-        if filename is not None:
-            entry.delete(0, END)
-            entry.insert(END, filename)
-
-    elif select == 'files':
-        files = filedialog.askopenfilenames(parent=root, title='Choose files', filetypes=ftypes)
-        l = root.tk.splitlist(files)
-        entry.delete(0, END)
-        entry.insert(END, l)
-
-    elif select == 'folder':
-        dirname = filedialog.askdirectory(parent=root, initialdir=entry.get(), title='Choose a directory')
-        if len(dirname) > 0:
-            entry.delete(0, END)
-            entry.insert(END, dirname + '/')
 
 
 # def spatial_ref(in_file):
@@ -84,6 +65,46 @@ class gcs_gui(tk.Frame):
             self.tabs[tab_name] = tab
 
         pad = 5  # Denoted padding between tkinter widgets
+
+        # Define functions used in multiple windows
+        ###################################################################
+
+        def browse(root, entry, select='file', ftypes=[('All files', '*')]):
+            """GUI button command: opens browser window and adds selected file/folder to entry"""
+            if select == 'file':
+                filename = filedialog.askopenfilename(parent=root, title='Choose a file', filetypes=ftypes)
+                if filename is not None:
+                    entry.delete(0, END)
+                    entry.insert(END, filename)
+
+            elif select == 'files':
+                files = filedialog.askopenfilenames(parent=root, title='Choose files', filetypes=ftypes)
+                l = root.tk.splitlist(files)
+                entry.delete(0, END)
+                entry.insert(END, l)
+
+            elif select == 'folder':
+                dirname = filedialog.askdirectory(parent=root, initialdir=entry.get(), title='Choose a directory')
+                if len(dirname) > 0:
+                    entry.delete(0, END)
+                    entry.insert(END, dirname + '/')
+
+        def open_popup(title, image):
+            """Opens a new window showing only an image and a caption displaying image path.
+            Inputs: A title that populates the window header, and an image path supported by PIL"""
+            self.im = Image.open(image)
+
+            top = Toplevel(root)
+            top.geometry()
+            top.title(title)
+
+            self.ph = ImageTk.PhotoImage(self.im, master=top)
+            self.label = Label(top, image=self.ph)
+            self.label.image = self.ph
+            self.label.grid(row=1, column=1, columnspan=3)
+
+            self.label2 = Label(top, text='Image saved @ %s' % image)
+            self.label2.grid(row=2, column=1)
 
         # LiDAR prep (filling tabs w/ widgets)
         ######################################################################
@@ -369,7 +390,7 @@ class gcs_gui(tk.Frame):
                                                                      fine_spike=self.e_f_spike.get(),
                                                                      fine_down_spike=self.e_f_dspike.get(),
                                                                      fine_offset=self.e_f_offset.get(),
-                                                                     out_spatialref=self.e_out_spatial.get(),
+                                                                     out_spatialref=self.e_out_spatialref.get(),
                                                                      dem_resolution=self.e_dem_res.get(),
                                                                      dem_method=dem_meth.get()))
 
@@ -454,6 +475,71 @@ class gcs_gui(tk.Frame):
                                                                        centerline_verified=True))
         self.b_detrend_prep2.grid(sticky=E, row=8, column=0, pady=15)
         root.grid_rowconfigure(6, minsize=50)
+
+        # DEM detrending
+        ######################################################################
+        root = self.tabs['Detrend DEM']
+
+
+        def show_plot(xyz):
+            """Plots thalweg elevation profile is plotted but not saved"""
+            #out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
+            #diagnostic_quick_plot(out_list[0]_out_list[1], out_list[2])  # Adjust to save png, and return path
+            plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
+            open_popup('Thalweg elevation profile', plot)
+
+            print('is it working')
+
+        def show_fit_plots(xyz, breakpoints):
+            """Linear fit and residuals are plotted but not saved"""
+            breakpoint_list = []
+            #out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
+            #linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transform=0, chosen_fit_index=[])
+            #make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location='',
+                                 #transform=0)
+            #make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location='')
+            #make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location=out_folder + '\\fit_plot.png',
+                                 #transform=0)
+            #make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location=out_folder + '\\res_plot.png')
+            plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
+            open_popup('Linear fit w/ breakpoints: %s' % breakpoint_list, plot)
+
+            plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
+            open_popup('Residual plot w/ breakpoints: %s' % breakpoint_list, plot)
+
+        self.l_xyz = ttk.Label(root, text='Thalweg profile csv:')
+        self.l_xyz.grid(sticky=E, row=0, column=0)
+        self.e_xyz = ttk.Entry(root)
+        self.e_xyz.grid(stick=E, row=0, column=1)
+        self.e_xyz.insert(END, '')
+        self.e_xyz.grid(stick=E, row=0, column=1, padx=5)
+        self.b_xyz = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_xyz, select='file',
+                                                                                  ftypes=[('Comma-Separated Values (.csv)', '*.csv'),
+                                                                                          ('All files', '*')]))
+        self.b_xyz.grid(sticky=W, row=0, column=2, pady=pad)
+
+        self.l_show = ttk.Label(root, text='Plot elevation profile:')
+        self.l_show.grid(stick=E, row=1, column=0, pady=pad)
+        self.e_show = ttk.Button(root, text='Plot!', command=lambda: show_plot(self.e_xyz.get()))
+        self.e_show.grid(stick=E, row=1, column=1, pady=pad)
+
+        self.l_breaks = ttk.Label(root, text='Breakpoints (comma separated!)')
+        self.l_breaks.grid(sticky=E, row=2, column=0, pady=pad)
+        self.e_breaks = ttk.Entry(root)
+        self.e_breaks.grid(stick=E, row=2, column=1, pady=pad)
+        self.e_breaks.insert(END, '')
+
+        self.l_show = ttk.Label(root, text='Plot fit:')
+        self.l_show.grid(stick=E, row=3, column=0, pady=pad)
+        self.e_show = ttk.Button(root, text='Plot!', command=lambda: show_fit_plots(self.e_xyz.get(), self.e_breaks.get()))
+        self.e_show.grid(stick=E, row=3, column=1, pady=pad)
+
+
+
+
+
+
+
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
