@@ -1,5 +1,4 @@
 import tkinter as tk
-from pydoc import browse
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -10,13 +9,10 @@ import warnings
 
 # warnings.filterwarnings("ignore")
 
-
-
 # def spatial_ref(in_file):
 # return arcpy.Describe(in_file).spatialReference
 
 ####### LETS MOVE THIS TO THE PROCESSING ITSELF, TOO COMPLICATED TO INSERT A SPATIAL REFERENCE OBJECT WITHIN A TKINTER BOX
-
 
 class gcs_gui(tk.Frame):
     def __init__(self, master=None):  # Initialize the class, this allows the GUI to run when the code is ran
@@ -170,7 +166,6 @@ class gcs_gui(tk.Frame):
                                                                             ftypes=[('Shapefile', '*.shp'),
                                                                                     ('All files', '*')]))
         self.b_aoi.grid(sticky=W, row=5, column=3, pady=pad)
-
 
         self.spacer1 = ttk.Label(root, text='')
         self.spacer1.grid(sticky=W, row=6, column=1, pady=pad)
@@ -401,7 +396,8 @@ class gcs_gui(tk.Frame):
         ######################################################################
         root = self.tabs['Thalweg centerline']
 
-        def detrend_prep(raster_name, flow_polygon, spatial_extent, ft_spatial_ref='', ft_spacing=3, use_filtered_ras=False,
+        def detrend_prep(raster_name, flow_polygon, spatial_extent, ft_spatial_ref='', ft_spacing=3,
+                         use_filtered_ras=False,
                          centerline_verified=False):
             """Dummy function until we polish up the real one"""
             print('in the function')
@@ -416,7 +412,8 @@ class gcs_gui(tk.Frame):
         self.e_flow_poly.insert(END, '')
         self.e_flow_poly.grid(row=1, column=1, pady=pad, padx=5)
         self.b_flow_poly = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_flow_poly, select='file',
-                                                                                  ftypes=[('Shapefile', '*.shp'), ('All files', '*')]))
+                                                                                  ftypes=[('Shapefile', '*.shp'),
+                                                                                          ('All files', '*')]))
         self.b_flow_poly.grid(sticky=W, row=1, column=2, pady=pad)
 
         self.l_extent = ttk.Label(root, text='Extent shapefile:')
@@ -426,8 +423,8 @@ class gcs_gui(tk.Frame):
         self.e_extent.insert(END, '')
         self.e_extent.grid(row=2, column=1, pady=pad, padx=5)
         self.b_extent = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_extent, select='file',
-                                                                            ftypes=[('Shapefile', '*.shp'),
-                                                                                    ('All files', '*')]))
+                                                                               ftypes=[('Shapefile', '*.shp'),
+                                                                                       ('All files', '*')]))
         self.b_extent.grid(sticky=W, row=2, column=2, pady=pad)
 
         self.l_filt = ttk.Label(root, text='Filter passes (15x default):')
@@ -451,15 +448,18 @@ class gcs_gui(tk.Frame):
         self.e_dem.insert(END, '')
         self.e_dem.grid(row=5, column=1, pady=pad, padx=5)
         self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem, select='file',
-                                                                               ftypes=[('TIFF', '*.tiff'),
-                                                                                       ('All files', '*')]))
+                                                                            ftypes=[('TIFF', '*.tiff'),
+                                                                                    ('All files', '*')]))
         self.b_extent.grid(sticky=W, row=5, column=2, pady=pad)
 
         # DUMMY VARIABLES IN FUNCTION JUST WORKING ON LAYOUT RN
         self.b_detrend_prep1 = ttk.Button(root, text='    Run    ',
-                                      command=lambda: detrend_prep(raster_name=self.e_dem.get(), flow_polygon=self.e_flow_poly.get(),
-                                                                   spatial_extent=self.e_extent.get(), ft_spatial_ref='', ft_spacing=3,
-                                                                   use_filtered_ras=False, centerline_verified=False))
+                                          command=lambda: detrend_prep(raster_name=self.e_dem.get(),
+                                                                       flow_polygon=self.e_flow_poly.get(),
+                                                                       spatial_extent=self.e_extent.get(),
+                                                                       ft_spatial_ref='', ft_spacing=3,
+                                                                       use_filtered_ras=False,
+                                                                       centerline_verified=False))
         self.b_detrend_prep1.grid(sticky=W, row=6, column=1, pady=15)
         root.grid_rowconfigure(6, minsize=50)
 
@@ -480,11 +480,10 @@ class gcs_gui(tk.Frame):
         ######################################################################
         root = self.tabs['Detrend DEM']
 
-
         def show_plot(xyz):
             """Plots thalweg elevation profile is plotted but not saved"""
-            #out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
-            #diagnostic_quick_plot(out_list[0]_out_list[1], out_list[2])  # Adjust to save png, and return path
+            # out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
+            # diagnostic_quick_plot(out_list[0]_out_list[1], out_list[2])  # Adjust to save png, and return path
             plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
             open_popup('Thalweg elevation profile', plot)
 
@@ -493,14 +492,14 @@ class gcs_gui(tk.Frame):
         def show_fit_plots(xyz, breakpoints):
             """Linear fit and residuals are plotted but not saved"""
             breakpoint_list = []
-            #out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
-            #linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transform=0, chosen_fit_index=[])
-            #make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location='',
-                                 #transform=0)
-            #make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location='')
-            #make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location=out_folder + '\\fit_plot.png',
-                                 #transform=0)
-            #make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location=out_folder + '\\res_plot.png')
+            # out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
+            # linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transform=0, chosen_fit_index=[])
+            # make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location='',
+            # transform=0)
+            # make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location='')
+            # make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location=out_folder + '\\fit_plot.png',
+            # transform=0)
+            # make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location=out_folder + '\\res_plot.png')
             plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
             open_popup('Linear fit w/ breakpoints: %s' % breakpoint_list, plot)
 
@@ -519,8 +518,9 @@ class gcs_gui(tk.Frame):
         self.e_xyz.insert(END, '')
         self.e_xyz.grid(stick=E, row=0, column=1, padx=5)
         self.b_xyz = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_xyz, select='file',
-                                                                                  ftypes=[('Comma-Separated Values (.csv)', '*.csv'),
-                                                                                          ('All files', '*')]))
+                                                                            ftypes=[('Comma-Separated Values (.csv)',
+                                                                                     '*.csv'),
+                                                                                    ('All files', '*')]))
         self.b_xyz.grid(sticky=W, row=0, column=2, pady=pad)
 
         self.l_show = ttk.Label(root, text='Plot elevation profile:')
@@ -536,7 +536,8 @@ class gcs_gui(tk.Frame):
 
         self.l_show = ttk.Label(root, text='Plot fit:')
         self.l_show.grid(stick=E, row=3, column=0, pady=pad)
-        self.e_show = ttk.Button(root, text='Plot!', command=lambda: show_fit_plots(self.e_xyz.get(), self.e_breaks.get()))
+        self.e_show = ttk.Button(root, text='Plot!',
+                                 command=lambda: show_fit_plots(self.e_xyz.get(), self.e_breaks.get()))
         self.e_show.grid(stick=E, row=3, column=1, pady=pad)
 
         self.l_dem = ttk.Label(root, text='DEM location:')
@@ -552,7 +553,7 @@ class gcs_gui(tk.Frame):
         self.b_dem.grid(sticky=W, row=4, column=2, pady=pad)
 
         self.e_detrend = ttk.Button(root, text='Detrend DEM!',
-                                 command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem.get()))
+                                    command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem.get()))
         self.e_detrend.grid(sticky=E, row=5, column=0, pady=15)
         root.grid_rowconfigure(5, minsize=50)
 
@@ -601,15 +602,6 @@ class gcs_gui(tk.Frame):
                     for img in self.imgs:
                         open_popup('Flow stage vs wetted area', img)
 
-
-
-
-
-
-
-
-
-
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
         root = self.tabs['River Builder prep']
@@ -628,8 +620,8 @@ class gcs_gui(tk.Frame):
         self.e_csv.insert(END, '')
         self.e_csv.grid(row=0, column=2, pady=pad)
         self.b_csv = ttk.Button(root, text='Browse', command=lambda: browse(root, self.b_csv, select='file',
-                                                                        ftypes=[('Comma-delimited text', '*.csv'),
-                                                                                ('All files', '*')]))
+                                                                            ftypes=[('Comma-delimited text', '*.csv'),
+                                                                                    ('All files', '*')]))
         self.b_csv.grid(sticky=W, row=0, column=3, pady=pad)
 
         self.l_field = ttk.Label(root, text='Index field:')
@@ -642,9 +634,9 @@ class gcs_gui(tk.Frame):
         self.l_units.grid(sticky=E, row=2, column=1, pady=pad)
         self.e_units = StringVar()
         self.r_meters = ttk.Radiobutton(root, text='Meters', variable=self.e_units, value='m')
-        self.r_meters.grid( row=2, column=2, pady=pad)
+        self.r_meters.grid(row=2, column=2, pady=pad)
         self.r_feet = ttk.Radiobutton(root, text='US Feet', variable=self.e_units,
-                                            value='ft')
+                                      value='ft')
         self.r_feet.grid(row=2, column=3, pady=pad)
 
         self.l_labels = ttk.Label(root, text='Add signal labels (optional, comma separated!)')
@@ -677,11 +669,11 @@ class gcs_gui(tk.Frame):
                    command=lambda: river_builder_harmonics(in_csv=str.replace(self.e_csv.get(), "\\", "\\\\"),
                                                            index_field=self.e_field.get(), units=self.e_units.get(),
                                                            field_names=string_to_list(self.e_labels.get()),
-                                                           r_2=float(self.e_r2.get()), n=int(self.e_harms.get()), methods=self.meth.get())
+                                                           r_2=float(self.e_r2.get()), n=int(self.e_harms.get()),
+                                                           methods=self.meth.get())
                    )
         b.grid(sticky=W, row=7, column=2)
         root.grid_rowconfigure(4, minsize=80)
-
 
 
 if __name__ == '__main__':
