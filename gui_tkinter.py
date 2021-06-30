@@ -195,7 +195,7 @@ class gcs_gui(tk.Frame):
                            coarse_bulge, coarse_spike, coarse_down_spike,
                            coarse_offset, fine_step, fine_bulge, fine_spike,
                            fine_down_spike, fine_offset, aoi_shp,
-                           dem_resolution, dem_method):
+                           dem_resolution, dem_method, tri_meth, void_meth):
             """This function used LAStools to generate LAS file tiles prepresenitng bare ground, and then converts them
             to a high resolution DEM (1m resolution is default)"""
 
@@ -208,7 +208,7 @@ class gcs_gui(tk.Frame):
             print('Done')
 
             print('Generating a %sm resolution DEM...' % dem_resolution)
-            lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, m_cell_size=dem_resolution)
+            lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, tri_meth, void_meth, m_cell_size=dem_resolution)
             print('Done')
 
         self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')

@@ -172,10 +172,10 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
         method_str = '%s AVERAGE %s' % (sample_meth, void_meth)
 
     else:
-        method_str = '%s %s MAXIMUM' % (sample_meth, tri_meth)
+        method_str = "%s %s NO_THINNING MAXIMUM 0" % (sample_meth, tri_meth)
+    print('Methods: %s' % method_str)
 
     try:
-        print('Methods: %s' % sample_meth)
         no_prj_dem = temp_files + '\\noprj_dem.tif'
         las_dataset = arcpy.CreateLasDataset_management(ground_lasdir, out_las, spatial_reference=in_spatial_ref,
                                                         compute_stats=True)
