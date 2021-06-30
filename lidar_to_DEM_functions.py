@@ -145,11 +145,13 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, m_cell_size=
     Returns: Raster name for use in detrending """
     # Create variables with relevant folders
     lasdir = lidardir + '\\las_files'
+    print(lasdir)
     ground_lasdir = lasdir + '\\09_ground_rm_duplicates'
+    print(ground_lasdir)
 
     # Create addresses for generated .lasd, .tiff files
     out_dem = lidardir + "\\las_dem.tif"
-    out_las = lasdir = '\\las_dataset.lasd'
+    out_las = lasdir + '\\las_dataset.lasd'
 
     # Initiate temp files folder
     temp_files = lidardir + '\\temp_files'

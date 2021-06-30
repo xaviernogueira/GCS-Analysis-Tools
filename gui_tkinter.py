@@ -109,7 +109,7 @@ class gcs_gui(tk.Frame):
             """This function is ran by the LiDAR Data prep tab.
              Outputs: A 1m (or other resolution) DEM modeling bare ground LiDAR returns """
             print('Unzipping LAZ files...')
-            #lidar_footptint(lasbin, lidardir, spatial_shp)
+            lidar_footptint(lasbin, lidardir, spatial_shp)
             print('Done')
 
             print('Generating inputs for LiDAR processing...')
@@ -189,24 +189,27 @@ class gcs_gui(tk.Frame):
         ######################################################################
         root = self.tabs['DEM generation']  # LiDAR processing to DEM generation widgets
 
+
+
         def dem_generation(lastoolsdir, lidardir, ground_poly, cores, units_code, keep_orig_pts, coarse_step,
                            coarse_bulge, coarse_spike, coarse_down_spike,
                            coarse_offset, fine_step, fine_bulge, fine_spike,
                            fine_down_spike, fine_offset, aoi_shp,
-                           dem_resolution, dem_method, in_spatialref):
+                           dem_resolution, dem_method):
             """This function used LAStools to generate LAS file tiles prepresenitng bare ground, and then converts them
             to a high resolution DEM (1m resolution is default)"""
 
             # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
             print('Processing LiDAR to remove vegetation points...')
-            process_lidar(lastoolsdir, lidardir, ground_poly, cores, units_code, keep_orig_pts, coarse_step,
-                           coarse_bulge, coarse_spike, coarse_down_spike,
-                           coarse_offset, fine_step, fine_bulge, fine_spike,
-                           fine_down_spike, fine_offset)
+            #process_lidar(lastoolsdir + '\\', lidardir + '\\', ground_poly, cores, units_code, keep_orig_pts, coarse_step,
+                           #coarse_bulge, coarse_spike, coarse_down_spike,
+                           #coarse_offset, fine_step, fine_bulge, fine_spike,
+                           #fine_down_spike, fine_offset)
+            print('Done')
 
-            print('Generating a %sm resolution DEM...')
-            lidar_to_raster(lidardir, in_spatialref, aoi_shp, dem_method, m_cell_size=dem_resolution)
-            print('Done!')
+            print('Generating a %sm resolution DEM...' % dem_resolution)
+            lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, m_cell_size=dem_resolution)
+            print('Done')
 
         self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')
         self.l_lasbin.grid(sticky=E, row=0, column=1)
@@ -225,7 +228,7 @@ class gcs_gui(tk.Frame):
                                      command=lambda: browse(root, self.e_lidardir, select='folder'))
         self.b_lidardir.grid(sticky=W, row=1, column=3)
 
-        self.l_ground_shp = ttk.Label(root, text='Lidar project spatial reference (.shp) (optional):')
+        self.l_ground_shp = ttk.Label(root, text='Ground polygon (.shp):')
         self.shp_var = StringVar()
         self.l_ground_shp.grid(sticky=E, row=2, column=1)
         self.e_ground_shp = ttk.Entry(root, textvariable=self.shp_var)
@@ -374,9 +377,9 @@ class gcs_gui(tk.Frame):
         self.l_dem_meth.grid(sticky=E, row=18, column=2)
         # Linear and natural neighbors refer to TIN based methods, be sure to document
         methods = ['AVERAGE', 'NEAREST', 'SIMPLE', 'Linear', 'Natural neighbors']
-        dem_meth = StringVar()
-        self.e_dem_meth = ttk.OptionMenu(root, dem_meth, *methods)
-        self.e_dem_meth.grid(sticky=W, row=18, column=3)
+        self.e_dem_meth = StringVar()
+        self.option_menu = ttk.OptionMenu(root, self.e_dem_meth, *methods)
+        self.option_menu.grid(sticky=W, row=18, column=3)
 
         # make 'Run' ttk.Button in GUI to call the process_lidar() function
         self.b_lidar_run = ttk.Button(root, text='    Run    ',
@@ -398,8 +401,7 @@ class gcs_gui(tk.Frame):
                                                                      fine_offset=self.e_f_offset.get(),
                                                                      aoi_shp=self.e_out_spatialref.get(),
                                                                      dem_resolution=self.e_dem_res.get(),
-                                                                     dem_method=self.e_dem_meth.get(),
-                                                                     in_spatialref=self.e_ground_shp.get()))
+                                                                     dem_method=self.e_dem_meth.get()))
 
         self.b_lidar_run.grid(sticky=W, row=20, column=2)
         root.grid_rowconfigure(20, minsize=80)

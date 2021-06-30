@@ -13,7 +13,6 @@ gc.collect()
 ##########################
 # first let's define some functions that will be helpful
 
-
 def las_files(directory):
     """returns list of all .las/.laz files in directory (at top level)"""
     l = []
@@ -106,6 +105,9 @@ def process_lidar(lastoolsdir,
                   fine_offset
                   ):
     """Executes main LAStools processing workflow. See readme for more info."""
+
+    # initialize the logger
+    init_logger(__file__)
 
     classes = ['01-Default',
                '02-Ground',
