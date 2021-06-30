@@ -139,7 +139,7 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         print(arcpy.GetMessages())
 
 
-def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, m_cell_size=1):
+def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, void_meth,  m_cell_size=1):
     """Converts processed LAS files to a LAS dataset, and then to a raster with cell size of 1m
     Args: Folder containing LAS files, desired cell size in meters (default is 1m), and ft spatial reference
     Returns: Raster name for use in detrending """
@@ -167,12 +167,20 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, m_cell_size=
     else:
         cell_size = (3.28 * m_cell_size)
 
+    # Set up interpolation method string
+    if sample_meth == 'BINNING':
+        method_str = '%s AVERAGE %s' % (sample_meth, void_meth)
+
+    else:
+        method_str = '%s %s MAXIMUM' % (sample_meth, tri_meth)
+
     try:
+        print('Methods: %s' % sample_meth)
         no_prj_dem = temp_files + '\\noprj_dem.tif'
         las_dataset = arcpy.CreateLasDataset_management(ground_lasdir, out_las, spatial_reference=in_spatial_ref,
                                                         compute_stats=True)
         lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT',
-                                                           interpolation_type=sample_meth, sampling_type='CELLSIZE', sampling_value=cell_size)
+                                                           interpolation_type=method_str, sampling_type='CELLSIZE', sampling_value=cell_size)
         tiff_lidar_raster = arcpy.CopyRaster_management(lidar_raster, out_dem)
         tiff_lidar_raster = arcpy.ProjectRaster_management(lidar_raster, out_raster=out_dem,
                                                            out_coor_system=out_spatial_ref)

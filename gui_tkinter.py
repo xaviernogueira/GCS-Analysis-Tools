@@ -373,37 +373,31 @@ class gcs_gui(tk.Frame):
         self.e_dem_res.grid(sticky=W, row=17, column=3, pady=pad)
         self.e_dem_res.insert(0, default)
 
-        self.l_dem_meth = ttk.Label(root, text='Select interpolation method:')
-        self.l_dem_meth.grid(sticky=E, row=18, column=0)
-        # Linear and natural neighbors refer to TIN based methods, be sure to document
+        # Choose binning or triangulation (TIN) based DEM interpolation, be sure to document
         methods = ['BINNING', 'TRIANGULATION']
-            #['AVERAGE', 'NEAREST', 'SIMPLE', 'Linear', 'Natural neighbors']
+        self.l_dem_meth = ttk.Label(root, text='Select interpolation method:')
+        self.l_dem_meth.grid(sticky=E, row=18, column=1, pady=pad)
         self.e_dem_meth = StringVar()
-        self.option_menu = ttk.OptionMenu(root, self.e_dem_meth, *methods)
-        self.option_menu.grid(sticky=W, row=18, column=1)
+        self.option_menu1 = ttk.OptionMenu(root, self.e_dem_meth, *methods)
+        self.option_menu1.grid(sticky=W, row=18, column=2, pady=pad)
 
-        # Select binning method, only relevent if binning is selected as the interpolation
+        # Select binning method, only relevant if binning is selected as the interpolation
         void_meths = ['LINEAR', 'SIMPLE', 'NATURAL_NEIGHBOR']
-        self.l_void_meths = ttk.Label(root, text='Void fill method (for binning:')
-        self.l_void_meths.grid(sticky=E, row=18, column=2)
-        self.e_void_meths = StringVar()
-        self.option_menu = ttk.OptionMenu(root, self.e_void_meths, *void_meths)
-        self.option_menu.grid(sticky=W, row=18, column=3)
+        self.l_void_meth = ttk.Label(root, text='Void fill method (for binning:')
+        self.l_void_meth.grid(sticky=E, row=19, column=1, pady=pad)
+        self.e_void_meth = StringVar()
+        self.option_menu2 = ttk.OptionMenu(root, self.e_void_meth, *void_meths)
+        self.option_menu2.grid(sticky=W, row=19, column=2, pady=pad)
 
-        # Select binning method, only relevent if binning is selected as the interpolation
-        tri_meths = ['Linear', 'Natural Neighbors']
-        self.l_tri_meths = ttk.Label(root, text='Triangulation method:')
-        self.l_tri_meths.grid(sticky=E, row=18, column=4)
-        self.e_tri_meths = StringVar()
-        self.option_menu = ttk.OptionMenu(root, self.e_tri_meths, *tri_meths)
-        self.option_menu.grid(sticky=W, row=18, column=5)
+        # Select binning method, only relevant if binning is selected as the interpolation
+        tri_meths = ['LINEAR', 'NATURAL_NEIGHBOR']
+        self.l_tri_meth = ttk.Label(root, text='Triangulation method:')
+        self.l_tri_meth.grid(sticky=E, row=20, column=1, pady=pad)
+        self.e_tri_meth = StringVar()
+        self.option_menu3 = ttk.OptionMenu(root, self.e_tri_meth, *tri_meths)
+        self.option_menu3.grid(sticky=W, row=20, column=2, pady=pad)
 
-        # Define DEM method string
-        if self.e_dem_meth == 'BINNING':
-            self.method_str = self.e_dem_meth + '' + self.e_void_meths
 
-        else:
-            self.method_str = self.e_dem_meth + '' + self.e_tri_meths
 
         # make 'Run' ttk.Button in GUI to call the process_lidar() function
         self.b_lidar_run = ttk.Button(root, text='    Run    ',
@@ -425,9 +419,11 @@ class gcs_gui(tk.Frame):
                                                                      fine_offset=self.e_f_offset.get(),
                                                                      aoi_shp=self.e_out_spatialref.get(),
                                                                      dem_resolution=self.e_dem_res.get(),
-                                                                     dem_method=self.method_str))
-        self.b_lidar_run.grid(sticky=W, row=20, column=2)
-        root.grid_rowconfigure(20, minsize=80)
+                                                                     dem_method=self.e_dem_meth.get(),
+                                                                     tri_meth=self.e_tri_meth.get(),
+                                                                     void_meth=self.e_void_meth.get()))
+        self.b_lidar_run.grid(sticky=W, row=20, column=3)
+        root.grid_rowconfigure(20, minsize=40)
 
         # Generate thalweg centerline and extract elevation profile
         ######################################################################
