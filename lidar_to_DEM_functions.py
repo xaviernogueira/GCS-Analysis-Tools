@@ -145,9 +145,7 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, m_cell_size=
     Returns: Raster name for use in detrending """
     # Create variables with relevant folders
     lasdir = lidardir + '\\las_files'
-    print(lasdir)
     ground_lasdir = lasdir + '\\09_ground_rm_duplicates'
-    print(ground_lasdir)
 
     # Create addresses for generated .lasd, .tiff files
     out_dem = lidardir + "\\las_dem.tif"
@@ -174,7 +172,7 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, m_cell_size=
         las_dataset = arcpy.CreateLasDataset_management(ground_lasdir, out_las, spatial_reference=in_spatial_ref,
                                                         compute_stats=True)
         lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT',
-                                                           sampling_type=sample_meth, sampling_value=cell_size)
+                                                           interpolation_type=sample_meth, sampling_type='CELLSIZE', sampling_value=cell_size)
         tiff_lidar_raster = arcpy.CopyRaster_management(lidar_raster, out_dem)
         tiff_lidar_raster = arcpy.ProjectRaster_management(lidar_raster, out_raster=out_dem,
                                                            out_coor_system=out_spatial_ref)
