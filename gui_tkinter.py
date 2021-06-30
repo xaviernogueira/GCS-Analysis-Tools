@@ -39,8 +39,9 @@ class gcs_gui(tk.Frame):
         self.style = ttk.Style()
 
         # Adding the Breeze ttk theme https://github.com/MaxPerl/ttk-Breeze
-        self.tk.call('lappend', 'auto_path', r'C:\Users\xavie\Documents\ttk-Breeze-master')
-        self.tk.call('source', r'C:\Users\xavie\Documents\ttk-Breeze-master\breeze.tcl')
+        breeze_dir = os.getcwd() + '\\ttk-Breeze-master'
+        self.tk.call('lappend', 'auto_path', breeze_dir)
+        self.tk.call('source', breeze_dir + '\\breeze.tcl')
         self.style.theme_use('Breeze')
 
         # initialize tab handler
