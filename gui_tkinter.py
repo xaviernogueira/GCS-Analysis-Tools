@@ -81,7 +81,7 @@ class gcs_gui(tk.Frame):
                 dirname = filedialog.askdirectory(parent=root, initialdir=entry.get(), title='Choose a directory')
                 if len(dirname) > 0:
                     entry.delete(0, END)
-                    entry.insert(END, dirname + '/')
+                    entry.insert(END, dirname)  # Used to add a \ at the end, may have to bring back if errors occur
 
         def open_popup(title, image):
             """Opens a new window showing only an image and a caption displaying image path.
@@ -108,29 +108,32 @@ class gcs_gui(tk.Frame):
         def lidar_prep(lasbin, lidardir, spatial_shp, naip_folder, ndvi_thresh=0.4, aoi_shp=''):
             """This function is ran by the LiDAR Data prep tab.
              Outputs: A 1m (or other resolution) DEM modeling bare ground LiDAR returns """
-            print('unzipping LAZ files...')
-            foot = lidar_footptint(lasbin, lidardir, spatial_shp)
+            print('Unzipping LAZ files...')
+            #lidar_footptint(lasbin, lidardir, spatial_shp)
+            print('Done')
+
             print('Generating inputs for LiDAR processing...')
+            foot = lidardir + '\\las_footprint.shp'
             define_ground_polygon(foot, lidardir, spatial_shp, naip_folder, ndvi_thresh, aoi_shp)
             print('Done')
 
-        self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')
-        self.l_lasbin.grid(sticky=E, row=0, column=1, pady=pad)
-        self.e_lasbin = ttk.Entry(root)
-        self.e_lasbin.insert(END, '')
-        self.e_lasbin.grid(row=0, column=2, pady=pad)
-        self.b_lasbin = ttk.Button(root, text='Browse',
-                                   command=lambda: browse(root, entry=self.e_lasbin, select='folder'))
-        self.b_lasbin.grid(sticky=W, row=0, column=3, pady=pad)
+        self.l_lasbin1 = ttk.Label(root, text='LAStools /bin/ directory:')
+        self.l_lasbin1.grid(sticky=E, row=0, column=1, pady=pad)
+        self.e_lasbin1 = ttk.Entry(root)
+        self.e_lasbin1.insert(END, os.getcwd() + '\\LAStools\\bin')
+        self.e_lasbin1.grid(row=0, column=2, pady=pad)
+        self.b_lasbin1 = ttk.Button(root, text='Browse',
+                                   command=lambda: browse(root, entry=self.e_lasbin1, select='folder'))
+        self.b_lasbin1.grid(sticky=W, row=0, column=3, pady=pad)
 
-        self.l_lidardir = ttk.Label(root, text='LiDAR data directory:')
-        self.l_lidardir.grid(sticky=E, row=1, column=1, pady=pad)
-        self.e_lidardir = ttk.Entry(root)
-        self.e_lidardir.insert(END, '')
-        self.e_lidardir.grid(row=1, column=2, pady=pad)
-        self.b_lidardir = ttk.Button(root, text='Browse',
-                                     command=lambda: browse(root, self.e_lidardir, select='folder'))
-        self.b_lidardir.grid(sticky=W, row=1, column=3, pady=pad)
+        self.l_lidardir1 = ttk.Label(root, text='LiDAR data directory:')
+        self.l_lidardir1.grid(sticky=E, row=1, column=1, pady=pad)
+        self.e_lidardir1 = ttk.Entry(root)
+        self.e_lidardir1.insert(END, '')
+        self.e_lidardir1.grid(row=1, column=2, pady=pad)
+        self.b_lidardir1 = ttk.Button(root, text='Browse',
+                                     command=lambda: browse(root, self.e_lidardir1, select='folder'))
+        self.b_lidardir1.grid(sticky=W, row=1, column=3, pady=pad)
 
         self.l_in_spatialref = ttk.Label(root, text='LiDAR project spatial ref shapefile:')
         self.l_in_spatialref.grid(sticky=E, row=2, column=1, pady=pad)
@@ -171,7 +174,7 @@ class gcs_gui(tk.Frame):
         self.spacer1 = ttk.Label(root, text='')
         self.spacer1.grid(sticky=W, row=6, column=1, pady=pad)
         self.prep_run = ttk.Button(root, text='Run',
-                                   command=lambda: lidar_prep(self.e_lasbin.get(), self.e_lidardir.get(),
+                                   command=lambda: lidar_prep(self.e_lasbin1.get(), self.e_lidardir1.get(),
                                                               self.e_in_spatialref.get(), self.e_naip.get(),
                                                               float(self.e_ndvi.get()), self.e_aoi.get()))
         self.prep_run.grid(sticky=E, row=6, column=2)
@@ -208,7 +211,7 @@ class gcs_gui(tk.Frame):
         self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')
         self.l_lasbin.grid(sticky=E, row=0, column=1)
         self.e_lasbin = ttk.Entry(root)
-        self.e_lasbin.insert(END, '')
+        self.e_lasbin.insert(END, os.getcwd() + '\\LAStools\\bin')
         self.e_lasbin.grid(row=0, column=2)
         self.b_lasbin = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_lasbin, select='folder'))
         self.b_lasbin.grid(sticky=W, row=0, column=3)
