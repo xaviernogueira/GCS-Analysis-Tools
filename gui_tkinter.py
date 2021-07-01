@@ -190,7 +190,6 @@ class gcs_gui(tk.Frame):
         root = self.tabs['DEM generation']  # LiDAR processing to DEM generation widgets
 
 
-
         def dem_generation(lastoolsdir, lidardir, ground_poly, cores, units_code, keep_orig_pts, coarse_step,
                            coarse_bulge, coarse_spike, coarse_down_spike,
                            coarse_offset, fine_step, fine_bulge, fine_spike,
@@ -441,7 +440,7 @@ class gcs_gui(tk.Frame):
                                                                                           ('All files', '*')]))
         self.b_flow_poly.grid(sticky=W, row=1, column=2, pady=pad)
 
-        self.l_extent = ttk.Label(root, text='AOI shapefile (.shp)::')
+        self.l_extent = ttk.Label(root, text='AOI shapefile (.shp):')
         self.l_extent.grid(sticky=E, row=2, column=0, pady=pad)
         self.e_extent = ttk.Entry(root)
         self.e_extent.grid(row=2, column=1, pady=pad)
@@ -473,9 +472,9 @@ class gcs_gui(tk.Frame):
         self.e_dem.insert(END, '')
         self.e_dem.grid(row=5, column=1, pady=pad, padx=5)
         self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem, select='file',
-                                                                            ftypes=[('TIFF', '*.tiff'),
+                                                                            ftypes=[('TIFF', '*.tif'),
                                                                                     ('All files', '*')]))
-        self.b_extent.grid(sticky=W, row=5, column=2, pady=pad)
+        self.b_dem.grid(sticky=W, row=5, column=2, pady=pad)
 
         # Create run botton to create smoothed centerline
         self.b_detrend_prep1 = ttk.Button(root, text='    Run    ',
@@ -570,18 +569,18 @@ class gcs_gui(tk.Frame):
 
         self.l_dem = ttk.Label(root, text='DEM location:')
         self.l_dem.grid(sticky=E, row=4, column=0, pady=pad)
-        self.e_dem = ttk.Entry(root)
-        self.e_dem.grid(sticky=E, row=4, column=1, pady=pad)
-        self.e_dem.insert(END, '')
-        self.e_dem.grid(sticky=E, row=4, column=1, pady=pad)
-        self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem, select='file',
+        self.e_dem2 = ttk.Entry(root)
+        self.e_dem2.grid(sticky=E, row=4, column=1, pady=pad)
+        self.e_dem2.insert(END, '')
+        self.e_dem2.grid(sticky=E, row=4, column=1, pady=pad)
+        self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem2, select='file',
                                                                             ftypes=[('TIFF, .tiff',
                                                                                      '*.tiff'),
                                                                                     ('All files', '*')]))
         self.b_dem.grid(sticky=W, row=4, column=2, pady=pad)
 
         self.e_detrend = ttk.Button(root, text='Detrend DEM!',
-                                    command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem.get()))
+                                    command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem2.get()))
         self.e_detrend.grid(sticky=E, row=5, column=0, pady=15)
         root.grid_rowconfigure(5, minsize=50)
 
