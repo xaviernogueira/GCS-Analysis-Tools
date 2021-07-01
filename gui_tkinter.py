@@ -135,7 +135,7 @@ class gcs_gui(tk.Frame):
                                      command=lambda: browse(root, self.e_lidardir1, select='folder'))
         self.b_lidardir1.grid(sticky=W, row=1, column=3, pady=pad)
 
-        self.l_in_spatialref = ttk.Label(root, text='LiDAR project spatial ref shapefile:')
+        self.l_in_spatialref = ttk.Label(root, text='LiDAR spatial reference (.shp):')
         self.l_in_spatialref.grid(sticky=E, row=2, column=1, pady=pad)
         self.e_in_spatialref = ttk.Entry(root)
         self.e_in_spatialref.insert(END, '')
@@ -161,7 +161,7 @@ class gcs_gui(tk.Frame):
         self.e_ndvi.insert(0, 0.40)
         self.e_ndvi.grid(sticky=E, row=4, column=2, pady=pad)
 
-        self.l_aoi = ttk.Label(root, text='AOI shapefile:')
+        self.l_aoi = ttk.Label(root, text='AOI shapefile (.shp):')
         self.l_aoi.grid(sticky=E, row=5, column=1, pady=pad)
         self.e_aoi = ttk.Entry(root)
         self.e_aoi.insert(END, '')
@@ -201,10 +201,10 @@ class gcs_gui(tk.Frame):
 
             # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
             print('Processing LiDAR to remove vegetation points...')
-            #process_lidar(lastoolsdir + '\\', lidardir + '\\', ground_poly, cores, units_code, keep_orig_pts, coarse_step,
-                           #coarse_bulge, coarse_spike, coarse_down_spike,
-                           #coarse_offset, fine_step, fine_bulge, fine_spike,
-                           #fine_down_spike, fine_offset)
+            process_lidar(lastoolsdir + '\\', lidardir + '\\', ground_poly, cores, units_code, keep_orig_pts, coarse_step,
+                           coarse_bulge, coarse_spike, coarse_down_spike,
+                           coarse_offset, fine_step, fine_bulge, fine_spike,
+                           fine_down_spike, fine_offset)
             print('Done')
 
             print('Generating a %sm resolution DEM...' % dem_resolution)
@@ -239,7 +239,7 @@ class gcs_gui(tk.Frame):
                                                                                            ('All files', '*')]))
         self.b_ground_shp.grid(sticky=W, row=2, column=3)
 
-        self.l_out_spatialref = ttk.Label(root, text='AOI w/ desired spatial reference (.shp)')
+        self.l_out_spatialref = ttk.Label(root, text='AOI shapefile (.shp):')
         self.l_out_spatialref.grid(sticky=E, row=3, column=1)
         self.e_out_spatialref = ttk.Entry(root)
         self.e_out_spatialref.insert(END, '')
@@ -397,8 +397,6 @@ class gcs_gui(tk.Frame):
         self.option_menu3 = ttk.OptionMenu(root, self.e_tri_meth, *tri_meths)
         self.option_menu3.grid(sticky=W, row=20, column=2, pady=pad)
 
-
-
         # make 'Run' ttk.Button in GUI to call the process_lidar() function
         self.b_lidar_run = ttk.Button(root, text='    Run    ',
                                       command=lambda: dem_generation(lastoolsdir=self.e_lasbin.get(),
@@ -429,16 +427,10 @@ class gcs_gui(tk.Frame):
         ######################################################################
         root = self.tabs['Thalweg centerline']
 
-        def detrend_prep(raster_name, flow_polygon, spatial_extent, ft_spatial_ref='', ft_spacing=3,
-                         use_filtered_ras=False,
-                         centerline_verified=False):
-            """Dummy function until we polish up the real one"""
-            print('in the function')
-
         self.remind = ttk.Label(root, text='Create upstream flow polygon in ArcMap')
         self.remind.grid(sticky=E, row=0, column=0)
 
-        self.l_flow_poly = ttk.Label(root, text='Upstream flow shapefile:')
+        self.l_flow_poly = ttk.Label(root, text='Upstream flow polygon (.shp):')
         self.l_flow_poly.grid(sticky=E, row=1, column=0, pady=pad)
         self.e_flow_poly = ttk.Entry(root)
         self.e_flow_poly.grid(sticky=E, row=1, column=1, pady=pad)
@@ -449,7 +441,7 @@ class gcs_gui(tk.Frame):
                                                                                           ('All files', '*')]))
         self.b_flow_poly.grid(sticky=W, row=1, column=2, pady=pad)
 
-        self.l_extent = ttk.Label(root, text='Extent shapefile:')
+        self.l_extent = ttk.Label(root, text='AOI shapefile (.shp)::')
         self.l_extent.grid(sticky=E, row=2, column=0, pady=pad)
         self.e_extent = ttk.Entry(root)
         self.e_extent.grid(row=2, column=1, pady=pad)
@@ -467,14 +459,14 @@ class gcs_gui(tk.Frame):
         self.e_filt.insert(END, 15)
         self.e_filt.grid(row=3, column=1, pady=pad, padx=5)
 
-        self.l_smooth = ttk.Label(root, text='Smoothing distance (DEM units):')
+        self.l_smooth = ttk.Label(root, text='Smoothing distance (meters):')
         self.l_smooth.grid(sticky=E, row=4, column=0, pady=pad)
         self.e_smooth = ttk.Entry(root)
         self.e_smooth.grid(sticky=E, row=4, column=1, pady=pad)
-        self.e_smooth.insert(END, 20)
+        self.e_smooth.insert(END, 6)
         self.e_smooth.grid(row=4, column=1, pady=pad, padx=5)
 
-        self.l_dem = ttk.Label(root, text='DEM:')
+        self.l_dem = ttk.Label(root, text='DEM (.tif):')
         self.l_dem.grid(sticky=E, row=5, column=0, pady=pad)
         self.e_dem = ttk.Entry(root)
         self.e_dem.grid(row=5, column=1, pady=pad)
@@ -485,13 +477,14 @@ class gcs_gui(tk.Frame):
                                                                                     ('All files', '*')]))
         self.b_extent.grid(sticky=W, row=5, column=2, pady=pad)
 
-        # DUMMY VARIABLES IN FUNCTION JUST WORKING ON LAYOUT RN
+        # Create run botton to create smoothed centerline
         self.b_detrend_prep1 = ttk.Button(root, text='    Run    ',
-                                          command=lambda: detrend_prep(raster_name=self.e_dem.get(),
-                                                                       flow_polygon=self.e_flow_poly.get(),
-                                                                       spatial_extent=self.e_extent.get(),
-                                                                       ft_spatial_ref='', ft_spacing=3,
-                                                                       use_filtered_ras=False,
+                                          command=lambda: detrend_prep(dem=self.e_dem.get(),
+                                                                       flow_poly=self.e_flow_poly.get(),
+                                                                       aoi_shp=self.e_extent.get(),
+                                                                       filt_passes=self.e_filt.get(),
+                                                                       smooth_dist=self.e_smooth.get(),
+                                                                       m_spacing=1,
                                                                        centerline_verified=False))
         self.b_detrend_prep1.grid(sticky=W, row=6, column=1, pady=15)
         root.grid_rowconfigure(6, minsize=50)
@@ -499,12 +492,14 @@ class gcs_gui(tk.Frame):
         self.l_step = ttk.Label(root, text='Verify centerline quality (edit if necessary), then run below...')
         self.l_step.grid(sticky=E, row=7, column=0)
 
+        # Create run button to generate a thalweg elevation table from 1m spaced station points
         self.b_detrend_prep2 = ttk.Button(root, text='    Generate thalweg profile    ',
-                                          command=lambda: detrend_prep(raster_name=self.e_dem.get(),
-                                                                       flow_polygon=self.e_flow_poly.get(),
-                                                                       spatial_extent=self.e_extent.get(),
-                                                                       ft_spatial_ref='', ft_spacing=3,
-                                                                       use_filtered_ras=False,
+                                          command=lambda: detrend_prep(dem=self.e_dem.get(),
+                                                                       flow_polyg=self.e_flow_poly.get(),
+                                                                       aoi_shp=self.e_extent.get(),
+                                                                       filt_passes=self.e_filt.get(),
+                                                                       smooth_dist=self.e_smooth.get(),
+                                                                       m_spacing=1,
                                                                        centerline_verified=True))
         self.b_detrend_prep2.grid(sticky=E, row=8, column=0, pady=15)
         root.grid_rowconfigure(6, minsize=50)

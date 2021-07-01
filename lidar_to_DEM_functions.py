@@ -139,7 +139,7 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         print(arcpy.GetMessages())
 
 
-def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, void_meth,  m_cell_size=1):
+def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, void_meth, m_cell_size=1):
     """Converts processed LAS files to a LAS dataset, and then to a raster with cell size of 1m
     Args: Folder containing LAS files, desired cell size in meters (default is 1m), and ft spatial reference
     Returns: Raster name for use in detrending """
@@ -180,7 +180,8 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
         las_dataset = arcpy.CreateLasDataset_management(ground_lasdir, out_las, spatial_reference=in_spatial_ref,
                                                         compute_stats=True)
         lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT',
-                                                           interpolation_type=method_str, sampling_type='CELLSIZE', sampling_value=cell_size)
+                                                           interpolation_type=method_str, sampling_type='CELLSIZE',
+                                                           sampling_value=cell_size)
         tiff_lidar_raster = arcpy.CopyRaster_management(lidar_raster, out_dem)
         tiff_lidar_raster = arcpy.ProjectRaster_management(lidar_raster, out_raster=out_dem,
                                                            out_coor_system=out_spatial_ref)
@@ -192,41 +193,52 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
     return out_dem
 
 
-def detrend_prep(raster_name, flow_polygon, spatial_extent, ft_spatial_ref, ft_spacing=3, use_filtered_ras=False,
-                 centerline_verified=False):
+def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1, centerline_verified=False):
     """This function takes the Lidar raster, creates a least-cost thalweg centerline from a smoothed raster. Station points are
     generated along the centerline at defined spacing (1/20th of channel width is a starting point) which are given the values of the lidar raster.
 
     Args: raster_name, upstream flow polygon, spatial extent (can be raster), station point spacing in ft (3ft is default).
     Run first with centerline_verified=False and visually inspect. Run again w/ True to return the [station_points, elevation_table]"""
 
-    # arcpy.env.extent = spatial_extent
-    raster_folder = os.path.dirname(raster_name)
-    spacing = int(ft_spacing)
-    xs_length = 5
-    smooth_distance = 20
-    filter_steps = 15
+    # Set up environment and output folder
+    spatial_ref = arcpy.Describe(aoi_shp).spatialReference
+    arcpy.env.extent = dem
+    dem_dir = os.path.dirname(dem)
 
-    if centerline_verified == False:
-        print("Smoothing raster w/ 15x low pass filters...")
+    # Initiate temp files folder
+    temp_files = dem_dir + '\\temp_files'
+
+    if not os.path.exists(temp_files):
+        os.makedirs(temp_files)
+
+    # Define input parameters
+    params = [m_spacing,
+              smooth_dist]  # First item defines XS length and spacing, second item described smoothing distance
+
+    if not spatial_ref.linearUnitName == 'Meter':
+        params = [int(i * 3) for i in params]
+
+    if not centerline_verified:
+        print('Generating smooth thalweg centerline...')
+        print("Smoothing DEM w/ %sx low pass filters..." % filt_passes)
         ticker = 0
-        filter_out = arcpy.sa.Filter(raster_name, "LOW")
-        filter_out.save(raster_folder + "\\filter_out%s" % ticker)
-        while ticker < filter_steps:  # Apply an iterative low pass filter 15x to the raster to smooth the topography
-            filter_out = arcpy.sa.Filter((raster_folder + "\\filter_out%s" % ticker), "LOW")
-            filter_out.save(raster_folder + "\\filter_out%s" % (ticker + 1))
+        filter_out = arcpy.sa.Filter(dem, "LOW")
+        filter_out.save(temp_files + "\\filter_out%s" % ticker)
+        while ticker < filt_passes:  # Apply an iterative low pass filter 15x to the raster to smooth the topography
+            filter_out = arcpy.sa.Filter((temp_files + "\\filter_out%s" % ticker), "LOW")
+            filter_out.save(temp_files + "\\filter_out%s" % (ticker + 1))
             ticker += 1
-        smooth_ras = (raster_folder + "\\filt_ras.tif")
-        filter_out.save(raster_folder + "\\filt_ras.tif")
+        smooth_ras = (temp_files + "\\filt_ras.tif")
+        filter_out.save(temp_files + "\\filt_ras.tif")
 
-        print("Smoothed raster made, least-cost centerline being calculated...")
-        least_cost_cl = create_centerline_GUI.least_cost_centerline(smooth_ras,
-                                                                    upstream_source_poly)  # Create least cost centerline from 10x filtered raster
+        # Create least cost centerline from 15x filtered raster
+        print("Smoothed DEM made, least-cost centerline being calculated...")
+        least_cost_cl = create_centerline_GUI.least_cost_centerline(smooth_ras, flow_poly)
         least_cost_cl = create_centerline_GUI.remove_spurs(least_cost_cl, spur_length=10)
-        centerline = create_centerline_GUI.smooth_centerline(least_cost_cl, smooth_distance=smooth_distance)
+        centerline = create_centerline_GUI.smooth_centerline(least_cost_cl, smooth_distance=smooth_dist)
 
-        for ticker in range(filter_steps + 1):  # Delete intermediate filtered rasters
-            file = (raster_folder + "\\filter_out%s" % ticker)
+        for ticker in range(filt_passes + 1):  # Delete intermediate filtered rasters
+            file = (temp_files + "\\filter_out%s" % ticker)
             if os.path.exists(file):
                 try:
                     shutil.rmtree(file)
@@ -234,50 +246,47 @@ def detrend_prep(raster_name, flow_polygon, spatial_extent, ft_spatial_ref, ft_s
                     print("Could not remove %s " % file)
             else:
                 print("Path %s does not exist and can't be deleted...")
-        print(
-            "Intermediate files deleted, please manually verify centerline quality and define reach range... Call this function again w/ centerline_verified=True.")
+        print('Done')
 
     else:
-        direct = os.path.dirname(flow_polygon)
-        centerline = direct + "\\las_files\\centerline\\smooth_centerline.shp"
-        station_lines = create_station_lines.create_station_lines_function(centerline, spacing=spacing,
-                                                                           xs_length=xs_length, stage=[])
+        print('Generating thalweg elevation profile...')
+        centerline = dem_dir + "\\thalweg_centerline.shp"
 
-        station_lines = direct + ("\\las_files\\centerline\\smooth_centerline_XS_%sx%sft.shp" % (spacing, xs_length))
-        print("Station lines file at: " + str(station_lines))
-        print("Centerline at: " + str(centerline))
+        # Define location of intermediate files, some of which will be deleted
+        intermediates = ["smooth_centerline_XS.shp", 'thalweg_station_points1.shp', 'thalweg_station_points2.shp',
+                         'thalweg_station_points.shp', 'sp_elevation_table.dbf']
+        intermediates = [temp_files + '\\%s' % i for i in intermediates]
 
-        station_points = arcpy.Intersect_analysis([station_lines, centerline], out_feature_class=(
-                    direct + "\\station_points_%s_smooth_%s_spaced.shp" % (smooth_distance, spacing)),
+        # Create a station point shapefile evenly sampling the thalweg centerline
+        station_lines = create_station_lines.create_station_lines_function(centerline, spacing=params[0],
+                                                                           xs_length=params[0], stage=[])
+        station_points = arcpy.Intersect_analysis([intermediates[0], centerline], out_feature_class=intermediates[1],
                                                   join_attributes="ALL", output_type="POINT")
-        station_points = arcpy.MultipartToSinglepart_management(station_points, (
-                    direct + "\\raw_station_points_%s_smooth %s_spaced.shp" % (smooth_distance, spacing)))
+        station_points = arcpy.MultipartToSinglepart_management(station_points, intermediates[2])
         station_points = arcpy.AddXY_management(station_points)
-        station_points = arcpy.Sort_management(station_points, out_dataset=(
-                    direct + "\\XYZ_station_points_%s_smooth %s_spaced.shp" % (smooth_distance, spacing)),
+        station_points = arcpy.Sort_management(station_points, out_dataset=intermediates[3],
                                                sort_field=[["LOCATION", "Ascending"]])
 
-        if use_filtered_ras == True:
-            raster_name = (raster_folder + "\\filt_ras.tif")
-        elevation_table = arcpy.ExtractValuesToTable_ga(station_points, in_rasters=raster_name, out_table=(
-                    direct + "\\sp_elevation_table_%s_smooth %s_spaced.dbf" % (smooth_distance, spacing)))
+        # Extract elevation values from each station point, and export to a .csv file
+        elevation_table = arcpy.ExtractValuesToTable_ga(station_points, in_rasters=dem, out_table=intermediates[4])
         station_points = arcpy.JoinField_management(station_points, in_field="ORIG_FID", join_table=elevation_table,
                                                     join_field="SrcID_Feat", fields=["Value"])
 
-        elevation_table = direct + '\\XYZ_elevation_table.csv'
+        # Add fields to override, but first adjust detrending functions 'POINT_M', 'FID_smooth', 'Id', 'FID_smoo_1', 'InLine_FID', 'ORIG_FID'
+        elevation_table = dem_dir + '\\xyz_elevation_table.csv'
         elevation_table = file_functions.tableToCSV(input_table=station_points, csv_filepath=elevation_table,
-                                                    fld_to_remove_override=[])  # Add fields to override, but first adjust detrending functions 'POINT_M', 'FID_smooth', 'Id', 'FID_smoo_1', 'InLine_FID', 'ORIG_FID'
+                                                    fld_to_remove_override=[])
         elevation_df = pd.read_csv(elevation_table)
 
         max_loc = elevation_df['LOCATION'].max()  # See if this thing works, hasn't been tested yet
         if elevation_df.iloc[0]['Value'] < elevation_df.iloc[-1]['Value']:
-            loc_list = elevation_df.loc[:, [('LOCATION')]].squeeze().to_list()
+            loc_list = elevation_df.loc[:, ['LOCATION']].squeeze().to_list()
             loc_np = np.array([int(max_loc - i) for i in loc_list])
             elevation_df['LOCATION'] = loc_np
             elevation_df.sort_values('LOCATION', inplace=True)
         elevation_df.to_csv(elevation_table)
 
-        print("Station points shapefile at: " + str(station_points))
-        print("Elevation table at: " + str(elevation_table))
+        print('Done')
+        print("Thalweg elevation profile (.csv) @ %s " % str(elevation_table))
 
-        return [station_points, elevation_table]
+        return elevation_table
