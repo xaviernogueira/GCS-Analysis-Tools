@@ -218,12 +218,15 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
     if not spatial_ref.linearUnitName == 'Meter':
         params = [int(i * 3) for i in params]
 
+    filt_passes = int(filt_passes)
+
     if not centerline_verified:
         print('Generating smooth thalweg centerline...')
         print("Smoothing DEM w/ %sx low pass filters..." % filt_passes)
         ticker = 0
         filter_out = arcpy.sa.Filter(dem, "LOW")
         filter_out.save(temp_files + "\\filter_out%s" % ticker)
+
         while ticker < filt_passes:  # Apply an iterative low pass filter 15x to the raster to smooth the topography
             filter_out = arcpy.sa.Filter((temp_files + "\\filter_out%s" % ticker), "LOW")
             filter_out.save(temp_files + "\\filter_out%s" % (ticker + 1))
