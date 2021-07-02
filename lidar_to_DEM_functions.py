@@ -62,9 +62,8 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
 
         raw_las_dataset = arcpy.CreateLasDataset_management(laspath, lidardir + "\\raw_las_dataset.lasd",
                                                             spatial_reference=spatial_ref, compute_stats=True)
-        lidar_footprint = arcpy.PointFileInformation_3d(raw_las_dataset, temp_files + "\\las_footprint_pre_dissolve",
-                                                        "LAS", input_coordinate_system=spatial_ref)
-        lidar_footprint = arcpy.Dissolve_management(lidar_footprint, lidardir + "\\las_footprint")
+        lidar_footprint = arcpy.PointFileInformation_3d(raw_las_dataset, temp_files + "\\las_footprint_pre_dissolve", "LAS")
+        lidar_footprint = arcpy.Dissolve_management(lidar_footprint, temp_files + "\\las_footprint")
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
@@ -79,6 +78,7 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
 
     # Set processing extent to the LiDAR data extent
     arcpy.env.extent = lidar_footprint
+    in_spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
     spatial_ref = arcpy.Describe(aoi_shp).spatialReference
 
     # Find NAIP imagery in folder
@@ -133,6 +133,7 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         else:
             ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, lidardir + "//ground_poly.shp")
 
+        ground_poly = arcpy.DefineProjection_management(ground_poly, in_spatial_ref)
         print("AOI bare-ground polygon @ %s" % ground_poly)
 
     except arcpy.ExecuteError:
