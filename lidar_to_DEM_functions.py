@@ -255,34 +255,33 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         centerline = dem_dir + "\\thalweg_centerline.shp"
 
         # Define location of intermediate files, some of which will be deleted
-        intermediates = ["thalweg_centerline_XS.shp", 'thalweg_station_points1.shp', 'thalweg_station_points2.shp',
-                         'thalweg_station_points.shp', 'sp_elevation_table.dbf']
+        intermediates = ["thalweg_centerline_XS.shp", 'thalweg_station_points.shp', 'thalweg_station_points1.shp',
+                         'sp_elevation_table.dbf']
         intermediates = [temp_files + '\\%s' % i for i in intermediates]
 
         # Create a station point shapefile evenly sampling the thalweg centerline
         station_lines = create_station_lines.create_station_lines_function(centerline, spacing=params[0],
                                                                            xs_length=params[0])
-        station_points = arcpy.Intersect_analysis([intermediates[0], centerline], out_feature_class=intermediates[1],
+        station_points = arcpy.Intersect_analysis([intermediates[0], centerline], out_feature_class=intermediates[2],
                                                   join_attributes="ALL", output_type="POINT")
-        station_points = arcpy.MultipartToSinglepart_management(station_points, intermediates[2])
+        station_points = arcpy.MultipartToSinglepart_management(station_points, intermediates[1])
         station_points = arcpy.AddXY_management(station_points)
-        station_points = arcpy.Sort_management(station_points, out_dataset=intermediates[3],
-                                               sort_field=[["LOCATION", "Ascending"]])
 
         # Extract elevation values from each station point, and export to a .csv file
-        elevation_table = arcpy.ExtractValuesToTable_ga(station_points, in_rasters=dem, out_table=intermediates[4])
+        elevation_table = arcpy.ExtractValuesToTable_ga(station_points, in_rasters=dem, out_table=intermediates[3])
         station_points = arcpy.JoinField_management(station_points, in_field="ORIG_FID", join_table=elevation_table,
                                                     join_field="SrcID_Feat", fields=["Value"])
 
         # Add fields to override, but first adjust detrending functions
         elevation_table = dem_dir + '\\xyz_elevation_table.csv'
         elevation_table = file_functions.tableToCSV(input_table=station_points, csv_filepath=elevation_table,
-                                                    fld_to_remove_override=[], keep_fields=['POINT_X', 'POINT_Y', 'LOCATION', 'Value'])
+                                                    fld_to_remove_override=['FID_thal_1', 'Id_1', 'InLine_FID',	'ORIG_FID'], keep_fields=[])
         elevation_df = pd.read_csv(elevation_table)
 
-        # Delete rows with
-
+        # Flip rows if upside down
         max_loc = elevation_df['LOCATION'].max()
+        elevation_df.sort_values('LOCATION', inplace=True)
+
         if elevation_df.iloc[0]['Value'] < elevation_df.iloc[-1]['Value']:
             loc_list = elevation_df.loc[:, ['LOCATION']].squeeze().to_list()
             loc_np = np.array([int(max_loc - i) for i in loc_list])
@@ -290,7 +289,11 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
             elevation_df.sort_values('LOCATION', inplace=True)
         elevation_df.to_csv(elevation_table)
 
-        print('Done')
+        # Delete extra files
+        for j in intermediates[2:]:
+            delete_gis_files(j)
+
         print("Thalweg elevation profile (.csv) @ %s " % str(elevation_table))
+        print('Done')
 
         return elevation_table

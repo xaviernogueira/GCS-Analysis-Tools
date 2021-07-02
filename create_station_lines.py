@@ -73,7 +73,6 @@ def create_station_lines_function(line_shp, spacing, xs_length):
 
     line_name = os.path.basename(line_shp)
     out_name = temp_files + '\\%s' % line_name.replace('.shp', '_XS.shp')
-    print(out_name)
 
     arcpy.PointsToLine_management(el, out_name, 'LOCATION')
     logging.info('OK.')
@@ -82,7 +81,7 @@ def create_station_lines_function(line_shp, spacing, xs_length):
     delfiles = [route, event_table, el_u, el]
     for delfile in delfiles:
         try:
-            delete_gis_files(delfile)
+            arcpy.Delete_management(delfile)
         except:
             print('')
 
