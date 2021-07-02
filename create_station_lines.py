@@ -20,6 +20,7 @@ def create_station_lines_function(line_shp, spacing, xs_length):
     # *** include coordinate priority so we automatically have stationing oriented DOWNSTREAM
 
     line_dir = os.path.dirname(line_shp)
+    init_logger(__file__)  # Initiate log file
 
     # Initiate temp files folder
     temp_files = line_dir + '\\temp_files'

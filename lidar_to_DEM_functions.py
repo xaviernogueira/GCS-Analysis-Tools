@@ -236,12 +236,8 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
 
         # Create least cost centerline from 15x filtered raster
         print("Smoothed DEM made, least-cost centerline being calculated...")
-        #least_cost_cl = create_centerline.least_cost_centerline(smooth_ras, flow_poly)
-        #least_cost_cl = create_centerline.remove_spurs(least_cost_cl, spur_length=10)
-        #centerline = create_centerline.smooth_centerline(least_cost_cl, smooth_distance=smooth_dist, aoi_shp=aoi_shp)
-
         lidar_foot = dem_dir + '\\las_footprint.shp'
-        centerline = create_centerline.make_centerline(smooth_ras, aoi_shp, lidar_foot, flow_poly, params[1])
+        create_centerline.make_centerline(smooth_ras, aoi_shp, lidar_foot, flow_poly, smooth_distance=10)
 
         for ticker in range(filt_passes + 1):  # Delete intermediate filtered rasters
             file = (temp_files + "\\filter_out%s" % ticker)
@@ -281,7 +277,7 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         # Add fields to override, but first adjust detrending functions
         elevation_table = dem_dir + '\\xyz_elevation_table.csv'
         elevation_table = file_functions.tableToCSV(input_table=station_points, csv_filepath=elevation_table,
-                                                    fld_to_remove_override=['POINT_X', 'POINT_Y', 'LOCATION', 'Value'])
+                                                    fld_to_remove_override=[], keep_fields=['POINT_X', 'POINT_Y', 'LOCATION', 'Value'])
         elevation_df = pd.read_csv(elevation_table)
 
         # Delete rows with

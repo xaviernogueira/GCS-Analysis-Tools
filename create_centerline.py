@@ -1,5 +1,4 @@
 import arcpy
-
 arcpy.env.overwriteOutput = True
 arcpy.CheckOutExtension('Spatial')
 import file_functions
@@ -11,57 +10,58 @@ def least_cost_centerline(DEM, source):
     '''returns a rough centerline using least cost path from source'''
     check_use([DEM, source])
 
-    # make directory for output files
-    outdir = os.path.dirname(DEM) + '\\'
-    if os.path.isdir(outdir) == False:
-        os.mkdir(outdir)
-        logging.info('Created output directory %s' % outdir)
+    try:
+        # make directory for output files
+        outdir = os.path.dirname(DEM) + '\\'
 
-    ###############################
-    # fill sinks in DEM raster
-    logging.info('Filling sinks in DEM...')
-    check_use(outdir + 'filled_DEM.tif')
-    filled_DEM = arcpy.sa.Fill(DEM.split('.aux')[0])
-    filled_DEM.save(outdir + 'filled_DEM.tif')
-    logging.info('OK')
+        ###############################
+        # fill sinks in DEM raster
+        logging.info('Filling sinks in DEM...')
+        check_use(outdir + 'filled_DEM.tif')
+        filled_DEM = arcpy.sa.Fill(DEM.split('.aux')[0])
+        filled_DEM.save(outdir + 'filled_DEM.tif')
+        logging.info('OK')
 
-    ###############################
-    # make flow direction raster
-    logging.info('Computing flow direction...')
-    check_use(outdir + 'flow_dir.tif')
-    flow_dir = arcpy.sa.FlowDirection(filled_DEM)
-    flow_dir.save(outdir + 'flow_dir.tif')
-    logging.info('OK')
+        ###############################
+        # make flow direction raster
+        logging.info('Computing flow direction...')
+        check_use(outdir + 'flow_dir.tif')
+        flow_dir = arcpy.sa.FlowDirection(filled_DEM)
+        flow_dir.save(outdir + 'flow_dir.tif')
+        logging.info('OK')
 
-    ###############################
-    # create least cost path
-    logging.info('Computing least cost path...')
-    check_use(outdir + 'lc_path.tif')
-    lc_path_raster = arcpy.sa.CostPath(source,
-                                       filled_DEM,
-                                       flow_dir,
-                                       path_type='BEST_SINGLE',
-                                       destination_field='Id'
-                                       )
-    lc_path_raster.save(outdir + 'lc_path.tif')
-    logging.info('OK')
+        ###############################
+        # create least cost path
+        logging.info('Computing least cost path...')
+        check_use(outdir + 'lc_path.tif')
+        lc_path_raster = arcpy.sa.CostPath(source,
+                                           filled_DEM,
+                                           flow_dir,
+                                           path_type='BEST_SINGLE',
+                                           destination_field='Id'
+                                           )
+        lc_path_raster.save(outdir + 'lc_path.tif')
+        logging.info('OK')
 
-    ###############################
-    # create rough center polyline
-    logging.info('Creating rough centerline...')
-    check_use(outdir + 'rough_centerline.shp')
-    rough_centerline = arcpy.RasterToPolyline_conversion(lc_path_raster,
-                                                         outdir + 'rough_centerline.shp',
-                                                         simplify='NO_SIMPLIFY'
-                                                         )
-    logging.info('OK')
+        ###############################
+        # create rough center polyline
+        logging.info('Creating rough centerline...')
+        check_use(outdir + 'rough_centerline.shp')
+        rough_centerline = arcpy.RasterToPolyline_conversion(outdir + 'lc_path.tif',
+                                                             outdir + 'rough_centerline.shp',
+                                                             simplify='NO_SIMPLIFY'
+                                                             )
+        logging.info('OK')
 
-    logging.info('Deleting intermediate files...')
-    del_files = [filled_DEM, flow_dir, lc_path_raster]
+        logging.info('Deleting intermediate files...')
+        del_files = [filled_DEM, flow_dir, lc_path_raster]
 
-    for f in del_files:
-        arcpy.Delete_management(f)
-    logging.info('OK')
+        for f in del_files:
+            arcpy.Delete_management(f)
+        logging.info('OK')
+
+    except arcpy.ExecuteError:
+        logging.info(str(arcpy.GetMessages()))
 
     return rough_centerline.getOutput(0)
 
@@ -70,21 +70,29 @@ def remove_spurs(line, spur_length=10):
     """Removes spurs from line smaller than spur_length"""
     check_use([line, line.replace('.shp', '_rm_spurs.shp')])
 
-    logging.info('Removing spurs smaller than % s units...' % str(spur_length))
-    # measure lengths
-    arcpy.AddGeometryAttributes_management(line, 'LENGTH')
-    # convert to layer
-    lyr = arcpy.MakeFeatureLayer_management(line, line.replace('.shp', '.lyr'))
-    # select the line segments with length > spur_length
-    no_spurs = arcpy.SelectLayerByAttribute_management(lyr, where_clause='LENGTH > %s' % str(spur_length))
-    # copy this selection to a new feature
-    no_spurs = arcpy.CopyFeatures_management(no_spurs, line.replace('.shp', '_rm_spurs.lyr'))
-    # delete input line and layers
-    del_files = [line, line.replace('.shp', '.lyr'), line.replace('.shp', '_rm_spurs.lyr')]
-    for f in del_files:
-        arcpy.Delete_management(f)
+    try:
+        logging.info('Removing spurs smaller than % s units...' % str(spur_length))
+        # measure lengths
+        arcpy.AddGeometryAttributes_management(line, 'LENGTH')
 
-    logging.info('OK.')
+
+        # convert to layer
+        lyr = arcpy.MakeFeatureLayer_management(line, line.replace('.shp', '.lyr'))
+        # select the line segments with length > spur_length
+        no_spurs = arcpy.SelectLayerByAttribute_management(lyr, where_clause='LENGTH > %s' % str(spur_length))
+        # copy this selection to a new feature
+        no_spurs = arcpy.CopyFeatures_management(no_spurs, line.replace('.shp', '_rm_spurs.lyr'))
+
+        # delete input line and layers
+        del_files = [line.replace('.shp', '.lyr'), line.replace('.shp', '_rm_spurs.lyr')]
+        del_files = []
+        for f in del_files:
+            arcpy.Delete_management(f)
+
+        logging.info('OK.')
+
+    except arcpy.ExecuteError:
+        logging.info(str(arcpy.GetMessages()))
 
     return line.replace('.shp', '_rm_spurs.shp')
 
@@ -93,7 +101,7 @@ def smooth_centerline(rough_centerline, smooth_distance):
     """returns a smoothed version of the rough centerline"""
 
     outdir = os.path.dirname(rough_centerline) + '\\'
-    check_use([rough_centerline, outdir + 'smooth_centerline.shp'])
+    check_use([rough_centerline, outdir + 'no_clip_thalweg_centerline.shp'])
 
     # dissolve rough centerline in case multiple pieces were made...
     centerline = arcpy.Dissolve_management(rough_centerline, outdir + 'dis_rough_centerline.shp')
@@ -133,7 +141,7 @@ def clip_centerline(centerline, clip_poly1, clip_poly2=''):
                                          clip_poly2,
                                          outdir + 'thalweg_centerline.shp'
                                          )
-        arcpy.Delete_management(outdir + 'thalweg_centerline.shp')
+        arcpy.Delete_management(outdir + 'thalweg_centerline1.shp')
         logging.info('OK')
 
     return centerline.getOutput(0)
@@ -154,9 +162,13 @@ def make_centerline(DEM, channel, lidar_extent, source, smooth_distance):
         centerline shapefile
     '''
     outdir = os.path.dirname(DEM)
+    arcpy.env.extent = lidar_extent
+    init_logger(__file__)  # Initiate log file
+
     check_use([DEM,
                channel,
                source,
+               lidar_extent,
                outdir + '\\filled_DEM.tif',
                outdir + '\\flow_dir.tif',
                outdir + '\\lc_path.tif',
@@ -170,7 +182,7 @@ def make_centerline(DEM, channel, lidar_extent, source, smooth_distance):
     centerline = clip_centerline(centerline, channel, lidar_extent)
 
     logging.info('Deleting intermediate files...')
-    del_files = [rough_centerline, outdir + '\\no_clip_thalweg_centerline.shp', outdir + '\\thalweg_centerline1.shp']
+    del_files = [rough_centerline, outdir + '\\rough_centerline.shp', outdir + '\\no_clip_thalweg_centerline.shp']
 
     for f in del_files:
         arcpy.Delete_management(f)
@@ -178,3 +190,6 @@ def make_centerline(DEM, channel, lidar_extent, source, smooth_distance):
 
     logging.info('Finished: %s' % centerline)
     return centerline
+
+
+
