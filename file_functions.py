@@ -272,16 +272,22 @@ def white_noise_acf_ci(series, maxlags=''):
 
     return lags, lower_lims, upper_lims
 
-def tableToCSV(input_table, csv_filepath, fld_to_remove_override=[]):
+
+def tableToCSV(input_table, csv_filepath, fld_to_remove_override=[], keep_fields=[]):
     """Returns the file path of a csv containing the attributes table of a shapefile or other table"""
     fld_list = arcpy.ListFields(input_table)
     fld_names = [str(fld.name) for fld in fld_list]
+
+    # Either delete specified fields, or only keep specified fields
     if len(fld_to_remove_override) > 0:
         for field in fld_to_remove_override:
             try:
                 fld_names.remove(field)
             except:
                 "Can't delete field: %s" % field
+
+    elif len(keep_fields) > 0:
+        fld_names = [i for i in fld_names if i in keep_fields]
 
     with open(csv_filepath, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
@@ -309,8 +315,8 @@ def delete_gis_files(file_loc):
     elif suffix == '.dbf':
         suf_list = ['.dbf', '.cpg', '.dbf.xml']
 
-    else:
-        print('Cant identify file type, make sure input file to delete_gis_files(file_loc) includes .tif, .shp, or .dbf suffix')
+    elif suffix == '.csv':
+        suf_list = ['.csv']
 
     counter = 0
     for suf in suf_list:

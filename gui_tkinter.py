@@ -494,7 +494,7 @@ class gcs_gui(tk.Frame):
         # Create run button to generate a thalweg elevation table from 1m spaced station points
         self.b_detrend_prep2 = ttk.Button(root, text='    Generate thalweg profile    ',
                                           command=lambda: detrend_prep(dem=self.e_dem.get(),
-                                                                       flow_polyg=self.e_flow_poly.get(),
+                                                                       flow_poly=self.e_flow_poly.get(),
                                                                        aoi_shp=self.e_extent.get(),
                                                                        filt_passes=self.e_filt.get(),
                                                                        smooth_dist=self.e_smooth.get(),

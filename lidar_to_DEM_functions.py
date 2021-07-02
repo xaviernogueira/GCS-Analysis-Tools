@@ -3,7 +3,7 @@ from arcpy import env
 from arcpy.sa import *
 import file_functions
 from file_functions import *
-import create_centerline_GUI
+import create_centerline
 import create_station_lines
 from create_station_lines import create_station_lines_function
 import os
@@ -231,14 +231,17 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
             filter_out = arcpy.sa.Filter((temp_files + "\\filter_out%s" % ticker), "LOW")
             filter_out.save(temp_files + "\\filter_out%s" % (ticker + 1))
             ticker += 1
-        smooth_ras = (temp_files + "\\filt_ras.tif")
-        filter_out.save(temp_files + "\\filt_ras.tif")
+        smooth_ras = (dem_dir + "\\filt_ras.tif")
+        filter_out.save(dem_dir + "\\filt_ras.tif")
 
         # Create least cost centerline from 15x filtered raster
         print("Smoothed DEM made, least-cost centerline being calculated...")
-        least_cost_cl = create_centerline_GUI.least_cost_centerline(smooth_ras, flow_poly)
-        least_cost_cl = create_centerline_GUI.remove_spurs(least_cost_cl, spur_length=10)
-        centerline = create_centerline_GUI.smooth_centerline(least_cost_cl, smooth_distance=smooth_dist)
+        #least_cost_cl = create_centerline.least_cost_centerline(smooth_ras, flow_poly)
+        #least_cost_cl = create_centerline.remove_spurs(least_cost_cl, spur_length=10)
+        #centerline = create_centerline.smooth_centerline(least_cost_cl, smooth_distance=smooth_dist, aoi_shp=aoi_shp)
+
+        lidar_foot = dem_dir + '\\las_footprint.shp'
+        centerline = create_centerline.make_centerline(smooth_ras, aoi_shp, lidar_foot, flow_poly, params[1])
 
         for ticker in range(filt_passes + 1):  # Delete intermediate filtered rasters
             file = (temp_files + "\\filter_out%s" % ticker)
@@ -256,13 +259,13 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         centerline = dem_dir + "\\thalweg_centerline.shp"
 
         # Define location of intermediate files, some of which will be deleted
-        intermediates = ["smooth_centerline_XS.shp", 'thalweg_station_points1.shp', 'thalweg_station_points2.shp',
+        intermediates = ["thalweg_centerline_XS.shp", 'thalweg_station_points1.shp', 'thalweg_station_points2.shp',
                          'thalweg_station_points.shp', 'sp_elevation_table.dbf']
         intermediates = [temp_files + '\\%s' % i for i in intermediates]
 
         # Create a station point shapefile evenly sampling the thalweg centerline
         station_lines = create_station_lines.create_station_lines_function(centerline, spacing=params[0],
-                                                                           xs_length=params[0], stage=[])
+                                                                           xs_length=params[0])
         station_points = arcpy.Intersect_analysis([intermediates[0], centerline], out_feature_class=intermediates[1],
                                                   join_attributes="ALL", output_type="POINT")
         station_points = arcpy.MultipartToSinglepart_management(station_points, intermediates[2])
@@ -275,13 +278,15 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         station_points = arcpy.JoinField_management(station_points, in_field="ORIG_FID", join_table=elevation_table,
                                                     join_field="SrcID_Feat", fields=["Value"])
 
-        # Add fields to override, but first adjust detrending functions 'POINT_M', 'FID_smooth', 'Id', 'FID_smoo_1', 'InLine_FID', 'ORIG_FID'
+        # Add fields to override, but first adjust detrending functions
         elevation_table = dem_dir + '\\xyz_elevation_table.csv'
         elevation_table = file_functions.tableToCSV(input_table=station_points, csv_filepath=elevation_table,
-                                                    fld_to_remove_override=[])
+                                                    fld_to_remove_override=['POINT_X', 'POINT_Y', 'LOCATION', 'Value'])
         elevation_df = pd.read_csv(elevation_table)
 
-        max_loc = elevation_df['LOCATION'].max()  # See if this thing works, hasn't been tested yet
+        # Delete rows with
+
+        max_loc = elevation_df['LOCATION'].max()
         if elevation_df.iloc[0]['Value'] < elevation_df.iloc[-1]['Value']:
             loc_list = elevation_df.loc[:, ['LOCATION']].squeeze().to_list()
             loc_np = np.array([int(max_loc - i) for i in loc_list])
