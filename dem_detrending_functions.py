@@ -36,14 +36,14 @@ def prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value']
     return [location, z, xyz_csv]
 
 
-def linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transform=0, chosen_fit_index=[]):
+def linear_fit(location_np, z_np, xyz_table_loc, list_of_breakpoints=[]):
     # Applies a linear fit to piecewise sections of the longitudinal profile, each piece is stored in split_list
 
     print("Applying linear fit...")
 
     if len(list_of_breakpoints) != 0:
         list_of_breakpoints.insert(0, 0)
-        list_of_breakpoints.append(int(location[-1]))
+        list_of_breakpoints.append(int(location_np[-1]))
         print("Breakpoints imported...")
     else:
         print("No breakpoint imported...")
@@ -51,11 +51,11 @@ def linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transfor
     split_location_list = []
     split_z_list = []
 
-    point_spacing = int(location[1]) - int(location[0])  # Split by breakpoints into a list of lists
+    point_spacing = int(location_np[1]) - int(location_np[0])  # Split by breakpoints into a list of lists
 
-    location = np.int_(location)  # Format input numpy arrays
-    z = np.float_(z)
-    z = np.around(z, 9)  # Round z to 9 decimal points
+    location_np = np.int_(location_np)  # Format input numpy arrays
+    z_np = np.float_(z_np)
+    z_np = np.around(z_np, 9)  # Round z to 9 decimal points
 
     if len(list_of_breakpoints) > 0:
         fit_params = []
@@ -69,15 +69,15 @@ def linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transfor
             index = slope_break_indices.index(temp_break_index)
 
             if index == 1:
-                split_location_list.append(location[:temp_break_index])
-                split_z_list.append(z[:temp_break_index])
+                split_location_list.append(location_np[:temp_break_index])
+                split_z_list.append(z_np[:temp_break_index])
             elif i != slope_break_indices[-1]:
-                temp_location_list = location[slope_break_indices[index-1]:temp_break_index]
+                temp_location_list = location_np[slope_break_indices[index - 1]:temp_break_index]
                 split_location_list.append(temp_location_list)
-                split_z_list.append(z[slope_break_indices[index-1]:temp_break_index])
+                split_z_list.append(z_np[slope_break_indices[index - 1]:temp_break_index])
             elif i == slope_break_indices[-1]:
-                split_location_list.append(location[slope_break_indices[index-1]:])
-                split_z_list.append(z[slope_break_indices[index-1]:])
+                split_location_list.append(location_np[slope_break_indices[index - 1]:])
+                split_z_list.append(z_np[slope_break_indices[index - 1]:])
 
         print("Breakpoints added...")
 
@@ -110,52 +110,32 @@ def linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transfor
             else:
                 index = int(chosen_fit_index[0])
             for j in range(list_of_lengths[i]):
-                z_fit_list.append((split_location_list[i][j] * fit_params[index][0] + fit_params[index][1]) + float(transform))
+                z_fit_list.append(split_location_list[i][j] * fit_params[index][0] + fit_params[index][1])
             i += 1
 
-        if len(z_fit_list) == len(z):
+        if len(z_fit_list) == len(z_np):
             print("List lengths are compatible, next we export to excel")
         else:
             print("Something went wrong, length of z =/ z_fit_list")
         print(z_fit_list)
 
     else:
-        m, b = np.polyfit(location, z, 1)
+        m, b = np.polyfit(location_np, z_np, 1)
         fit_params = [[m, b]]
         print("Fit params [m, b]: " + str(fit_params))
 
         z_fit_list = []
 
-        location_list = location.tolist()
+        location_list = location_np.tolist()
         for j in location_list:
-            z_fit_list.append((j*fit_params[0][0]+fit_params[0][1]) + float(transform))
+            z_fit_list.append(j*fit_params[0][0]+fit_params[0][1])
 
-    #Calculate residual and R^2
-    residual = []
-    for i in range(len(z_fit_list)):
-        residual.append(z[i]-z_fit_list[i])
-    mean_z = (sum(z) / len(z))
-    squared_real = []
-    squared_res = []
-
-    #Calculate the total sum of squares, sum of residuals, and R^2
-    for i in range(len(residual)):
-        squared_real.append((z[i] - mean_z)**2)
-        squared_res.append(residual[i]**2)
-
-    R_squared = 1 - (sum(squared_res)/sum(squared_real))
-    print("The coefficient of determination is: " + str(R_squared))
-
-    # Calculate mean and SD for residual to calculate residual z scores as a list
-    mean_res = sum(residual)/len(residual)
-    sd_res = np.std(residual)
-    res_z_score = [(z_res_value - mean_res) * 1.0 / sd_res for z_res_value in residual]
-
-    if xyz_table_location[-4:] == 'xlsx':  # Add fitted z values to the xyz table
-        wb = load_workbook(xyz_table_location)
+    # Add fitted z values to the xyz table
+    if xyz_table_loc[-4:] == 'xlsx':
+        wb = load_workbook(xyz_table_loc)
         ws = wb.active
         cell_test = ws["F1"]
-        cell_test.value = ("z_fit")
+        cell_test.value = "z_fit"
 
         if ws["F1"].value == cell_test.value:
             for i in z_fit_list:
@@ -166,17 +146,30 @@ def linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transfor
         else:
             print("Something is wrong with writing to the excel sheet")
 
-        ws["A1"].value == "OID"
-        wb.save(filename=xyz_table_location)
+    # Save fitted values to the output .csv table
+    elevation_df = pd.read_csv(xyz_table_loc)
+    elevation_df['z_fit'] = np.array(z_fit_list)
+    elevation_df.to_csv(xyz_table_loc)
 
-    elif xyz_table_location[-4:] == '.csv':
-        elevation_df = pd.read_csv(xyz_table_location)
-        elevation_df['z_fit'] = np.array(z_fit_list)
-        elevation_df.to_csv(xyz_table_location)
+    # Calculate residual and R^2
+    residual = []
+    for i in range(len(z_fit_list)):
+        residual.append(z_np[i] - z_fit_list[i])
+    mean_z = (sum(z_np) / len(z_np))
+    squared_real = []
+    squared_res = []
 
-    print("Excel file ready for wetted-polygon processing!")
+    # Calculate the total sum of squares, sum of residuals, and R^2
+    for i in range(len(residual)):
+        squared_real.append((z_np[i] - mean_z) ** 2)
+        squared_res.append(residual[i] ** 2)
 
-    return [fit_params, z_fit_list, residual, R_squared]
+    r_squared = 1 - (sum(squared_res) / sum(squared_real))
+    print("The coefficient of determination is: " + str(r_squared))
+
+    residual = np.array(residual)
+
+    return [fit_params, z_fit_list, residual, r_squared]
 
 
 def detrend_that_raster(detrend_location, fit_z_xl_file, original_dem, stage=0, window_size=0, list_of_breakpoints=[]):
@@ -239,27 +232,40 @@ def detrend_that_raster(detrend_location, fit_z_xl_file, original_dem, stage=0, 
 # Define plotting functions
 ######################################################################
 
-def diagnostic_quick_plot(location_np, z_np, xlim=0):
+def diagnostic_quick_plot(location_np, z_np, out_dir):
+    """Generates a basic plot showing the thalweg elevation profile.
+    Inputs: Numpy array of distance downstream, thalweg z values. A folder where plots can be saved (sub-folder generated)."""
     x_plot = location_np
     y_plot = z_np
-    plt.plot(x_plot, y_plot, 'r', label="Actual elevation profile")
-    plt.xlabel("Thalweg distance downstream (ft)")
-    plt.ylabel("Bed elevation (ft)")
-    if xlim != 0:
-        plt.xlim(0,xlim)
-    else:
-        plt.xlim(0,None)
+    plt.plot(x_plot, y_plot, 'r', label='Thalweg elevation profile')
+
+    # Define plotting extent
+    plt.xlim(min(location_np), max(location_np))
+    plt.ylim(min(z_np), max(z_np))
+
+    # Set up plot labels
+    plt.xlabel('Thalweg distance downstream')
+    plt.ylabel('Thalweg elevation')
+
+    # Format plot
     plt.grid(b=True, which='major', color='#666666', linestyle='-')
     plt.minorticks_on()
     plt.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
 
-    return plt.show()
+    # Save plot, return address
+    fig = plt.gcf()
+    fig.set_size_inches(6, 3)
+    out_png = out_dir + '\\thalweg_z_plot.png'
+    plt.savefig(out_png, dpi=300, bbox_inches='tight')
+    plt.cla()
+
+    return out_png
 
 
 def linear_fit_plot(location_np, z_np, fit_params, out_dir):
     """Generates a plot showing linear fit models between breakpoints
     Inputs: Numpy array of distance downstream, thalweg z values. List of fit parameters output from detrending function.
-    A folder where plots can be saved within (sub-folder generated)."""
+    A folder where plots can be saved (sub-folder generated)."""
 
     # Prep input arrays
     y1_plot = z_np
@@ -278,8 +284,8 @@ def linear_fit_plot(location_np, z_np, fit_params, out_dir):
     plt.ylim(min(z_np), max(z_np))
 
     # Set up plot labels
-    plt.xlabel("Thalweg distance downstream (ft)")
-    plt.ylabel("Bed elevation (ft)")
+    plt.xlabel('Thalweg distance downstream')
+    plt.ylabel('Thalweg elevation')
     plt.title("Linear piecewise fit")
 
     # Format plot
@@ -287,10 +293,10 @@ def linear_fit_plot(location_np, z_np, fit_params, out_dir):
     plt.minorticks_on()
     plt.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
     plt.legend(loc=1)
-    fig = plt.gcf()
-    fig.set_size_inches(12, 6)
 
     # Save plot, return address
+    fig = plt.gcf()
+    fig.set_size_inches(12, 6)
     out_png = out_dir + '\\fit_plot.png'
     plt.savefig(out_png, dpi=300, bbox_inches='tight')
     plt.cla()
@@ -298,35 +304,35 @@ def linear_fit_plot(location_np, z_np, fit_params, out_dir):
     return out_png
 
 
-def make_residual_plot(location_np, residual, r2, out_dir):
+def make_residual_plot(location_np, residual_np, r2, out_dir):
     """Plots residuals across the longitudinal profile, shows the R^2 value. Outlier values removed for view-ability.
-    Inputs: Numpy arrays of distance downstream and fit residuals. A R-squared value (float). An out directory.
-    Returns: A figure showing linear fit residuals, saved within a plotting folder within the lidar directory."""
+    Inputs: Numpy arrays of distance downstream and fit residuals. A R-squared value (float).
+    A folder where plots can be saved (sub-folder generated).
+    Returns: A figure showing linear fit residuals."""
 
     # Prep input arrays and initiate plot
-    y_plot = np.array(residual)
     y_zero = 0*location_np
-    plt.scatter(location_np, y_plot, s=1, c='r')
+    plt.scatter(location_np, residual_np, s=1, c='r')
     plt.plot(location_np, y_zero, c='b')
 
     # Define plotting extent using percentile (removes outliers for improved plot  output)
-    bottom, top = np.percentile(y_plot, 1), np.percentile(y_plot, 99)
+    bottom, top = np.percentile(residual_np, 1), np.percentile(residual_np, 99)
     plt.xlim(0, max(location_np))
     plt.ylim(min(bottom), max(top))
 
     # Set up plot labels
-    plt.xlabel("Distance down stream centerline (ft)")
-    plt.ylabel("Residual")
+    plt.xlabel('Thalweg distance downstream')
+    plt.ylabel("Fit residual")
     plt.title("Residuals: R^2 = %.4f" % r2)
 
     # Format plot
     plt.grid(b=True, which='major', color='#666666', linestyle='-')
     plt.minorticks_on()
     plt.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
-    fig = plt.gcf()
-    fig.set_size_inches(12, 6)
 
     # Save plot, return address
+    fig = plt.gcf()
+    fig.set_size_inches(12, 6)
     out_png = out_dir + '\\residual_plot.png'
     plt.savefig(out_png, dpi=300, bbox_inches='tight')
     plt.cla()
@@ -374,7 +380,7 @@ if process_on == True:
 
     else:
 
-        fit_list = linear_fit(location=loc, z=z, xyz_table_location=xyz_table, list_of_breakpoints=breakpoints,
+        fit_list = linear_fit(location_np=loc, z_np=z, xyz_table_loc=xyz_table, list_of_breakpoints=breakpoints,
                               transform=transform_value, chosen_fit_index=chosen_fit_index)
         linear_fit_plot(location_np=loc, z_np=z, fit_params=fit_list[0], stage=0, xmin=xlimits[0], xmax=xlimits[1], ymin=ylimits[0], ymax=ylimits[1],
                              location=save_location, transform=transform_value)

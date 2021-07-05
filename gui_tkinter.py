@@ -3,11 +3,13 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 import PIL
-from PIL import ImageTk, Image
+from PIL import ImageTk
 import lidar_to_DEM_functions
 from lidar_to_DEM_functions import *
 import lidar_processing_functions
 from lidar_processing_functions import *
+import dem_detrending_functions
+from dem_detrending_functions import *
 import warnings
 
 
@@ -86,7 +88,7 @@ class gcs_gui(tk.Frame):
         def open_popup(title, image):
             """Opens a new window showing only an image and a caption displaying image path.
             Inputs: A title that populates the window header, and an image path supported by PIL"""
-            self.im = Image.open(image)
+            self.im = PIL.Image.open(image)
 
             top = Toplevel(root)
             top.geometry()
@@ -188,7 +190,6 @@ class gcs_gui(tk.Frame):
         # DEM generation
         ######################################################################
         root = self.tabs['DEM generation']  # LiDAR processing to DEM generation widgets
-
 
         def dem_generation(lastoolsdir, lidardir, ground_poly, cores, units_code, keep_orig_pts, coarse_step,
                            coarse_bulge, coarse_spike, coarse_down_spike,
@@ -507,14 +508,21 @@ class gcs_gui(tk.Frame):
         ######################################################################
         root = self.tabs['Detrend DEM']
 
-        def show_plot(xyz):
+        def show_plot(xyz_csv):
             """Plots thalweg elevation profile is plotted but not saved"""
-            # out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
-            # diagnostic_quick_plot(out_list[0]_out_list[1], out_list[2])  # Adjust to save png, and return path
-            plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
+            # Set up directory for plots
+            out_dir = os.path.dirname(xyz_csv) + '\\detrending_plots'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+
+            # Make arrays. Save and display (pop up) the thalweg elevation plot
+            out_list = prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
+            plot = diagnostic_quick_plot(location_np=out_list[0], z_np=out_list[1], out_dir=out_dir)
+
+            #plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
             open_popup('Thalweg elevation profile', plot)
 
-            print('is it working')
+            print('Displaying thalweg elevation profile plot!')
 
         def show_fit_plots(xyz, breakpoints):
             """Linear fit and residuals are plotted but not saved"""
