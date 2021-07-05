@@ -27,131 +27,91 @@ def prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value']
     location = np.int_(list_of_lists[0])
     z = np.around(list_of_lists[-1], 9)
 
-    point_spacing = int(location[1]) - int(location[0])
-    print("Point spacing: " + str(point_spacing))
-    number_of_points = int(int(location[-1]) / int(point_spacing))
-
-    print("Z array: %s" % z)
-
     return [location, z, xyz_csv]
 
 
-def linear_fit(location_np, z_np, xyz_table_loc, list_of_breakpoints=[]):
+def linear_fit(location_np, z_np, xyz_table_loc, bp_list=[]):
     # Applies a linear fit to piecewise sections of the longitudinal profile, each piece is stored in split_list
 
     print("Applying linear fit...")
 
-    if len(list_of_breakpoints) != 0:
-        list_of_breakpoints.insert(0, 0)
-        list_of_breakpoints.append(int(location_np[-1]))
+    # Initiate lists for breakpoint based linear fit
+    split_locs_list = []
+    split_z_list = []
+    fit_params = []
+    z_fit_list = []
+
+    if len(bp_list) != 0:
+        bp_list.insert(0, 0)
+        bp_list.append(int(location_np[-1]))
         print("Breakpoints imported...")
     else:
         print("No breakpoint imported...")
 
-    split_location_list = []
-    split_z_list = []
-
-    point_spacing = int(location_np[1]) - int(location_np[0])  # Split by breakpoints into a list of lists
-
-    location_np = np.int_(location_np)  # Format input numpy arrays
+    # Set up arrays and calculate point spacing
+    location_np = np.int_(location_np)
+    point_spacing = int(location_np[1]) - int(location_np[0])
     z_np = np.float_(z_np)
     z_np = np.around(z_np, 9)  # Round z to 9 decimal points
 
-    if len(list_of_breakpoints) > 0:
-        fit_params = []
+    if len(bp_list) > 0:
+        bp_indices = [int(dist / point_spacing) for dist in bp_list]
 
-        slope_break_indices = [int(int(distance)/int(point_spacing)) for distance in list_of_breakpoints]
+        for j in bp_indices[1:]:
+            i = bp_indices.index(i)
 
-        for i in slope_break_indices[1:]:
-            temp_location_list = []
-            temp_z_list = []
-            temp_break_index = i
-            index = slope_break_indices.index(temp_break_index)
+            if i == 1:
+                split_locs_list.append(location_np[:i])
+                split_z_list.append(z_np[:i])
 
-            if index == 1:
-                split_location_list.append(location_np[:temp_break_index])
-                split_z_list.append(z_np[:temp_break_index])
-            elif i != slope_break_indices[-1]:
-                temp_location_list = location_np[slope_break_indices[index - 1]:temp_break_index]
-                split_location_list.append(temp_location_list)
-                split_z_list.append(z_np[slope_break_indices[index - 1]:temp_break_index])
-            elif i == slope_break_indices[-1]:
-                split_location_list.append(location_np[slope_break_indices[index - 1]:])
-                split_z_list.append(z_np[slope_break_indices[index - 1]:])
+            elif i != bp_indices[-1]:
+                split_locs_list.append(location_np[bp_indices[i - 1]:i] )
+                split_z_list.append(z_np[bp_indices[i - 1]:i])
 
-        print("Breakpoints added...")
+            elif i == bp_indices[-1]:
+                split_locs_list.append(location_np[bp_indices[i - 1]:])
+                split_z_list.append(z_np[bp_indices[i - 1]:])
+        print("Breakpoints added")
 
-        if len(split_z_list) == len(split_location_list):  # Get fit parameters for each section of the data
-            for i in range(len(split_location_list)):
-                temp_loc_array_unformatted = np.array(split_location_list[i])
-                temp_loc_array = np.int_(temp_loc_array_unformatted)
-                temp_z_array_unformatted = np.array(split_z_list[i])
-                temp_z_array = np.float_(temp_z_array_unformatted)
+        # Get fit parameters for each section of the data
+        if len(split_z_list) == len(split_locs_list):
+            for i in range(len(split_locs_list)):
+                temp_locs = np.int_(np.array(split_locs_list[i]))
+                temp_zs = np.float_(np.array(split_z_list[i]))
 
-                m, b = np.polyfit(temp_loc_array, temp_z_array, 1)
+                m, b = np.polyfit(temp_locs, temp_zs, 1)
                 fit_params.append([m, b])
-            print("Fit param list: " + str(fit_params))
+
         else:
             print("Something went wrong, list lengths do not match...")
 
-        # Make list of lists storing fitted z values
-        list_of_lengths = []
-        z_fit_list = []
+        # Make list storing the lengths of each breakpoint split location/z array segment
+        lengths = []
         for i in range(len(split_z_list)):
-            list_of_lengths.append(len(split_z_list[i]))
+            lengths.append(len(split_z_list[i]))
 
-        # Add fitted z's into a list
-        print(list_of_lengths)
+        # For each segment, generate an array storing the fitted z values
         i = 0
-
-        while i < len(list_of_lengths):
-            if len(chosen_fit_index) == 0:
-                index = i
-            else:
-                index = int(chosen_fit_index[0])
-            for j in range(list_of_lengths[i]):
-                z_fit_list.append(split_location_list[i][j] * fit_params[index][0] + fit_params[index][1])
+        while i < len(lengths):
+            for j in range(lengths[i]):
+                z_fit_list.append(split_locs_list[i][j] * fit_params[i][0] + fit_params[i][1])
             i += 1
-
-        if len(z_fit_list) == len(z_np):
-            print("List lengths are compatible, next we export to excel")
-        else:
-            print("Something went wrong, length of z =/ z_fit_list")
-        print(z_fit_list)
 
     else:
         m, b = np.polyfit(location_np, z_np, 1)
         fit_params = [[m, b]]
         print("Fit params [m, b]: " + str(fit_params))
 
-        z_fit_list = []
-
         location_list = location_np.tolist()
         for j in location_list:
             z_fit_list.append(j*fit_params[0][0]+fit_params[0][1])
-
-    # Add fitted z values to the xyz table
-    if xyz_table_loc[-4:] == 'xlsx':
-        wb = load_workbook(xyz_table_loc)
-        ws = wb.active
-        cell_test = ws["F1"]
-        cell_test.value = "z_fit"
-
-        if ws["F1"].value == cell_test.value:
-            for i in z_fit_list:
-                index = int(z_fit_list.index(i))
-                row_index = index + 2
-                cell = ws.cell(row=row_index, column=6)
-                cell.value = float(z_fit_list[index])
-        else:
-            print("Something is wrong with writing to the excel sheet")
 
     # Save fitted values to the output .csv table
     elevation_df = pd.read_csv(xyz_table_loc)
     elevation_df['z_fit'] = np.array(z_fit_list)
     elevation_df.to_csv(xyz_table_loc)
 
-    # Calculate residual and R^2
+    # Calculate residual
     residual = []
     for i in range(len(z_fit_list)):
         residual.append(z_np[i] - z_fit_list[i])
@@ -159,17 +119,19 @@ def linear_fit(location_np, z_np, xyz_table_loc, list_of_breakpoints=[]):
     squared_real = []
     squared_res = []
 
-    # Calculate the total sum of squares, sum of residuals, and R^2
+    # Calculate the R^2 value
     for i in range(len(residual)):
         squared_real.append((z_np[i] - mean_z) ** 2)
         squared_res.append(residual[i] ** 2)
 
     r_squared = 1 - (sum(squared_res) / sum(squared_real))
-    print("The coefficient of determination is: " + str(r_squared))
 
+    # Convert residual and z fit values to an array
+    z_fit = np.array(z_fit_list)
     residual = np.array(residual)
+    print('Done')
 
-    return [fit_params, z_fit_list, residual, r_squared]
+    return [fit_params, z_fit, residual, r_squared]
 
 
 def detrend_that_raster(detrend_location, fit_z_xl_file, original_dem, stage=0, window_size=0, list_of_breakpoints=[]):
@@ -380,7 +342,7 @@ if process_on == True:
 
     else:
 
-        fit_list = linear_fit(location_np=loc, z_np=z, xyz_table_loc=xyz_table, list_of_breakpoints=breakpoints,
+        fit_list = linear_fit(location_np=loc, z_np=z, xyz_table_loc=xyz_table, bp_list=breakpoints,
                               transform=transform_value, chosen_fit_index=chosen_fit_index)
         linear_fit_plot(location_np=loc, z_np=z, fit_params=fit_list[0], stage=0, xmin=xlimits[0], xmax=xlimits[1], ymin=ylimits[0], ymax=ylimits[1],
                              location=save_location, transform=transform_value)
