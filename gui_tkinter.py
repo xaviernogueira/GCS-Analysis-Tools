@@ -209,7 +209,12 @@ class gcs_gui(tk.Frame):
             print('Done')
 
             print('Generating a %sm resolution DEM...' % dem_resolution)
-            lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, tri_meth, void_meth, m_cell_size=dem_resolution)
+            dem = lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, tri_meth, void_meth, m_cell_size=dem_resolution)
+            print('Done')
+
+            print('Generating hillshade raster for the DEM...')
+            hill_out = lidardir + '\\hillshade.tif'
+            arcpy.HillShade_3d(dem, hill_out)
             print('Done')
 
         self.l_lasbin = ttk.Label(root, text='LAStools /bin/ directory:')
