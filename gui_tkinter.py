@@ -125,7 +125,7 @@ class gcs_gui(tk.Frame):
         self.e_lasbin1.insert(END, os.getcwd() + '\\LAStools\\bin')
         self.e_lasbin1.grid(row=0, column=2, pady=pad)
         self.b_lasbin1 = ttk.Button(root, text='Browse',
-                                   command=lambda: browse(root, entry=self.e_lasbin1, select='folder'))
+                                    command=lambda: browse(root, entry=self.e_lasbin1, select='folder'))
         self.b_lasbin1.grid(sticky=W, row=0, column=3, pady=pad)
 
         self.l_lidardir1 = ttk.Label(root, text='LiDAR data directory:')
@@ -134,7 +134,7 @@ class gcs_gui(tk.Frame):
         self.e_lidardir1.insert(END, '')
         self.e_lidardir1.grid(row=1, column=2, pady=pad)
         self.b_lidardir1 = ttk.Button(root, text='Browse',
-                                     command=lambda: browse(root, self.e_lidardir1, select='folder'))
+                                      command=lambda: browse(root, self.e_lidardir1, select='folder'))
         self.b_lidardir1.grid(sticky=W, row=1, column=3, pady=pad)
 
         self.l_in_spatialref = ttk.Label(root, text='LiDAR spatial reference (.shp):')
@@ -201,10 +201,11 @@ class gcs_gui(tk.Frame):
 
             # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
             print('Processing LiDAR to remove vegetation points...')
-            process_lidar(lastoolsdir + '\\', lidardir + '\\', ground_poly, cores, units_code, keep_orig_pts, coarse_step,
-                           coarse_bulge, coarse_spike, coarse_down_spike,
-                           coarse_offset, fine_step, fine_bulge, fine_spike,
-                           fine_down_spike, fine_offset)
+            process_lidar(lastoolsdir + '\\', lidardir + '\\', ground_poly, cores, units_code, keep_orig_pts,
+                          coarse_step,
+                          coarse_bulge, coarse_spike, coarse_down_spike,
+                          coarse_offset, fine_step, fine_bulge, fine_spike,
+                          fine_down_spike, fine_offset)
             print('Done')
 
             print('Generating a %sm resolution DEM...' % dem_resolution)
@@ -531,26 +532,35 @@ class gcs_gui(tk.Frame):
                 os.makedirs(out_dir)
 
             # Format breakpoints list from string
-            bp_split = breakpoints.split(',')
-            breakpoint_list = [int(i) for i in bp_split]
+            if breakpoints != '':
+                bp_split = breakpoints.split(',')
+                breakpoint_list = [int(i) for i in bp_split]
+            else:
+                breakpoint_list = []
 
             # Apply linear fit to input csv
             out_list = prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
-            fit_out = linear_fit(location_np=out_list[0], z_np=out_list[1], xyz_table_loc=xyz_csv, bp_list=breakpoint_list)
+            fit_out = linear_fit(location_np=out_list[0], z_np=out_list[1], xyz_table_loc=xyz_csv,
+                                 bp_list=breakpoint_list)
 
             # Save and display (pop up) linear fit and residual plots. Generate txt
-            fit_plot = linear_fit_plot(location_np=out_list[0], z_np=out_list[1], fit_params=fit_out[0], fit_np=fit_out[1], out_dir=out_dir)
-            res_plot = make_residual_plot(location_np=out_list[0], residual_np=fit_out[2], r2=fit_out[3], out_dir=out_dir)
+            fit_plot = linear_fit_plot(location_np=out_list[0], z_np=out_list[1], fit_params=fit_out[0],
+                                       fit_np=fit_out[1], out_dir=out_dir)
+            res_plot = make_residual_plot(location_np=out_list[0], residual_np=fit_out[2], r2=fit_out[3],
+                                          out_dir=out_dir)
             txt = fit_params_txt(fit_params=fit_out[0], bp_list=breakpoint_list, out_dir=out_dir)
 
             open_popup('Linear fit w/ breakpoints: %s' % breakpoint_list, fit_plot)
             open_popup('Residual plot w/ breakpoints: %s' % breakpoint_list, res_plot)
             print('Text file listing linear piecewise fit components @ %s' % txt)
 
-        def detrend(xyz, dem):
+        def detrend(xyz_csv, in_dem, aoi_shp):
             """Detrends the input raster based on .csv stored x, y, z, z_fit values for thalweg points"""
 
             print('Detrending DEM...')
+            detrended_dem = detrend_that_raster(xyz_csv=xyz_csv, in_dem=in_dem, aoi_shp=aoi_shp)
+            print('Done')
+            print('Detrended DEM @ %s' % detrended_dem)
 
         self.l_xyz = ttk.Label(root, text='Thalweg profile csv:')
         self.l_xyz.grid(sticky=E, row=0, column=0)
@@ -586,17 +596,30 @@ class gcs_gui(tk.Frame):
         self.e_dem2 = ttk.Entry(root)
         self.e_dem2.grid(sticky=E, row=4, column=1, pady=pad)
         self.e_dem2.insert(END, '')
-        self.e_dem2.grid(sticky=E, row=4, column=1, pady=pad)
-        self.b_dem = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem2, select='file',
-                                                                            ftypes=[('TIFF, .tiff',
-                                                                                     '*.tiff'),
+        self.e_dem2.grid(sticky=E, row=4, column=1, pady=pad, padx=5)
+        self.b_dem2 = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem2, select='file',
+                                                                            ftypes=[('TIFF, .tif',
+                                                                                     '*.tif'),
                                                                                     ('All files', '*')]))
-        self.b_dem.grid(sticky=W, row=4, column=2, pady=pad)
+        self.b_dem2.grid(sticky=W, row=4, column=2, pady=pad)
+
+        self.l_clip = ttk.Label(root, text='DEM clip AOI (optional):')
+        self.l_clip.grid(sticky=E, row=5, column=0, pady=pad)
+        self.e_clip = ttk.Entry(root)
+        self.e_clip.grid(sticky=E, row=5, column=1, pady=pad)
+        self.e_clip.insert(END, '')
+        self.e_clip.grid(sticky=E, row=5, column=1, pady=pad, padx=5)
+        self.b_clip = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_clip, select='file',
+                                                                             ftypes=[('Shapefile (.shp), .shp',
+                                                                                      '*.shp'),
+                                                                                     ('All files', '*')]))
+        self.b_clip.grid(sticky=W, row=5, column=2, pady=pad)
 
         self.e_detrend = ttk.Button(root, text='Detrend DEM!',
-                                    command=lambda: detrend(xyz=self.e_xyz.get(), dem=self.e_dem2.get()))
-        self.e_detrend.grid(sticky=E, row=5, column=0, pady=15)
-        root.grid_rowconfigure(5, minsize=50)
+                                    command=lambda: detrend(xyz_csv=self.e_xyz.get(), in_dem=self.e_dem2.get(),
+                                                            aoi_shp=self.e_clip.get()))
+        self.e_detrend.grid(sticky=E, row=6, column=0, pady=15)
+        root.grid_rowconfigure(6, minsize=50)
 
         # Flow-stage modeling
         ######################################################################

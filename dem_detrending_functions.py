@@ -1,6 +1,8 @@
 import openpyxl as xl
 import arcpy
 import os as os
+
+import pandas
 import pandas as pd
 from arcpy import env
 from openpyxl import Workbook
@@ -134,61 +136,54 @@ def linear_fit(location_np, z_np, xyz_table_loc, bp_list=[]):
     return [fit_params, z_fit, residual, r_squared]
 
 
-def detrend_that_raster(detrend_location, fit_z_xl_file, original_dem, stage=0, window_size=0, list_of_breakpoints=[]):
-    # Turn fitted xl file to a csv
-    arcpy.env.workspace = detrend_location
+def detrend_that_raster(xyz_csv, in_dem, aoi_shp=''):
+    """Generates a detrended DEM from a the fitted xyz .csv file and an input .tif dem"""
+    # Set up directory structure and environment
+    out_dir = os.path.dirname(xyz_csv)
+    temp_files = out_dir + '\\temp_files'
+    if not os.path.exists(temp_files):
+        os.makedirs(temp_files)
+    arcpy.env.workspace = temp_files
+
+    out_dem = out_dir + '\\ras_detren.tif'
     arcpy.overwriteoutput = True
-    spatial_ref = arcpy.Describe(original_dem).spatialReference
-    arcpy.env.extent = arcpy.Describe(original_dem).extent
+    spatial_ref = arcpy.Describe(in_dem).spatialReference
+    arcpy.env.extent = arcpy.Describe(in_dem).extent
 
-    if not os.path.exists(detrend_location):
-        os.makedirs(detrend_location)
+    # Create dataframe storing the fitted xyz .csv values
+    fit_col = 'z_fit'
+    cols = ['FID', 'Shape', 'POINT_X', 'POINT_Y', fit_col]
+    xyz_df = pandas.read_csv(xyz_csv, usecols=cols)
 
-    if fit_z_xl_file[-4:] == 'xlsx':
-        wb = xl.load_workbook(fit_z_xl_file)
-        ws = wb.active
-        csv_name = fit_z_xl_file[:-5] + "_fitted.csv"
-        with open(csv_name, 'w', newline="") as f:
-            col = csv.writer(f)
-            for row in ws.rows:
-                col.writerow([cell.value for cell in row])
-
-    elif fit_z_xl_file[-4:] == '.csv':
-        csv_name = fit_z_xl_file
-
-    else:
-        print('Invalid input table. Please re-save file as either an csv or xlsx')
-
-    if window_size != 0:
-        column = ('z_fit_window%s' % window_size)
-    else:
-        column = 'z_fit'
-
-    if stage != 0:
-        detrended_raster_file = detrend_location + ("\\rs_dt_s%s.tif" % stage)
-    else:
-        detrended_raster_file = detrend_location + "\\ras_detren.tif"
-        print("0th stage marks non-stage specific centerline")
-    points = arcpy.MakeXYEventLayer_management(csv_name, "POINT_X", "POINT_Y",
-                                                   out_layer=("fitted_station_points_stage%s" % stage),
-                                                   spatial_reference=spatial_ref, in_z_field=column)
-    points = arcpy.SaveToLayerFile_management(points, ("fitted_station_points_stage%sft" % stage).replace('.csv', '.lyr'))
+    # Generate station points with fitted z values
+    points = arcpy.MakeXYEventLayer_management(xyz_csv, "POINT_X", "POINT_Y", out_layer='fit_station_points',
+                                               spatial_reference=spatial_ref, in_z_field=fit_col)
+    points = arcpy.SaveToLayerFile_management(points, 'fit_station_points.lyr')
     points = arcpy.CopyFeatures_management(points)
-    print("Creating Thiessen polygons...")
 
-    fields = [f.name for f in arcpy.ListFields(points)]  # Delete non-relevent fields tp reduce errors
-    dont_delete_fields = ['FID', 'Shape', 'POINT_X', 'POINT_Y', column]
-    fields2delete = list(set(fields) - set(dont_delete_fields))
+    # Delete non-relevant csv columns
+    fields = [f.name for f in arcpy.ListFields(points)]
+    fields2delete = list(set(fields) - set(cols))
     points = arcpy.DeleteField_management(points, fields2delete)
 
-    cell_size1 = arcpy.GetRasterProperties_management(DEM, "CELLSIZEX")
+    # Calculate dem cell size and generate thiessen raster from fitted station points
+    print("Creating Thiessen polygons...")
+    cell_size1 = arcpy.GetRasterProperties_management(in_dem, "CELLSIZEX")
     cell_size = float(cell_size1.getOutput(0))
-    thiessen = arcpy.CreateThiessenPolygons_analysis(points, "thiespoly_stage%s.shp" % stage, fields_to_copy='ALL')
-    z_fit_raster = arcpy.PolygonToRaster_conversion(thiessen, column, ('theis_raster_stage%sft.tif' % stage),
-                                                        cell_assignment="CELL_CENTER", cellsize=cell_size)
-    detrended_DEM = arcpy.Raster(DEM) - arcpy.Raster(z_fit_raster)
-    detrended_DEM.save(detrended_raster_file)
-    print("DEM DETRENDED!")
+    thiessen = arcpy.CreateThiessenPolygons_analysis(points, "thiespoly.shp", fields_to_copy='ALL')
+    z_fit_ras = arcpy.PolygonToRaster_conversion(thiessen, fit_col, 'theis_ras.tif', cell_assignment="MAXIMUM_AREA", cellsize=cell_size)
+
+    # Detrend in_dem by subtracting thiessen raster values from it
+    detrended_dem = arcpy.Raster(in_dem) - arcpy.Raster(z_fit_ras)
+
+    if aoi_shp == '':
+        detrended_dem.save(out_dem)
+    else:
+        no_clip = temp_files + '\\ras_dt_nc.tif'
+        detrended_dem.save(no_clip)
+        arcpy.Clip_management(no_clip, out_raster=out_dem, in_template_dataset=aoi_shp, clipping_geometry='ClippingGeometry')
+
+    return out_dem
 
 
 # Define plotting functions
@@ -311,15 +306,17 @@ def make_residual_plot(location_np, residual_np, r2, out_dir):
 def fit_params_txt(fit_params, bp_list, out_dir):
     """Generates a text file in the same folder as the detrending plots that lists applied linear fit equations"""
 
+    # Create .txt file and copy breakpoint list
     text_dir = out_dir + '\\detrending_fit_eqs.txt'
     text_file = open(text_dir, 'w+')
-
-    # Make a copy of the breakpoint list
     bps_form = [i for i in bp_list]
 
     # Write to and save .txt file
     for count, params in enumerate(fit_params):
-        text_file.write('From %s to %s: %.4f * dist_downstream + %.4f\n' % (bps_form[count], bps_form[count+1], params[0], params[1]))
+        if len(bp_list) != 0:
+            text_file.write('From %s to %s: %.4f * dist_downstream + %.4f\n' % (bps_form[count], bps_form[count+1], params[0], params[1]))
+        else:
+            text_file.write('For full reach: %.4f * dist_downstream + %.4f\n' % (params[0], params[1]))
     text_file.close()
 
     return text_dir
