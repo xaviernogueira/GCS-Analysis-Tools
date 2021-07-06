@@ -519,27 +519,31 @@ class gcs_gui(tk.Frame):
             out_list = prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
             plot = diagnostic_quick_plot(location_np=out_list[0], z_np=out_list[1], out_dir=out_dir)
 
-            #plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
             open_popup('Thalweg elevation profile', plot)
 
             print('Displaying thalweg elevation profile plot!')
 
-        def show_fit_plots(xyz, breakpoints):
+        def show_fit_plots(xyz_csv, breakpoints):
             """Linear fit and residuals are plotted but not saved"""
-            breakpoint_list = []
-            # out_list = prep_xl_file(xyz, listofcolumn=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
-            # linear_fit(location, z, xyz_table_location, list_of_breakpoints=[], transform=0, chosen_fit_index=[])
-            # make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location='',
-            # transform=0)
-            # make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location='')
-            # make_linear_fit_plot(location_np, z_np, fit_params, stage=0, xmin=0, xmax=0, ymin=0, ymax=0, location=out_folder + '\\fit_plot.png',
-            # transform=0)
-            # make_residual_plot(location_np, residual, R_squared, stage=0, xmin=0, xmax=0, location=out_folder + '\\res_plot.png')
-            plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
-            open_popup('Linear fit w/ breakpoints: %s' % breakpoint_list, plot)
+            # Set up directory for plots
+            out_dir = os.path.dirname(xyz_csv) + '\\detrending_plots'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
 
-            plot = r'C:\Users\xavie\Documents\My_Scripts\cloud.png'
-            open_popup('Residual plot w/ breakpoints: %s' % breakpoint_list, plot)
+            # Format breakpoints list from string
+            bp_split = breakpoints.split(',')
+            breakpoint_list = [int(i) for i in bp_split]
+
+            # Apply linear fit to input csv
+            out_list = prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
+            fit_out = linear_fit(location_np=out_list[0], z_np=out_list[1], xyz_table_loc=xyz_csv, bp_list=breakpoint_list)
+
+            # Save and display (pop up) linear fit and residual plots
+            fit_plot = linear_fit_plot(location_np=out_list[0], z_np=out_list[1], fit_params=fit_out[0], out_dir=out_dir)
+            res_plot = make_residual_plot(location_np=out_list[0], residual_np=fit_out[2], r2=fit_out[3], out_dir=out_dir)
+
+            open_popup('Linear fit w/ breakpoints: %s' % breakpoint_list, fit_plot)
+            open_popup('Residual plot w/ breakpoints: %s' % breakpoint_list, res_plot)
 
         def detrend(xyz, dem):
             """Detrends the input raster based on .csv stored x, y, z, z_fit values for thalweg points"""
@@ -563,7 +567,7 @@ class gcs_gui(tk.Frame):
         self.e_show = ttk.Button(root, text='Plot!', command=lambda: show_plot(self.e_xyz.get()))
         self.e_show.grid(stick=E, row=1, column=1, pady=pad)
 
-        self.l_breaks = ttk.Label(root, text='Breakpoints (comma separated!)')
+        self.l_breaks = ttk.Label(root, text='Breakpoints (comma separated, no spaces)')
         self.l_breaks.grid(sticky=E, row=2, column=0, pady=pad)
         self.e_breaks = ttk.Entry(root)
         self.e_breaks.grid(stick=E, row=2, column=1, pady=pad)
