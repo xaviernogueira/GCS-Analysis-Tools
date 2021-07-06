@@ -538,12 +538,14 @@ class gcs_gui(tk.Frame):
             out_list = prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
             fit_out = linear_fit(location_np=out_list[0], z_np=out_list[1], xyz_table_loc=xyz_csv, bp_list=breakpoint_list)
 
-            # Save and display (pop up) linear fit and residual plots
-            fit_plot = linear_fit_plot(location_np=out_list[0], z_np=out_list[1], fit_params=fit_out[0], out_dir=out_dir)
+            # Save and display (pop up) linear fit and residual plots. Generate txt
+            fit_plot = linear_fit_plot(location_np=out_list[0], z_np=out_list[1], fit_params=fit_out[0], fit_np=fit_out[1], out_dir=out_dir)
             res_plot = make_residual_plot(location_np=out_list[0], residual_np=fit_out[2], r2=fit_out[3], out_dir=out_dir)
+            txt = fit_params_txt(fit_params=fit_out[0], bp_list=breakpoint_list, out_dir=out_dir)
 
             open_popup('Linear fit w/ breakpoints: %s' % breakpoint_list, fit_plot)
             open_popup('Residual plot w/ breakpoints: %s' % breakpoint_list, res_plot)
+            print('Text file listing linear piecewise fit components @ %s' % txt)
 
         def detrend(xyz, dem):
             """Detrends the input raster based on .csv stored x, y, z, z_fit values for thalweg points"""

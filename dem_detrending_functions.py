@@ -226,7 +226,7 @@ def diagnostic_quick_plot(location_np, z_np, out_dir):
     return out_png
 
 
-def linear_fit_plot(location_np, z_np, fit_params, out_dir):
+def linear_fit_plot(location_np, z_np, fit_params, fit_np, out_dir):
     """Generates a plot showing linear fit models between breakpoints
     Inputs: Numpy array of distance downstream, thalweg z values. List of fit parameters output from detrending function.
     A folder where plots can be saved (sub-folder generated)."""
@@ -240,8 +240,7 @@ def linear_fit_plot(location_np, z_np, fit_params, out_dir):
 
     # Initiate plot
     plt.plot(location_np, y1_plot, 'r', label="Thalweg elevation profile")
-    for i in range(len(y2_plots)):
-        plt.plot(location_np, y2_plots[i], 'b', label="%.4f * x + %.4f" % (y2_plots[i][0], y2_plots[i][1]), linewidth=0.75)
+    plt.plot(location_np, fit_np, 'b', label='Piecewise linear fit', linewidth=0.75)
 
     # Define plotting extent
     plt.xlim(min(location_np), max(location_np))
@@ -308,3 +307,19 @@ def make_residual_plot(location_np, residual_np, r2, out_dir):
 
     return out_png
 
+
+def fit_params_txt(fit_params, bp_list, out_dir):
+    """Generates a text file in the same folder as the detrending plots that lists applied linear fit equations"""
+
+    text_dir = out_dir + '\\detrending_fit_eqs.txt'
+    text_file = open(text_dir, 'w+')
+
+    # Make a copy of the breakpoint list
+    bps_form = [i for i in bp_list]
+
+    # Write to and save .txt file
+    for count, params in enumerate(fit_params):
+        text_file.write('From %s to %s: %.4f * dist_downstream + %.4f\n' % (bps_form[count], bps_form[count+1], params[0], params[1]))
+    text_file.close()
+
+    return text_dir
