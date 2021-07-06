@@ -1,13 +1,12 @@
 import openpyxl as xl
 import arcpy
-import os as os
-
+import os
 import pandas
 import pandas as pd
 from arcpy import env
 from openpyxl import Workbook
 from openpyxl import load_workbook
-import matplotlib as mpl
+import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 import csv

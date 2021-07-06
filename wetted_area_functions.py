@@ -1,6 +1,10 @@
 import arcpy
+import numpy as np
 from arcpy import env
 from arcpy.sa import *
+import os
+import matplotlib
+from matplotlib import pyplot as plt
 import file_functions
 from file_functions import *
 
@@ -72,3 +76,111 @@ def prep_small_inc(detrended_dem, max_stage):
     print('Done')
 
     return out_dir
+
+
+def pdf_cdf_plotting(in_dir, out_folder, max_stage):
+    """Doc string goes here
+    Returns: A list containing the locations of the three generated wetted area plots"""
+    print('Wetted area vs stage height analysis initiated...')
+
+    # Find all wetted area polygons in their out folder
+    wetted_areas = []
+    wetted_polys = [in_dir + '\\%s' % f for f in os.listdir(in_dir) if f[:11] == 'wetted_poly']
+
+    # Set units based on the end of the wetted polygons name
+    if wetted_polys[0][-5] == 'm':
+        interval = 0.03
+        u = 'm'
+    else:
+        interval = 0.1
+        u = 'ft'
+
+    # Calculate the wetted area of each wetted area polygon in their folder
+    print('Calculating wetted areas...')
+    for poly in wetted_polys:
+        poly_area = 0
+        for row in arcpy.da.SearchCursor(poly, ["SHAPE@AREA"]):
+            poly_area += float(row[0])
+        wetted_areas.append(poly_area)
+
+    # Clean up any errors and sort wetted areas from smallest to largest
+    wetted_areas = [i for i in wetted_areas if i is not None]
+    wetted_areas.sort()
+
+    # Clip list down to only include wetted areas below the selected max stage
+    stages = np.arange(0, max_stage + interval, interval)
+    wetted_areas = wetted_areas[:len(stages)]
+
+    # Calculate the change in wetted area between stages
+    print('Calculating d(wetted area)...')
+    d_area = []
+    for count, area in enumerate(wetted_areas):
+        if count == 0:
+            d_area.append(area)
+        else:
+            d_area.append(float(area-wetted_areas[count-1]))
+
+    # Plot stage height (x axis) vs wetted area (y axis)
+    print('Plotting...')
+    x1 = stages
+    y1 = np.array(wetted_areas)
+    title1 = (out_folder + '\\wetted_areas_plot_small_inc.png')
+    plt.figure()
+    plt.plot(x1, y1)
+    plt.xlabel('Flood stage height (%s)' % u)
+    plt.ylabel('Wetted area (sq %s)' % u)
+    plt.title('Cumulative wetted area chart')
+    plt.grid(b=True, which='major', color='#666666', linestyle='-')
+    plt.xlim(0, max_stage)
+    plt.ylim(0, None)
+    plt.xticks(np.arange(0, max_stage + 1, step=1))
+    fig = plt.gcf()
+    fig.set_size_inches(6, 3)
+    plt.savefig(title1, dpi=300, bbox_inches='tight')
+    plt.clf()
+    plt.close('all')
+
+    # Plot the derivative of the previous plot: PDF plot, shows d(wetted area)
+    x2 = np.arange(interval, max_stage + interval, interval)
+    y2 = np.array(d_area[1:])
+    title2 = (out_folder + '\\pdf_plot.png')
+    plt.figure()
+    plt.plot(x2, y2)
+    plt.xlabel('Flood stage height (%s)' % u)
+    plt.ylabel('Change in area (sq %s)' % u)
+    plt.title('PDF: d(wetted area) plot')
+    plt.grid(b=True, which='major', color='#666666', linestyle='-')
+    plt.xlim(0, max_stage)
+    plt.ylim(0, None)
+    plt.xticks(np.arange(0, (max_stage+1), step=1))
+    fig = plt.gcf()
+    fig.set_size_inches(6, 3)
+    plt.savefig(title2, dpi=300, bbox_inches='tight')
+    plt.clf()
+    plt.close('all')
+
+    # Plot the z vs wetted area, but with wetted area as the x axis to represent an mean cross-sectional geometry
+    x3 = np.array(wetted_areas)
+    y3 = stages
+    title3 = out_folder + '\\mean_XS_plot.png'
+    plt.figure()
+    plt.plot(x3, y3)
+    plt.xlabel('Wetted area (sq %s)' % u)
+    plt.ylabel('Flood stage height (%s)' % u)
+    plt.title('Represents mean cross-sectional geometry')
+    plt.grid(b=True, which='major', color='#666666', linestyle='-')
+    plt.grid(b=True, which='minor', color='#666666', linestyle='-')
+    plt.xlim(0, max(x3))
+    plt.ylim(0, max_stage)
+    plt.xticks(np.arange(0, int(max(x3)), step=round(max(x3) / 10)))
+    plt.yticks(np.arange(0, int(max(y3)), step=1))
+    fig = plt.gcf()
+    fig.set_size_inches(6, 3)
+    plt.savefig(title3, dpi=300, bbox_inches='tight')
+    plt.clf()
+    plt.close('all')
+    print('Done')
+
+    return [title1, title2, title3]
+
+

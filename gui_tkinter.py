@@ -1,3 +1,4 @@
+import os.path
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -10,6 +11,8 @@ import lidar_processing_functions
 from lidar_processing_functions import *
 import dem_detrending_functions
 from dem_detrending_functions import *
+import wetted_area_functions
+from wetted_area_functions import *
 import warnings
 
 
@@ -639,39 +642,37 @@ class gcs_gui(tk.Frame):
             self.highest = max(self.maxs)
             self.switch = False
 
-            def run(self, max_stage):
+            def run(self, detrended_dem, max_stage):
                 self.runs += 1
-                imgs = []
-
                 if max_stage > self.highest:
                     self.switch = True
+
+                out_dir = os.path.dirname(detrended_dem)
+                wet_dir = out_dir + '\\wetted_polygons'
 
                 # If you run for the first time it starts from 0 to max stage, generating shapefiles and plotting
                 if self.runs == 0:
                     self.switch = False
-                    stages = range(0, self.max_stage + 1)
-                    # prep_small_inc(detrend_folder, interval=0.1, max_stage=max_stage)
-                    # imgs = pdf_cdf_plotting(in_folder, out_folder, channel_clip_poly, key_zs=[], max_stage=max_stage, small_increments=0)
-
-                    imgs.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
+                    prep_small_inc(detrended_dem=detrended_dem, max_stage=max_stage)
+                    imgs = pdf_cdf_plotting(in_dir=wet_dir, out_folder=out_dir, max_stage=max_stage)
 
                     for img in imgs:
-                        open_popup('Flow stage vs wetted area', img)
+                        name = os.path.basename(img)[:-4]
+                        open_popup(name, img)
 
                 # If the updated max_stage is higher, shapefiles are made for the missing stages, and plots are updated
-                elif self.switch:  # If you ran before, but max_stage was updated,
-                    stages = range(self.highest, self.max_stage + 1)  # Use as input for prep_small_inc
-                    # prep_small_inc(detrend_folder, interval=0.1, max_stage=max_stage)
-                    # imgs = pdf_cdf_plotting(in_folder, out_folder, channel_clip_poly, key_zs=[], max_stage=max_stage, small_increments=0)
-
-                    self.images.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
+                elif self.switch:
+                    prep_small_inc(detrended_dem=detrended_dem, max_stage=max_stage)
+                    imgs = pdf_cdf_plotting(in_dir=wet_dir, out_folder=out_dir, max_stage=max_stage)
 
                     for img in imgs:
-                        open_popup('Flow stage vs wetted area', img)
+                        name = os.path.basename(img)[:-4]
+                        open_popup(name, img)
+                    self.switch = False
 
                 # If the max stage is less than on equal to the previous max stage, plots are updated
                 else:
-                    stages = range(0, self.max_stage + 1)
+                    imgs = pdf_cdf_plotting(in_dir=wet_dir, out_folder=out_dir, max_stage=max_stage)
                     for img in imgs:
                         open_popup('Flow stage vs wetted area', img)
 
