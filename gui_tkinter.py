@@ -630,41 +630,48 @@ class gcs_gui(tk.Frame):
 
         class wetted_controller:
             self.maxs = [0]
-            self.highest = max(self.maxs)
             self.runs = 0
+            self.highest = max(self.maxs)
+            self.switch = False
 
-            def __init__(self, max_stage):
-                self.maxs.append(max_stage)
+            def run(self, max_stage):
                 self.runs += 1
-                self.switch = False
-                self.imgs = []
+                imgs = []
 
-                if self.highest > max_stage:
+                if max_stage > self.highest:
                     self.switch = True
 
-            def run(self):
+                # If you run for the first time it starts from 0 to max stage, generating shapefiles and plotting
                 if self.runs == 0:
+                    self.switch = False
+                    stages = range(0, self.max_stage + 1)
                     # prep_small_inc(detrend_folder, interval=0.1, max_stage=max_stage)
                     # imgs = pdf_cdf_plotting(in_folder, out_folder, channel_clip_poly, key_zs=[], max_stage=max_stage, small_increments=0)
 
-                    self.images.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
+                    imgs.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
 
-                    for img in self.imgs:
+                    for img in imgs:
                         open_popup('Flow stage vs wetted area', img)
 
-                elif not self.switch:
+                # If the updated max_stage is higher, shapefiles are made for the missing stages, and plots are updated
+                elif self.switch:  # If you ran before, but max_stage was updated,
                     stages = range(self.highest, self.max_stage + 1)  # Use as input for prep_small_inc
                     # prep_small_inc(detrend_folder, interval=0.1, max_stage=max_stage)
                     # imgs = pdf_cdf_plotting(in_folder, out_folder, channel_clip_poly, key_zs=[], max_stage=max_stage, small_increments=0)
 
-                    self.imgs = []
                     self.images.append(r'C:\Users\xavie\Documents\My_Scripts\cloud.png')
 
-                    for img in self.imgs:
+                    for img in imgs:
                         open_popup('Flow stage vs wetted area', img)
+
+                # If the max stage is less than on equal to the previous max stage, plots are updated
                 else:
-                    for img in self.imgs:
+                    stages = range(0, self.max_stage + 1)
+                    for img in imgs:
                         open_popup('Flow stage vs wetted area', img)
+
+                # Update list of used max stage values
+                self.maxs.append(max_stage)
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
