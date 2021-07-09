@@ -23,7 +23,8 @@
 - A shapefile (.shp) defining the analysis area of interest (AOI).
   -   Projected in a spatial reference frame with desired analysis units (Meters 
       or US Feet)This shapefile's spatial reference is applied to all output  files.
-- A folder (within the top level directory) containing only 4-band NAIP imagery .jp2 files that cover the AOI. 
+- A folder (within the top level directory) containing only 4-band, 1m- resolution
+  NAIP imagery .jp2 files that cover the AOI. 
 
 
 ### Literature 
@@ -72,13 +73,30 @@ guide prior to any choosing parameters or manually editing shapefiles.
 
 
 #### Tab 1 -- Prepping LiDAR data from processing
-Overview:
-
+Overview: LiDAR data point files are prepared for LAStools vegetation point removal. NAIP imagery is used to generate 
+a NDVI raster and create a polygon representing non-vegetated bare-ground.
+ 
 Inputs:
+- The directory containing river valley LiDAR point cloud files (see 'Setting up')
+- The directory containing NAIP imagery (see 'Setting up')
+- A shapefile with the LiDAR project's spatial reference frame (see 'Setting up')
+- A shapefile defining the area of interest in the desired output spatial reference frame (see 'Setting up')
+  - This shapefile should be manually edited to somewhat tightly surround the river channel and flood-plain.
+  - Do not exclude any areas that could be submerged under flood stage flows, but excess AOI coverage will substantially 
+    slow the LiDAR processing step.
+  - Define the shapefile's spatial reference frame (including vertical). This will be the reference frame 
+    of all output files, and defines the units used within the analysis.
+- NDVI threshold (default is 0.4)
+  - NDVI = Normalized Difference Vegetation Index (https://en.wikipedia.org/wiki/Normalized_difference_vegetation_index)
+  - The threshold corresponds to the minimum NDVI value that gets defined as vegetation.
+  - In arid regions, lower values may be required (0.15-0.3).
+  - **USER INPUT :** Inspect the 'veg_poly.shp' file within the output folder. Verify vegetation mask
+    quality. Adjust NDVI value and run again if necessary.
 
-NDVI value selection
+Relevant outputs: 
+- A shapefile representing bare-ground -- ground_poly.shp 
+- A shapefile representing the LiDAR data extent -- las_footprint.shp
 
-Outputs: 
 #### Tab 2 -- Generating a ground-surface DEM from LiDAR data
 #### Tab 3 -- Generating a thalweg centerline + elevation profile
 #### Tab 4 -- Thalweg based DEM detrending
