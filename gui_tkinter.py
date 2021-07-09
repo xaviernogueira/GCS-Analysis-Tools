@@ -29,7 +29,7 @@ class gcs_gui(tk.Frame):
 
         # set header
         self.master.title('Geomorphic Covariance Structure (GCS) analysis GUI')
-        # self.master.iconbitmap('river.ico')  # UPDATE
+        self.master.iconbitmap('win_icon.ico')
 
         self.bg_color = 'LightSkyBlue1'  # Create color scheme and padding for the frame/self
         self.padding = 5
@@ -212,7 +212,8 @@ class gcs_gui(tk.Frame):
             print('Done')
 
             print('Generating a %sm resolution DEM...' % dem_resolution)
-            dem = lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, tri_meth, void_meth, m_cell_size=dem_resolution)
+            dem = lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, tri_meth, void_meth,
+                                  m_cell_size=dem_resolution)
             print('Done')
 
             print('Generating hillshade raster for the DEM...')
@@ -606,9 +607,9 @@ class gcs_gui(tk.Frame):
         self.e_dem2.insert(END, '')
         self.e_dem2.grid(sticky=E, row=4, column=1, pady=pad, padx=5)
         self.b_dem2 = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_dem2, select='file',
-                                                                            ftypes=[('TIFF, .tif',
-                                                                                     '*.tif'),
-                                                                                    ('All files', '*')]))
+                                                                             ftypes=[('TIFF, .tif',
+                                                                                      '*.tif'),
+                                                                                     ('All files', '*')]))
         self.b_dem2.grid(sticky=W, row=4, column=2, pady=pad)
 
         self.l_clip = ttk.Label(root, text='DEM clip AOI (optional):')
@@ -651,33 +652,110 @@ class gcs_gui(tk.Frame):
                 wet_dir = out_dir + '\\wetted_polygons'
 
                 # If you run for the first time it starts from 0 to max stage, generating shapefiles and plotting
-                if self.runs == 0:
-                    self.switch = False
+                # Or the updated max_stage is higher, shapefiles are made for the missing stages, and plots are updated
+                if self.runs == 0 or self.switch:
+                    print('Making wetted area polygons...')
                     prep_small_inc(detrended_dem=detrended_dem, max_stage=max_stage)
+                    print('Done')
+
+                    print('Creating flow stage analysis plots...')
                     imgs = pdf_cdf_plotting(in_dir=wet_dir, out_folder=out_dir, max_stage=max_stage)
+                    print('Done')
+                    print('Plots @ %s' % os.path.dirname(imgs[0]))
 
                     for img in imgs:
                         name = os.path.basename(img)[:-4]
                         open_popup(name, img)
-
-                # If the updated max_stage is higher, shapefiles are made for the missing stages, and plots are updated
-                elif self.switch:
-                    prep_small_inc(detrended_dem=detrended_dem, max_stage=max_stage)
-                    imgs = pdf_cdf_plotting(in_dir=wet_dir, out_folder=out_dir, max_stage=max_stage)
-
-                    for img in imgs:
-                        name = os.path.basename(img)[:-4]
-                        open_popup(name, img)
-                    self.switch = False
+                        self.switch = False
 
                 # If the max stage is less than on equal to the previous max stage, plots are updated
                 else:
+                    print('Creating flow stage analysis plots...')
                     imgs = pdf_cdf_plotting(in_dir=wet_dir, out_folder=out_dir, max_stage=max_stage)
+                    print('Done')
+                    print('Plots @ %s' % os.path.dirname(imgs[0]))
+
                     for img in imgs:
                         open_popup('Flow stage vs wetted area', img)
 
                 # Update list of used max stage values
                 self.maxs.append(max_stage)
+
+            def draft_centerline(self, detrended_dem, stages_str):
+                """"""
+                print('Generating draft center-lines for flow stage heights %s...' % stages_str)
+                out_dir = ''  # Make function return the output directory with key stage center-lines
+                print('Draft center-lines @ %s, manually edit and run the next step...' % out_dir)
+                print('Done')
+
+                return
+
+            def final_centerline(self, detrended_dem, stages_str):
+                """"""
+                print('Generating final center-lines for flow stage heights %s...' % stages_str)
+                out_dir = ''  # Make function return the output directory with key stage center-lines
+                print('Final center-lines @ %s' % out_dir)
+                print('Done')
+                return
+
+        # Build GUI for flow-stage analysis
+
+        self.l_detrended = ttk.Label(root, text='Detrended DEM:')
+        self.l_detrended.grid(sticky=E, row=0, column=0, pady=pad)
+        self.e_detrended = ttk.Entry(root)
+        self.e_detrended.grid(sticky=E, row=0, column=1, pady=pad, padx=5)
+        self.e_detrended.insert(END, '')
+        self.b_detrended = ttk.Button(root, text='Browse', command=lambda: browse(root, self.e_detrended, select='file',
+                                                                                  ftypes=[('TIFF, .tif',
+                                                                                           '*.tif'),
+                                                                                          ('All files', '*')]))
+        self.b_detrended.grid(sticky=W, row=0, column=2, pady=pad)
+
+        self.l_max = ttk.Label(root, text='Max stage height:')
+        self.l_max.grid(sticky=E, row=1, column=0, pady=pad)
+        self.e_max = ttk.Entry(root)
+        self.e_max.grid(sticky=E, row=1, column=1, pady=pad, padx=5)
+        self.e_max.insert(END, 0)
+        self.n_max = ttk.Label(root, text='Integer only, in DEM units')
+        self.n_max.grid(sticky=W, row=1, column=2, pady=pad)
+
+        self.e_flows = ttk.Button(root, text='Flow-stage analysis!',
+                                  command=lambda: wetted_controller.run(self, detrended_dem=self.e_detrended.get(),
+                                                                        max_stage=int(self.e_max.get())))
+        self.e_flows.grid(sticky=E, row=2, column=1, pady=15)
+        root.grid_rowconfigure(2, minsize=50)
+
+        self.note1 = ttk.Label(root, text='Choose key flow stages from plots and wetted area polygons')
+        self.note1.grid(sticky=W, row=3, columnspan=3, pady=pad)
+
+        self.l_zs = ttk.Label(root, text='Key stage heights:')
+        self.l_zs.grid(sticky=E, row=4, column=0, pady=pad)
+        self.e_zs = ttk.Entry(root)
+        self.e_zs.grid(sticky=E, row=4, column=1, pady=pad, padx=5)
+        self.e_zs.insert(END, '')
+        self.n_zs = ttk.Label(root, text='Float only, comma separated, DEM units (ex: 0.6,1.7,5.8)')
+        self.n_zs.grid(sticky=E, row=4, column=2, pady=pad)
+
+        self.l_dcenter = ttk.Label(root, text='Generate draft center-lines:')
+        self.l_dcenter.grid(stick=E, row=5, column=0, pady=15)
+        self.e_dcenter = ttk.Button(root, text='Run',
+                                    command=lambda: wetted_controller.draft_centerline(self,
+                                                                                       detrended_dem=self.e_detrended.get(),
+                                                                                       stages_str=self.e_zs.get()))
+        self.e_dcenter.grid(sticky=E, row=5, column=1, pady=15)
+        root.grid_rowconfigure(2, minsize=50)
+
+        self.note2 = ttk.Label(root, text='Edit drafts center-lines with ArcGIS, then run below')
+        self.note2.grid(sticky=W, row=6, columnspan=3, pady=pad)
+
+        self.l_center = ttk.Label(root, text='Generate final center-lines:')
+        self.l_center.grid(stick=E, row=7, column=0, pady=15)
+        self.e_center = ttk.Button(root, text='Run',
+                                   command=lambda: wetted_controller.final_centerline(self,
+                                                                                      detrended_dem=self.e_detrended.get(),
+                                                                                      stages_str=self.e_zs.get()))
+        self.e_center.grid(sticky=E, row=7, column=1, pady=15)
+        root.grid_rowconfigure(2, minsize=50)
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################

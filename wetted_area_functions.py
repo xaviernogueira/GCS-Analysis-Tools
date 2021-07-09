@@ -1,4 +1,5 @@
 import arcpy
+import numpy
 import numpy as np
 from arcpy import env
 from arcpy.sa import *
@@ -9,15 +10,15 @@ import file_functions
 from file_functions import *
 
 
-def float_keyz_format(z):
-    '''This function takes a float key z argument and retrusn its equivalent formatted string.
-    ex: 5.3 -> 5p3, or 10.0 -> 10p0'''
-
+def float_keyz_format(z, n=1):
+    """This function takes a float key z argument and retrusn its equivalent formatted string.
+    ex: 5.3 -> 5p3, or 10.0 -> 10p0
+    If the n parameter (default=1) is altered, more digits past the decimal as converted"""
     z_str = ''
     if z >= 10.0 and isinstance(z, float):
-        z_str = (str(z)[0:2] + 'p' + str(z)[3:])
+        z_str = (str(z)[0:2] + 'p' + str(z)[3:3+n])
     elif z < 10.0 and isinstance(z, float):
-        z_str = (str(z)[0] + 'p' + str(z)[2:])
+        z_str = (str(z)[0] + 'p' + str(z)[2:3+n])
     elif isinstance(z, int):
         z_str = str(z) + 'p0'
 
@@ -29,7 +30,7 @@ def float_keyz_format(z):
 
 def prep_small_inc(detrended_dem, max_stage):
     """IN: Folder containing detrended DEM ras_detren.tif, an stage interval length, a maximum flood stafe height.
-    RETURNS: None. This function creates a folder containing wetted polygons for a 0.1ft increments as well as a clippped detrended DEM and contours."""
+    RETURNS: Directory with wetted polygons"""
     # Set up an out directory for wetted area polygons
     in_dir = os.path.dirname(detrended_dem)
     out_dir = in_dir + '\\wetted_polygons'
@@ -45,35 +46,39 @@ def prep_small_inc(detrended_dem, max_stage):
     # Use detrended dem spatial reference to determine stage intervals
     spatial_ref = arcpy.Describe(detrended_dem).spatialReference
     unit = spatial_ref.linearUnitName
-    if not unit == 'Meter':
+    if unit == 'Meter':
         interval = 0.03
         u = 'm'
+        n = 2
     else:
         interval = 0.1
         u = 'ft'
-    print('TESTING. Units are %s' % unit)
+        n = 1
+    print('Units are %s' % unit)
 
     # Set up range
-    stages = np.arange(0, max_stage + interval, float(interval))
+    stages = np.arange(0, float(max_stage + interval), interval)
+    stages = np.around(stages, n)
 
     # Make wetted area polygons at 0.1ft / 0.03m intervals
     print('Making wetted polygons...')
     in_ras = arcpy.sa.Raster(detrended_dem)
 
     for inc in stages:
-        inc_str = float_keyz_format(inc)
+        inc_str = float_keyz_format(inc, n)
         temp_names = [int_files + '\\noval_%s%s.tif' % (inc_str, u), int_files + '\\dt_clp_%s%s.tif' % (inc_str, u)]
         out_name = out_dir + '\\wetted_poly_%s%s.shp' % (inc_str, u)
 
-        # Create intermediate rasters and detrended dems clipped at each wetted interval
-        wetted_ras = arcpy.sa.Con(in_ras <= inc, 1)
-        clip_ras = arcpy.sa.Con(in_ras <= inc, in_ras)
-        wetted_ras.save(temp_names[0])
-        clip_ras.save(temp_names[1])
+        # Only generate polygons that have not already been generated
+        if not os.path.exists(out_name):
+            # Create intermediate rasters and detrended dems clipped at each wetted interval
+            wetted_ras = arcpy.sa.Con(in_ras <= inc, 1)
+            clip_ras = arcpy.sa.Con(in_ras <= inc, in_ras)
+            wetted_ras.save(temp_names[0])
+            clip_ras.save(temp_names[1])
 
-        # Turn the wetted area raster into a polygon, delete intermediate rasters
-        arcpy.RasterToPolygon_conversion(in_raster=wetted_ras, out_polygon_features=out_name, simplify=False)
-    print('Done')
+            # Turn the wetted area raster into a polygon, delete intermediate rasters
+            arcpy.RasterToPolygon_conversion(in_raster=wetted_ras, out_polygon_features=out_name, simplify=False)
 
     return out_dir
 
@@ -83,9 +88,15 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     Returns: A list containing the locations of the three generated wetted area plots"""
     print('Wetted area vs stage height analysis initiated...')
 
+    # Make new folder to hold plots
+    out_folder = out_folder + '\\flow_stage_plots'
+
+    if not os.path.exists(out_folder):
+        os.makedirs(out_folder)
+
     # Find all wetted area polygons in their out folder
     wetted_areas = []
-    wetted_polys = [in_dir + '\\%s' % f for f in os.listdir(in_dir) if f[:11] == 'wetted_poly']
+    wetted_polys = [in_dir + '\\%s' % f for f in os.listdir(in_dir) if f[:11] == 'wetted_poly' and f[-4:] == '.shp']
 
     # Set units based on the end of the wetted polygons name
     if wetted_polys[0][-5] == 'm':
@@ -127,13 +138,14 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     title1 = (out_folder + '\\wetted_areas_plot_small_inc.png')
     plt.figure()
     plt.plot(x1, y1)
-    plt.xlabel('Flood stage height (%s)' % u)
-    plt.ylabel('Wetted area (sq %s)' % u)
+    plt.xlabel('Flood stage height (%s)' % u, fontsize='small')
+    plt.ylabel('Wetted area (sq %s)' % u, fontsize='small')
     plt.title('Cumulative wetted area chart')
     plt.grid(b=True, which='major', color='#666666', linestyle='-')
     plt.xlim(0, max_stage)
     plt.ylim(0, None)
-    plt.xticks(np.arange(0, max_stage + 1, step=1))
+    plt.xticks(np.arange(0, max_stage + 1, step=1), fontsize='x-small')
+    plt.yticks(fontsize='x-small')
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
     plt.savefig(title1, dpi=300, bbox_inches='tight')
@@ -146,13 +158,14 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     title2 = (out_folder + '\\pdf_plot.png')
     plt.figure()
     plt.plot(x2, y2)
-    plt.xlabel('Flood stage height (%s)' % u)
-    plt.ylabel('Change in area (sq %s)' % u)
+    plt.xlabel('Flood stage height (%s)' % u, fontsize='small')
+    plt.ylabel('Change in area (sq %s)' % u, fontsize='small')
     plt.title('PDF: d(wetted area) plot')
     plt.grid(b=True, which='major', color='#666666', linestyle='-')
     plt.xlim(0, max_stage)
     plt.ylim(0, None)
-    plt.xticks(np.arange(0, (max_stage+1), step=1))
+    plt.xticks(np.arange(0, (max_stage+1), step=1), fontsize='x-small')
+    plt.yticks(fontsize='x-small')
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
     plt.savefig(title2, dpi=300, bbox_inches='tight')
@@ -165,22 +178,29 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     title3 = out_folder + '\\mean_XS_plot.png'
     plt.figure()
     plt.plot(x3, y3)
-    plt.xlabel('Wetted area (sq %s)' % u)
-    plt.ylabel('Flood stage height (%s)' % u)
+    plt.xlabel('Wetted area (sq %s)' % u, fontsize='small')
+    plt.ylabel('Flood stage height (%s)' % u, fontsize='small')
     plt.title('Represents mean cross-sectional geometry')
     plt.grid(b=True, which='major', color='#666666', linestyle='-')
     plt.grid(b=True, which='minor', color='#666666', linestyle='-')
     plt.xlim(0, max(x3))
     plt.ylim(0, max_stage)
-    plt.xticks(np.arange(0, int(max(x3)), step=round(max(x3) / 10)))
-    plt.yticks(np.arange(0, int(max(y3)), step=1))
+    plt.xticks(np.arange(0, int(max(x3)), step=round(max(x3) / 10)), fontsize='x-small')
+    plt.yticks(np.arange(0, int(max(y3)), step=1), fontsize='x-small')
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
     plt.savefig(title3, dpi=300, bbox_inches='tight')
     plt.clf()
     plt.close('all')
-    print('Done')
 
     return [title1, title2, title3]
+
+
+def stage_centerlines():
+    """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). A string or list
+    containing N number of stage heights"""
+    # Convert string to list, or keep list and sort from smallest to largest
+    # Make sure floats are formatted correctly
+
 
 
