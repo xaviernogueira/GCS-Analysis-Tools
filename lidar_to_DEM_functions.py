@@ -34,7 +34,7 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
 
-    spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
+    in_spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
 
     try:
         # Convert laz files to LAS files
@@ -61,10 +61,9 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
                 os.remove(laspath + "\\%s" % f)
 
         raw_las_dataset = arcpy.CreateLasDataset_management(laspath, lidardir + "\\raw_las_dataset.lasd",
-                                                            spatial_reference=spatial_ref, compute_stats=True)
-        lidar_footprint = arcpy.PointFileInformation_3d(raw_las_dataset, temp_files + "\\las_footprint_pre_dissolve", "LAS",
-                                                        input_coordinate_system=spatial_ref)
-        lidar_footprint = arcpy.Dissolve_management(lidar_footprint, lidardir + "\\las_footprint")
+                                                            spatial_reference=in_spatial_ref, compute_stats=True)
+        lidar_ras = CreateConstantRaster(1, extent=raw_las_dataset)
+        lidar_footprint = arcpy.RasterToPolygon_conversion(lidar_ras, lidardir + '\\las_footprint.shp')
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
@@ -72,7 +71,7 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
     return lidar_footprint
 
 
-def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, ndvi_thresh, aoi_shp):
+def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_shp):
     """This function takes the defined lidar footprint from the lidar_footprint() function, as well as a defined NAIP imagery location (in .jpg2)
     and makes a polygon of vegeation using a NDVI threshold of >0.4. This polygon is erased from the lidar footprint to give a ground_polygon used
     to define processing settings"""
@@ -80,7 +79,6 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
     # Set processing extent to the LiDAR data extent
     arcpy.env.extent = lidar_footprint
     in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
-    spatial_ref = arcpy.Describe(aoi_shp).spatialReference
 
     # Find NAIP imagery in folder
     naip_imagery = [f for f in listdir(naipdir) if isfile(join(naipdir, f))]

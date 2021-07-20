@@ -119,7 +119,7 @@ class gcs_gui(tk.Frame):
 
             print('Generating inputs for LiDAR processing...')
             foot = lidardir + '\\las_footprint.shp'
-            #define_ground_polygon(foot, lidardir, spatial_shp, naip_folder, ndvi_thresh, aoi_shp)
+            define_ground_polygon(foot, lidardir, naip_folder, ndvi_thresh, aoi_shp)
             print('Done')
 
         self.l_lasbin1 = ttk.Label(root, text='LAStools /bin/ directory:')

@@ -118,14 +118,19 @@ Inputs:
   - The number of cores your computer has
   - Optional box allowing intermediate vegetation point clouds to be deleted
   - **USER INPUT:** The desired output DEM resolution in the units specified by the AOI shapefile
-  - **USER INPUT:** Interpolation method (Binning or Triangulation)
-      - "The Triangulation interpolation methods derive cell values using a TIN based approach while also offering the
-        opportunity to speed up processing time by thinning the sampling of LAS data"
+  - **USER INPUT:** Interpolation method (Binning or Triangulation), and sub-methods
+      - Binning assigns the average of all LiDAR points within a cell
+          - If selected, choose a Void Fill Method to determine the value of cells not containing LiDAR points
+            ('LINEAR', 'SIMPLE', or 'NATURAL_NEIGHBOR')
+      - Triangulation assigns cell values by first converting the LiDAR point cloud to a Triangulation Irregular 
+        Network (TIN), and then applying an interpolation algorithm
+           - If selected, choose the interpolation algorithm used for TIN generation ('LINEAR', 'NATURAL_NEIGHBOR')
+           - Triangulation is typically faster than binning, and recommended for large datasets
       - For more information on LAS to raster interpolation methods see ArcGIS documentation 
         (https://pro.arcgis.com/en/pro-app/latest/tool-reference/conversion/las-dataset-to-raster.htm)
 
 Relevant Outputs:
-  - A digital elevation model (DEM) in the selected resolution representing bare ground topography (las_dem.tif).
+  - A digital elevation model (DEM) in the selected resolution representing bare ground topography (las_dem.tif)
 
 #### Tab 3 -- Generating a thalweg centerline + elevation profile
 #### Tab 4 -- Thalweg based DEM detrending
