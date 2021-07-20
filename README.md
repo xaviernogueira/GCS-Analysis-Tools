@@ -131,15 +131,30 @@ Inputs:
 
 Relevant Outputs:
   - A topo-bathymetric digital elevation model (DEM) in the selected resolution representing bare ground and channel 
-    topography (las_dem.tif)
+    topography -- las_dem.tif
 
 #### Tab 3 -- Generating a thalweg centerline + elevation profile
 Overview: A thalweg centerline is generated using a smoothed version of the topo-bathymetric DEM. Elevation values are
 sampled along the centerline at 1m intervals, and used to generate a thalweg elevation profile CSV file.
 
 Inputs:
+  - **USER GENERATED:** An upstream flow polygon that intersects the thalweg centerline 
+    - This defines the top of the thalweg longitidnal elevation profile
+    - Generate manually in ArcPro or ArcGIS, **define projection to match the thalweg centerline!**
+  - The area of interest (AOI) shapefile
+  - Number of low pass filter runs to smooth topography with (15 is default)
+  - PAEK centerline smoothing distance / 'tolerance' in meters (6 is default)
+    - PAEK: Polynomial Approximation with Exponential Kernel
+    - For more information on the PAEK smoothing algorithm see ESRI's documentation 
+      (https://pro.arcgis.com/en/pro-app/latest/tool-reference/cartography/smooth-line.htm)
+  - The topo-bathymetric DEM
+
+Note: Please verify centerline quality, and edit if necessary, before generating the thalweg elevation profile.
 
 Relevant outputs:
+  - Smooth thalweg centerline -- thalweg_centerline.shp
+  - Thalweg elevation profile CSV file -- xyz_elevation_table.csv
+
 #### Tab 4 -- Thalweg based DEM detrending
 #### Tab 5 -- Selecting key flow stage heights + refining center-lines 
 #### Tab 6(1) -- Running key flow stage GCS analysis
