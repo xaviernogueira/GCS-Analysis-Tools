@@ -98,6 +98,35 @@ Relevant outputs:
 - A shapefile representing the LiDAR data extent -- las_footprint.shp
 
 #### Tab 2 -- Generating a ground-surface DEM from LiDAR data
+Overview: LiDAR point cloud files (LAS format) are processed using Rapidlasso LAStools
+functionality to remove vegetation returns, and ideally, leave a point cloud representing bare ground topography.
+Next, the processed point cloud is converted into a Digital Elevation Model (DEM) using a user selected
+interpolation algorithm.
+
+Inputs:
+  - The directory containing river valley LiDAR point cloud files (see 'Setting up')
+  - The bare-ground shapefile created in the previous step (ground_poly.shp)
+  - The area of interest (AOI) shapefile with the desired output spatial reference frame  (see 'Setting up')
+  - **USER INPUT:** RapidLasso las_ground parameters for vegetated and non-vegetated areas
+      - Recommended starting parameters in US FT:
+        - Step size: 0.9 (standard), 0.1 (fine)
+        - Bulge: 0.1 (both)Spike: 0.15 (both)
+        - Down spike: 0.3 (both)
+        - Offset: 0.015 (standard), 0.15 (fine)
+      - For more infomation on these parameters see LAStools documentation (https://github.com/LAStools/LAStools/blob/master/bin/lasground_new_README.txt)
+  - The units that the processing parameters were entered in
+  - The number of cores your computer has
+  - Optional box allowing intermediate vegetation point clouds to be deleted
+  - **USER INPUT:** The desired output DEM resolution in the units specified by the AOI shapefile
+  - **USER INPUT:** Interpolation method (Binning or Triangulation)
+      - "The Triangulation interpolation methods derive cell values using a TIN based approach while also offering the
+        opportunity to speed up processing time by thinning the sampling of LAS data"
+      - For more information on LAS to raster interpolation methods see ArcGIS documentation 
+        (https://pro.arcgis.com/en/pro-app/latest/tool-reference/conversion/las-dataset-to-raster.htm)
+
+Relevant Outputs:
+  - A digital elevation model (DEM) in the selected resolution representing bare ground topography (las_dem.tif).
+
 #### Tab 3 -- Generating a thalweg centerline + elevation profile
 #### Tab 4 -- Thalweg based DEM detrending
 #### Tab 5 -- Selecting key flow stage heights + refining center-lines 

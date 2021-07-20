@@ -62,8 +62,9 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
 
         raw_las_dataset = arcpy.CreateLasDataset_management(laspath, lidardir + "\\raw_las_dataset.lasd",
                                                             spatial_reference=spatial_ref, compute_stats=True)
-        lidar_footprint = arcpy.PointFileInformation_3d(raw_las_dataset, temp_files + "\\las_footprint_pre_dissolve", "LAS")
-        lidar_footprint = arcpy.Dissolve_management(lidar_footprint, temp_files + "\\las_footprint")
+        lidar_footprint = arcpy.PointFileInformation_3d(raw_las_dataset, temp_files + "\\las_footprint_pre_dissolve", "LAS",
+                                                        input_coordinate_system=spatial_ref)
+        lidar_footprint = arcpy.Dissolve_management(lidar_footprint, lidardir + "\\las_footprint")
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
@@ -78,7 +79,7 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
 
     # Set processing extent to the LiDAR data extent
     arcpy.env.extent = lidar_footprint
-    in_spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
+    in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
     spatial_ref = arcpy.Describe(aoi_shp).spatialReference
 
     # Find NAIP imagery in folder
@@ -94,13 +95,14 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         add_to_mosaic = [naipdir + "\\" + f for f in naip_imagery]
         naip_imagery = arcpy.MosaicToNewRaster_management(add_to_mosaic, output_location=lidardir,
                                                           raster_dataset_name_with_extension="NAIP_mos.tif",
+                                                          coordinate_system_for_the_raster=in_spatial_ref,
                                                           number_of_bands=4)
     else:
         naip_imagery = (naipdir + "\\%s" % naip_imagery[0])
+        naip_imagery = arcpy.ProjectRaster_management(naip_imagery, lidardir + "\\NAIP_prj.tif", in_spatial_ref)
 
     try:
-        # Project the NAIP data and extract bands 1(red) and 4(NIR)
-        naip_imagery = arcpy.ProjectRaster_management(naip_imagery, lidardir + "\\NAIP_prj.tif", spatial_ref)
+        # Extract bands 1 (red) and 4 (NIR)
         red_lyr = arcpy.MakeRasterLayer_management(naip_imagery, temp_files + "\\rd_lyr", band_index=0)
         nir_lyr = arcpy.MakeRasterLayer_management(naip_imagery, temp_files + "\\nr_lyr", band_index=4)
 
@@ -114,24 +116,25 @@ def define_ground_polygon(lidar_footprint, lidardir, spatialref_shp, naipdir, nd
         nir_ras = Raster(nir_ras)
 
         # Calculate ndvi and generate polygon delineating values > ndvi_thresh
-        ndvi = ((nir_ras - red_ras) / (nir_ras + red_ras))
-        ndvi.save(lidardir + "//NDVI.tif")
+        ndvi = lidardir + "\\NDVI.tif"
+        ndvi_ras = ((nir_ras - red_ras) / (nir_ras + red_ras))
+        ndvi_ras.save(ndvi)
 
         veg_ras_raw = Con(arcpy.sa.Raster(ndvi) >= ndvi_thresh, 1)
-        veg_ras_raw.save(temp_files + "//veg_ras_raw.tif")
+        veg_ras_raw.save(temp_files + "\\veg_ras_raw.tif")
         veg_ras = MajorityFilter(veg_ras_raw, "EIGHT", "MAJORITY")
-        veg_ras.save(temp_files + "//veg_ras.tif")
-        veg_poly = arcpy.RasterToPolygon_conversion(veg_ras, lidardir + "//veg_poly_ndvi.shp", simplify=FALSE)
+        veg_ras.save(temp_files + "\\veg_ras.tif")
+        veg_poly = arcpy.RasterToPolygon_conversion(veg_ras, lidardir + "\\veg_poly_ndvi.shp", simplify=FALSE)
 
         # Make polygon representing bare ground
         if aoi_shp != '':
-            ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, temp_files + "//ground_poly_full.shp")
-            centerline_buff_prj = arcpy.Project_management(aoi_shp, temp_files + "//aoi_prj_to_inref.shp",
-                                                           out_coor_system=spatial_ref)
-            ground_poly = arcpy.Clip_analysis(ground_poly, aoi_shp, lidardir + "//ground_poly.shp")
+            ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, temp_files + "\\ground_poly_full.shp")
+            aoi_prj = arcpy.Project_management(aoi_shp, temp_files + "\\aoi_prj_to_inref.shp",
+                                               out_coor_system=in_spatial_ref)
+            ground_poly = arcpy.Clip_analysis(ground_poly, aoi_prj, lidardir + "\\ground_poly.shp")
 
         else:
-            ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, lidardir + "//ground_poly.shp")
+            ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, lidardir + "\\ground_poly.shp")
 
         ground_poly = arcpy.DefineProjection_management(ground_poly, in_spatial_ref)
         print("AOI bare-ground polygon @ %s" % ground_poly)
@@ -276,7 +279,8 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         # Add fields to override, but first adjust detrending functions
         elevation_table = dem_dir + '\\xyz_elevation_table.csv'
         elevation_table = file_functions.tableToCSV(input_table=station_points, csv_filepath=elevation_table,
-                                                    fld_to_remove_override=['FID_thal_1', 'Id_1', 'InLine_FID',	'ORIG_FID'], keep_fields=[])
+                                                    fld_to_remove_override=['FID_thal_1', 'Id_1', 'InLine_FID',
+                                                                            'ORIG_FID'], keep_fields=[])
         elevation_df = pd.read_csv(elevation_table)
 
         # Flip rows if upside down
