@@ -130,9 +130,16 @@ Inputs:
         (https://pro.arcgis.com/en/pro-app/latest/tool-reference/conversion/las-dataset-to-raster.htm)
 
 Relevant Outputs:
-  - A digital elevation model (DEM) in the selected resolution representing bare ground topography (las_dem.tif)
+  - A topo-bathymetric digital elevation model (DEM) in the selected resolution representing bare ground and channel 
+    topography (las_dem.tif)
 
 #### Tab 3 -- Generating a thalweg centerline + elevation profile
+Overview: A thalweg centerline is generated using a smoothed version of the topo-bathymetric DEM. Elevation values are
+sampled along the centerline at 1m intervals, and used to generate a thalweg elevation profile CSV file.
+
+Inputs:
+
+Relevant outputs:
 #### Tab 4 -- Thalweg based DEM detrending
 #### Tab 5 -- Selecting key flow stage heights + refining center-lines 
 #### Tab 6(1) -- Running key flow stage GCS analysis
