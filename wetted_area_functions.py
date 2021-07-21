@@ -135,7 +135,7 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     print('Plotting...')
     x1 = stages
     y1 = np.array(wetted_areas)
-    title1 = (out_folder + '\\wetted_areas_plot_small_inc.png')
+    title1 = (out_folder + '\\cumulative_area.png')
     plt.figure()
     plt.plot(x1, y1)
     plt.xlabel('Flood stage height (%s)' % u, fontsize='small')

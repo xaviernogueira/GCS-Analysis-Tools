@@ -36,7 +36,10 @@ def cmd(command):
         raise Exception(msg)
 
     msg = res.communicate()[1]
+
     # if using for LAStools, get rid of the annoying LAStools licensing message.
+    if msg[:6] == 'Please':
+        msg = ''
     # msg = msg.replace(
     # 'Please note that LAStools is not "free" (see http://lastools.org/LICENSE.txt) contact martin.isenburg@rapidlasso.com to clarify licensing terms if needed.',
     # '')
