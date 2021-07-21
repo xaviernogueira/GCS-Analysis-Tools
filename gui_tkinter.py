@@ -204,7 +204,8 @@ class gcs_gui(tk.Frame):
 
             # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
             print('Processing LiDAR to remove vegetation points...')
-            process_lidar(lastoolsdir + '\\', lidardir + '\\', ground_poly, cores, units_code, keep_orig_pts,
+            las_folder = lidardir + '\\las_files\\'
+            process_lidar(lastoolsdir + '\\', las_folder, ground_poly, cores, units_code, keep_orig_pts,
                           coarse_step,
                           coarse_bulge, coarse_spike, coarse_down_spike,
                           coarse_offset, fine_step, fine_bulge, fine_spike,
