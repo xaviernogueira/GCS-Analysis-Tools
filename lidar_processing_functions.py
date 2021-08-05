@@ -194,7 +194,7 @@ def process_lidar(lastoolsdir,
                    ]
 
     # make new directories for output from each step in processing
-    for outdir in outdirs:
+    for ind, outdir in enumerate(outdirs):
         if os.path.isdir(lidardir + outdir) == False:
             os.mkdir(lidardir + outdir)
 
