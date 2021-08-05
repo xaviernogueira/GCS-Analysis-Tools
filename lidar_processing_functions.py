@@ -238,15 +238,22 @@ def process_lidar(lastoolsdir,
         logging.error(msg)
         raise Exception(msg)
 
-    # copy original files into '00_declassified' folder
+    # remove duplicate files already copied to declassified in re-run scenarios
     for name in lidar_files:
-        out_fol = lidardir + '00_declassified/'
-        if name not in os.listdir(out_fol):
-            shutil.copyfile(name, out_fol + + os.path.basename(name))
+        if '00_declassified' in name:
+            lidar_files.remove(name)
 
-    # make list of files for LASTools to process
+    # copy original files into '00_declassified' folder
+    out_fol = lidardir + '00_declassified/'
+    for name in lidar_files:
+        name_base = os.path.basename(name)
+
+        if name_base not in os.listdir(out_fol):
+            shutil.copyfile(name, out_fol + name_base)
+
+    # make list of files for LASTools to process, which is output
     lof = lof_text(lastoolsdir, lidardir + '00_declassified/')
-    logging.info('DEBUG: %s' % lastoolsdir)
+
     # call LAStools command to declassify points and get point density
     cmd('%slasinfo.exe -lof %s -set_classification 1 -otxt -cd' % (lastoolsdir, lof))
 

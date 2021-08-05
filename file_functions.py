@@ -36,14 +36,13 @@ def cmd(command):
         raise Exception(msg)
 
     msg = res.communicate()[1]
-    print(msg.type())
+    msg_str = str(msg, 'utf-8')
 
     # if using for LAStools, get rid of the annoying LAStools licensing message.
     # 'Please note that LAStools is not "free" (see http://lastools.org/LICENSE.txt) contact martin.isenburg@rapidlasso.com to clarify licensing terms if needed.',
-    if b'http://lastools.org/LICENSE.txt' in msg:
-        msg = b''
 
-    logger.info(msg)
+    if 'http://lastools.org/LICENSE.txt' not in msg_str and len(msg_str) > 0:
+        logger.info(msg)
     return
 
 
