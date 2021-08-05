@@ -29,6 +29,7 @@ def las_files(directory):
 def lof_text(pwd, src):
     """creates a .txt file in pwd (LAStools bin) containing a list of .las/.laz filenames from src directory"""
     filename = pwd + 'file_list.txt'
+
     f = open(filename, 'w+')
 
     if type(src) == str:
@@ -38,6 +39,7 @@ def lof_text(pwd, src):
         # this is the case when there are multiple source folders
         for i in [name for source in src for name in las_files(source)]:
             f.write('%s\n' % i)
+
     f.close()
     return filename
 
@@ -229,7 +231,7 @@ def process_lidar(lastoolsdir,
     for path, subdirs, files in os.walk(lidardir):
         for name in files:
             if name.endswith('.las') or name.endswith('.laz'):
-                lidar_files.append(path + '/' + name)
+                lidar_files.append(path + name)  # Used to have a '/' added between path and name
 
     if lidar_files == []:
         msg = 'No .las or .laz files in %s or its subdirectories' % lidardir
@@ -238,10 +240,13 @@ def process_lidar(lastoolsdir,
 
     # copy original files into '00_declassified' folder
     for name in lidar_files:
-        shutil.copyfile(name, lidardir + '00_declassified/' + os.path.basename(name))
+        out_fol = lidardir + '00_declassified/'
+        if name not in os.listdir(out_fol):
+            shutil.copyfile(name, out_fol + + os.path.basename(name))
 
-        # make list of files for LASTools to process
+    # make list of files for LASTools to process
     lof = lof_text(lastoolsdir, lidardir + '00_declassified/')
+    logging.info('DEBUG: %s' % lastoolsdir)
     # call LAStools command to declassify points and get point density
     cmd('%slasinfo.exe -lof %s -set_classification 1 -otxt -cd' % (lastoolsdir, lof))
 
@@ -286,7 +291,7 @@ def process_lidar(lastoolsdir,
 
     odir = (lidardir + '01_tiled/')
 
-    # call LAStools command to create tiling, NO OUTPUT BUT WHYYYYYY
+    # call LAStools command to create tiling
     cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
     cmd('%slastile.exe -lof %s -cores %i -tile_size %i -buffer 5 -faf -odir %s -o tile.las -olas' % (
         lastoolsdir, lof, cores, tile_size, odir))
@@ -635,7 +640,9 @@ def process_lidar(lastoolsdir,
 
     logging.info('Processing finished.')
     logging.info('Outputs in:')
-    logging.info('%s\n%s' % (ground_results, veg_results))
+    logging.info(ground_results)
+    logging.info('')
+    logging.info(veg_results)
 
     return
 
