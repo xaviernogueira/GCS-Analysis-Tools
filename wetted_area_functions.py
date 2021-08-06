@@ -196,11 +196,58 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     return [title1, title2, title3]
 
 
-def stage_centerlines():
-    """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). A string or list
+def stage_centerlines(dem, zs, drafting=True):
+    """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). Zs, a list
     containing N number of stage heights"""
     # Convert string to list, or keep list and sort from smallest to largest
     # Make sure floats are formatted correctly
+
+    # Set up directories
+    dem_dir = os.path.dirname(dem)
+    out_dir = dem_dir + '\\centerlines\\'
+    wetted_dir = dem_dir + '\\wetted_polygons\\wetted_area_rasters\\'
+    temp_files = dem_dir + '\\temp_files\\'
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    if not os.path.exists(temp_files):
+        os.makedirs(temp_files)
+
+    drafts = []
+
+    # set up units string
+    spatial_ref = arcpy.Describe(dem).spatialReference
+    unit = spatial_ref.linearUnitName
+    if unit == 'Meter':
+        u = 'm'
+    else:
+        u = 'ft'
+
+    if drafting:
+        for z in zs:
+            # majority filter, boundary clean, raster to polygon, polygon to centerline, remove spurs
+            z_str = float_keyz_format(z)
+            in_name = wetted_dir + 'noval_%s%s' % (z_str, u)
+            out_name = out_dir + '%s_centerline_draft.shp' % (z_str, u)
+
+            mf = arcpy.sa.MajorityFilter(in_name, 'EIGHT')
+            bc =arcpy.sa.BoundaryClean(mf)
+
+            temp_poly = temp_files + 'smooth_poly_%s%s' % (z_str, u)
+            poly = arcpy.RasterToPolygon_conversion(bc, temp_poly)
+            drafts.append(out_name)
+
+
+            # print message, make .txt file in the centerline folder with instructions on editing
+
+    elif not drafting:
+        # make into multipart, then slightly smooth
+        for draft in drafts:
+            out_name = draft.replace('draft.shp', '.shp')
+
+
+
 
 
 

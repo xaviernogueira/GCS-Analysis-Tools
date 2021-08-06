@@ -165,9 +165,14 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
 
     if in_spatial_ref.linearUnitName == 'Meter':
         cell_size = m_cell_size
+        print('LAS units are Meters')
+
+    elif in_spatial_ref.linearUnitName == 'Foot_US':
+        cell_size = (3.28 * m_cell_size)
+        print('LAS units are Feet')
 
     else:
-        cell_size = (3.28 * m_cell_size)
+        return print('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' % os.path.basename(in_spatial_ref))
 
     # Set up interpolation method string
     if sample_meth == 'BINNING':
@@ -184,13 +189,22 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
         lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT',
                                                            interpolation_type=method_str, sampling_type='CELLSIZE',
                                                            sampling_value=cell_size)
-        tiff_lidar_raster = arcpy.CopyRaster_management(lidar_raster, out_dem)
-        tiff_lidar_raster = arcpy.ProjectRaster_management(lidar_raster, out_raster=out_dem,
-                                                           out_coor_system=out_spatial_ref)
+        arcpy.CopyRaster_management(lidar_raster, no_prj_dem)
+        arcpy.ProjectRaster_management(no_prj_dem, out_raster=out_dem, out_coor_system=out_spatial_ref)
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
     print("LAS -> DEM output @ %s" % out_dem)
+
+    # Notify the user which units the DEM are in
+    if out_spatial_ref.linearUnitName == 'Meter':
+        print('DEM units are Meters')
+
+    elif out_spatial_ref.linearUnitName == 'Foot_US':
+        print('DEM units are Feet')
+
+    else:
+        print('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' % os.path.basename(out_spatial_ref))
 
     return out_dem
 

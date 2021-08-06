@@ -257,3 +257,17 @@ def float_keyz_format(z):
         return z_str
     except z_str == '':
         print('Key z list parameters not valid. Please fill list with int or float.')
+
+
+def string_to_list(string, format=''):
+    """Splits a string at each comma and produces a list. format parameter allows the type of the output to
+    be designated"""
+    if string != '':
+        str_split = string.split(',')
+        if format == 'int':
+            out_list = [int(i) for i in str_split]
+        elif format == 'float':
+            out_list = [float(i) for i in str_split]
+    else:
+        out_list = []
+    return out_list

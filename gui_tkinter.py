@@ -105,6 +105,7 @@ class gcs_gui(tk.Frame):
             self.label2 = Label(top, text='Image saved @ %s' % image)
             self.label2.grid(row=2, column=1)
 
+
         # LiDAR prep (filling tabs w/ widgets)
         ######################################################################
 
@@ -214,7 +215,7 @@ class gcs_gui(tk.Frame):
 
             print('Generating a %sm resolution DEM...' % dem_resolution)
             dem = lidar_to_raster(lidardir, ground_poly, aoi_shp, dem_method, tri_meth, void_meth,
-                                  m_cell_size=dem_resolution)
+                                  m_cell_size=float(dem_resolution))
             print('Done')
 
             print('Generating hillshade raster for the DEM...')
@@ -542,11 +543,7 @@ class gcs_gui(tk.Frame):
                 os.makedirs(out_dir)
 
             # Format breakpoints list from string
-            if breakpoints != '':
-                bp_split = breakpoints.split(',')
-                breakpoint_list = [int(i) for i in bp_split]
-            else:
-                breakpoint_list = []
+            breakpoint_list = string_to_list(breakpoints, format='int')
 
             # Apply linear fit to input csv
             out_list = prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value'])
@@ -685,6 +682,7 @@ class gcs_gui(tk.Frame):
             def draft_centerline(self, detrended_dem, stages_str):
                 """"""
                 print('Generating draft center-lines for flow stage heights %s...' % stages_str)
+                zs = string_to_list(detrended_dem, stages_str)
                 out_dir = ''  # Make function return the output directory with key stage center-lines
                 print('Draft center-lines @ %s, manually edit and run the next step...' % out_dir)
                 print('Done')
@@ -766,9 +764,7 @@ class gcs_gui(tk.Frame):
             """DUMMY FUNCTION FOR FORMATTING"""
             print('In the RB function')
 
-        def string_to_list(string):
-            out_list = list(string.split(','))
-            return out_list
+
 
         self.l_csv = ttk.Label(root, text='In csv:')
         self.l_csv.grid(sticky=E, row=0, column=1, pady=pad)
