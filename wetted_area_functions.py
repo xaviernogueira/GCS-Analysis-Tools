@@ -8,6 +8,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 import file_functions
 from file_functions import *
+import create_centerline
 
 
 def float_keyz_format(z, n=1):
@@ -221,8 +222,12 @@ def stage_centerlines(dem, zs, drafting=True):
     unit = spatial_ref.linearUnitName
     if unit == 'Meter':
         u = 'm'
+        spur_lim = 100
+        smooth = 20
     else:
         u = 'ft'
+        spur_lim = (100 * 3.28)
+        smooth = 60
 
     if drafting:
         for z in zs:
@@ -234,17 +239,35 @@ def stage_centerlines(dem, zs, drafting=True):
             mf = arcpy.sa.MajorityFilter(in_name, 'EIGHT')
             bc =arcpy.sa.BoundaryClean(mf)
 
-            temp_poly = temp_files + 'smooth_poly_%s%s' % (z_str, u)
-            poly = arcpy.RasterToPolygon_conversion(bc, temp_poly)
+            temp_poly = temp_files + 'smooth_poly_%s%s.shp' % (z_str, u)
+            arcpy.RasterToPolygon_conversion(bc, temp_poly)
+
+            w_spurs = temp_files + '%s%s_spur_cl.shp'
+            rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
+            spurs = arcpy.PolygonToCenterline_topographic(temp_poly, w_spurs)
+            create_centerline.remove_spurs(spurs, spur_length=spur_lim)
+
+            arcpy.CopyFeatures_management(rm_spur, out_name)
             drafts.append(out_name)
 
-
-            # print message, make .txt file in the centerline folder with instructions on editing
+        print('Done! \n Draft centerlines are located in %s' % out_dir)
+        print('Please see centerline_info.txt in %s for information about editing centerlines')
+        # print message, make .txt file in the centerline folder with instructions on editing
 
     elif not drafting:
-        # make into multipart, then slightly smooth
-        for draft in drafts:
+        for z in zs:
+            z_str = float_keyz_format(z)
+            draft = out_dir + '%s_centerline_draft.shp' % (z_str, u)
             out_name = draft.replace('draft.shp', '.shp')
+            diss = temp_files + os.path.basename(draft).replace('draft.shp', 'diss.shp')
+
+            # make into multipart, then slightly smooth
+            arcpy.Dissolve_management(draft, diss, dissolve_field='ObjectID')
+            arcpy.SmoothLine_cartography(diss, out_name, 'PAEK', smooth)
+            arcpy.AddField_management(out_name, 'Id', 'Short')
+
+        print('Done! \n Final centerlines are located in %s' % out_dir)
+
 
 
 
