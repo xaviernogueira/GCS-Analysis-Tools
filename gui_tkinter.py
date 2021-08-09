@@ -105,7 +105,6 @@ class gcs_gui(tk.Frame):
             self.label2 = Label(top, text='Image saved @ %s' % image)
             self.label2.grid(row=2, column=1)
 
-
         # LiDAR prep (filling tabs w/ widgets)
         ######################################################################
 
@@ -679,21 +678,6 @@ class gcs_gui(tk.Frame):
                 # Update list of used max stage values
                 self.maxs.append(max_stage)
 
-        def draft_centerline(detrended_dem, zs_str):
-            """zs_str is a string containing key stage elevations separated by commas"""
-            print('Generating draft center-lines for flow stage heights %s...' % zs_str)
-            zs = string_to_list(zs_str, format='float')
-            out_dir = stage_centerlines(detrended_dem, zs, drafting=True)
-            print('Draft center-lines @ %s, manually edit and run the next step...' % out_dir)
-            print('Done')
-
-        def final_centerline(detrended_dem, zs_str):
-            print('Generating final center-lines for flow stage heights %s...' % zs_str)
-            zs = string_to_list(zs_str, format='float')
-            out_dir = stage_centerlines(detrended_dem, zs, drafting=False)
-            print('Final center-lines @ %s' % out_dir)
-            print('Done')
-
         # Build GUI for flow-stage analysis
 
         self.l_detrended = ttk.Label(root, text='Detrended DEM:')
@@ -735,8 +719,9 @@ class gcs_gui(tk.Frame):
         self.l_dcenter = ttk.Label(root, text='Generate draft center-lines:')
         self.l_dcenter.grid(stick=E, row=5, column=0, pady=15)
         self.e_dcenter = ttk.Button(root, text='Run',
-                                    command=lambda: draft_centerline(detrended_dem=self.e_detrended.get(),
-                                                                     zs_str=self.e_zs.get()))
+                                    command=lambda: wetted_area_functions.stage_centerlines(dem=self.e_detrended.get(),
+                                                                                            zs=self.e_zs.get(),
+                                                                                            drafting=True))
         self.e_dcenter.grid(sticky=E, row=5, column=1, pady=15)
         root.grid_rowconfigure(2, minsize=50)
 
@@ -746,8 +731,9 @@ class gcs_gui(tk.Frame):
         self.l_center = ttk.Label(root, text='Generate final center-lines:')
         self.l_center.grid(stick=E, row=7, column=0, pady=15)
         self.e_center = ttk.Button(root, text='Run',
-                                   command=lambda: final_centerline(detrended_dem=self.e_detrended.get(),
-                                                                                      zs_str=self.e_zs.get()))
+                                   command=lambda: wetted_area_functions.stage_centerlines(dem=self.e_detrended.get(),
+                                                                                           zs=self.e_zs.get(),
+                                                                                           drafting=False))
         self.e_center.grid(sticky=E, row=7, column=1, pady=15)
         root.grid_rowconfigure(2, minsize=50)
 
@@ -758,8 +744,6 @@ class gcs_gui(tk.Frame):
         def river_builder_harmonics(in_csv, index_field, units, field_names, r_2, n, methods):
             """DUMMY FUNCTION FOR FORMATTING"""
             print('In the RB function')
-
-
 
         self.l_csv = ttk.Label(root, text='In csv:')
         self.l_csv.grid(sticky=E, row=0, column=1, pady=pad)

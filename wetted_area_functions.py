@@ -199,9 +199,13 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
 
 def stage_centerlines(dem, zs, drafting=True):
     """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). Zs, a list
-    containing N number of stage heights (floats)"""
+    containing N number of stage heights (floats) or a string with key xs separated by commas (ex: '0.2,0.7,2.6')"""
+    # convert from string to list if necessary
 
-    # Set up directories
+    if type(zs) == str:
+        zs = string_to_list(zs, format='float')
+
+    # set up directories
     dem_dir = os.path.dirname(dem)
 
     if len(dem_dir) == 0:
@@ -219,6 +223,16 @@ def stage_centerlines(dem, zs, drafting=True):
         os.makedirs(temp_files)
 
     drafts = []
+
+    # set up messages
+    if drafting:
+        messages = ['Generating draft center-lines for flow stage heights %s...' % zs,
+                    'Draft center-lines @ %s. \nManually edit (must see documentation) and run the next step. \nDone' % out_dir]
+    else:
+        messages = ['Generating final center-lines for flow stage heights %s...' % zs,
+                    'Final center-lines @ %s \nDone.' % out_dir]
+
+    print(messages[0])
 
     # set up units string
     spatial_ref = arcpy.Describe(dem).spatialReference
@@ -254,7 +268,6 @@ def stage_centerlines(dem, zs, drafting=True):
             arcpy.CopyFeatures_management(rm_spur, out_name)
             drafts.append(out_name)
 
-        print('Done! \n Draft centerlines are located in %s' % out_dir)
         print('Please see centerline_info.txt in %s for information about editing centerlines')
         # print message, make .txt file in the centerline folder with instructions on editing
 
@@ -270,8 +283,7 @@ def stage_centerlines(dem, zs, drafting=True):
             arcpy.SmoothLine_cartography(diss, out_name, 'PAEK', smooth)
             arcpy.AddField_management(out_name, 'Id', 'Short')
 
-        print('Done! \n Final centerlines are located in %s' % out_dir)
-
+    print(messages[1])
     return out_dir
 
 
