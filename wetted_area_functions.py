@@ -199,15 +199,18 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
 
 def stage_centerlines(dem, zs, drafting=True):
     """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). Zs, a list
-    containing N number of stage heights"""
-    # Convert string to list, or keep list and sort from smallest to largest
-    # Make sure floats are formatted correctly
+    containing N number of stage heights (floats)"""
 
     # Set up directories
     dem_dir = os.path.dirname(dem)
-    out_dir = dem_dir + '\\centerlines\\'
-    wetted_dir = dem_dir + '\\wetted_polygons\\wetted_area_rasters\\'
-    temp_files = dem_dir + '\\temp_files\\'
+
+    if len(dem_dir) == 0:
+        print('Error: Please select valid detrended DEM file')
+        return
+
+    out_dir = dem_dir + '\\centerlines'
+    wetted_dir = dem_dir + '\\wetted_polygons\\wetted_area_rasters'
+    temp_files = dem_dir + '\\temp_files'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -229,22 +232,23 @@ def stage_centerlines(dem, zs, drafting=True):
         spur_lim = (100 * 3.28)
         smooth = 60
 
+    # majority filter, boundary clean, raster to polygon, polygon to centerline, remove spurs
     if drafting:
         for z in zs:
-            # majority filter, boundary clean, raster to polygon, polygon to centerline, remove spurs
+
             z_str = float_keyz_format(z)
-            in_name = wetted_dir + 'noval_%s%s' % (z_str, u)
-            out_name = out_dir + '%s_centerline_draft.shp' % (z_str, u)
+            in_name = wetted_dir + '\\noval_%s%s.tif' % (z_str, u)
+            out_name = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
 
             mf = arcpy.sa.MajorityFilter(in_name, 'EIGHT')
             bc =arcpy.sa.BoundaryClean(mf)
 
-            temp_poly = temp_files + 'smooth_poly_%s%s.shp' % (z_str, u)
+            temp_poly = temp_files + '\\smooth_poly_%s%s.shp' % (z_str, u)
             arcpy.RasterToPolygon_conversion(bc, temp_poly)
 
-            w_spurs = temp_files + '%s%s_spur_cl.shp'
+            w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
             rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
-            spurs = arcpy.PolygonToCenterline_topographic(temp_poly, w_spurs)
+            spurs = str(arcpy.PolygonToCenterline_topographic(temp_poly, w_spurs))
             create_centerline.remove_spurs(spurs, spur_length=spur_lim)
 
             arcpy.CopyFeatures_management(rm_spur, out_name)
@@ -257,9 +261,9 @@ def stage_centerlines(dem, zs, drafting=True):
     elif not drafting:
         for z in zs:
             z_str = float_keyz_format(z)
-            draft = out_dir + '%s_centerline_draft.shp' % (z_str, u)
-            out_name = draft.replace('draft.shp', '.shp')
-            diss = temp_files + os.path.basename(draft).replace('draft.shp', 'diss.shp')
+            draft = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
+            out_name = draft.replace('_draft.shp', '.shp')
+            diss = temp_files + os.path.basename(draft).replace('_draft.shp', 'diss.shp')
 
             # make into multipart, then slightly smooth
             arcpy.Dissolve_management(draft, diss, dissolve_field='ObjectID')
@@ -267,6 +271,8 @@ def stage_centerlines(dem, zs, drafting=True):
             arcpy.AddField_management(out_name, 'Id', 'Short')
 
         print('Done! \n Final centerlines are located in %s' % out_dir)
+
+    return out_dir
 
 
 

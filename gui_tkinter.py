@@ -679,23 +679,20 @@ class gcs_gui(tk.Frame):
                 # Update list of used max stage values
                 self.maxs.append(max_stage)
 
-            def draft_centerline(self, detrended_dem, stages_str):
-                """"""
-                print('Generating draft center-lines for flow stage heights %s...' % stages_str)
-                zs = string_to_list(detrended_dem, stages_str)
-                out_dir = ''  # Make function return the output directory with key stage center-lines
-                print('Draft center-lines @ %s, manually edit and run the next step...' % out_dir)
-                print('Done')
+        def draft_centerline(detrended_dem, zs_str):
+            """zs_str is a string containing key stage elevations separated by commas"""
+            print('Generating draft center-lines for flow stage heights %s...' % zs_str)
+            zs = string_to_list(zs_str, format='float')
+            out_dir = stage_centerlines(detrended_dem, zs, drafting=True)
+            print('Draft center-lines @ %s, manually edit and run the next step...' % out_dir)
+            print('Done')
 
-                return
-
-            def final_centerline(self, detrended_dem, stages_str):
-                """"""
-                print('Generating final center-lines for flow stage heights %s...' % stages_str)
-                out_dir = ''  # Make function return the output directory with key stage center-lines
-                print('Final center-lines @ %s' % out_dir)
-                print('Done')
-                return
+        def final_centerline(detrended_dem, zs_str):
+            print('Generating final center-lines for flow stage heights %s...' % zs_str)
+            zs = string_to_list(zs_str, format='float')
+            out_dir = stage_centerlines(detrended_dem, zs, drafting=False)
+            print('Final center-lines @ %s' % out_dir)
+            print('Done')
 
         # Build GUI for flow-stage analysis
 
@@ -738,9 +735,8 @@ class gcs_gui(tk.Frame):
         self.l_dcenter = ttk.Label(root, text='Generate draft center-lines:')
         self.l_dcenter.grid(stick=E, row=5, column=0, pady=15)
         self.e_dcenter = ttk.Button(root, text='Run',
-                                    command=lambda: wetted_controller.draft_centerline(self,
-                                                                                       detrended_dem=self.e_detrended.get(),
-                                                                                       stages_str=self.e_zs.get()))
+                                    command=lambda: draft_centerline(detrended_dem=self.e_detrended.get(),
+                                                                     zs_str=self.e_zs.get()))
         self.e_dcenter.grid(sticky=E, row=5, column=1, pady=15)
         root.grid_rowconfigure(2, minsize=50)
 
@@ -750,9 +746,8 @@ class gcs_gui(tk.Frame):
         self.l_center = ttk.Label(root, text='Generate final center-lines:')
         self.l_center.grid(stick=E, row=7, column=0, pady=15)
         self.e_center = ttk.Button(root, text='Run',
-                                   command=lambda: wetted_controller.final_centerline(self,
-                                                                                      detrended_dem=self.e_detrended.get(),
-                                                                                      stages_str=self.e_zs.get()))
+                                   command=lambda: final_centerline(detrended_dem=self.e_detrended.get(),
+                                                                                      zs_str=self.e_zs.get()))
         self.e_center.grid(sticky=E, row=7, column=1, pady=15)
         root.grid_rowconfigure(2, minsize=50)
 
