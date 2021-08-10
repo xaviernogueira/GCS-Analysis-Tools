@@ -53,8 +53,7 @@ class gcs_gui(tk.Frame):
         self.tab_container = ttk.Notebook(master)
 
         self.tab_names = ['LiDAR Data prep', 'DEM generation', 'Thalweg centerline',
-                          'Detrend DEM', 'Flow-stage modeling', 'Extract GCS series and landforms',
-                          'Flow-stage analysis', 'River Builder prep']
+                          'Detrend DEM', 'Flow-stage modeling', 'GCS analysis', 'River Builder prep']
 
         self.tabs = {}
         for tab_name in self.tab_names:
@@ -736,6 +735,85 @@ class gcs_gui(tk.Frame):
                                                                                            drafting=False))
         self.e_center.grid(sticky=E, row=7, column=1, pady=15)
         root.grid_rowconfigure(2, minsize=50)
+
+        # Generate GCS series .csv files w/ landform classifications
+        ######################################################################
+
+        root = self.tabs['GCS analysis']
+
+        def gcs_analysis(detrended_dem, zs, xs_lengths, xs_spacing, make_plots=True):
+            """DUMMY FUNCTION FOR FORMATTING"""
+            print('In the gcs function')
+
+        def nesting_analysis(detrended_dem, zs, xs_spacing):
+            print('nesting')
+
+        self.l_detrended2 = ttk.Label(root, text='Detrended DEM:')
+        self.l_detrended2.grid(sticky=E, row=0, column=0, pady=pad)
+        self.e_detrended2 = ttk.Entry(root)
+        self.e_detrended2.grid(sticky=E, row=0, column=1, pady=pad, padx=5)
+        self.e_detrended2.insert(END, '')
+        self.b_detrended2 = ttk.Button(root, text='Browse',
+                                       command=lambda: browse(root, self.e_detrended2, select='file',
+                                                              ftypes=[('TIFF, .tif',
+                                                                       '*.tif'),
+                                                                      ('All files', '*')]))
+        self.b_detrended.grid(sticky=W, row=0, column=2, pady=pad)
+
+        self.l_zs2 = ttk.Label(root, text='Key stage heights:')
+        self.l_zs2.grid(sticky=E, row=2, column=0, pady=pad)
+        self.e_zs2 = ttk.Entry(root)
+        self.e_zs2.grid(sticky=E, row=2, column=1, pady=pad, padx=5)
+        self.e_zs2.insert(END, '')
+        self.n_zs2 = ttk.Label(root, text='Float only, comma separated, DEM units (ex: 0.6,1.7,5.8)')
+        self.n_zs2.grid(sticky=W, row=2, column=2, pady=pad)
+
+        self.l_length = ttk.Label(root, text='Cross-section lengths:')
+        self.l_length.grid(sticky=E, row=3, column=0, pady=pad)
+        self.e_length = ttk.Entry(root)
+        self.e_length.grid(sticky=E, row=3, column=1, pady=pad, padx=5)
+        self.e_length.insert(END, '')
+        self.n_length = ttk.Label(root, text='List of integers corresponding to key stage heights (ex: 400,600,1000)')
+        self.n_length.grid(sticky=W, row=3, column=2, pady=pad)
+
+        self.l_space = ttk.Label(root, text='Cross-section spacing:')
+        self.l_space.grid(sticky=E, row=4, column=0, pady=pad)
+        self.e_space = ttk.Entry(root)
+        self.e_space.grid(sticky=E, row=4, column=1, pady=pad, padx=5)
+        self.e_space.insert(END, '')
+        self.n_space = ttk.Label(root,
+                                 text='Integer, in same units as the DEM. Should not be less than the DEM resolution!')
+        self.n_space.grid(sticky=W, row=4, column=2, pady=pad)
+
+        self.l_plots = ttk.Label(root, text='Make plots?:')
+        self.l_plots.grid(sticky=E, row=5, column=0)
+        self.plots = BooleanVar()
+        self.plots.set(True)
+        self.r_plots_y = ttk.Radiobutton(root, text='Yes', variable=self.plots, value=True)
+        self.r_plots_y.grid(sticky=W, row=5, column=1)
+        self.r_plots_n = ttk.Radiobutton(root, text='No', variable=self.plots,
+                                         value=False)
+        self.r_plots_n.grid(sticky=W, row=5, column=2, pady=pad)
+        root.grid_rowconfigure(5, minsize=30)
+
+        self.l_gcs = ttk.Label(root, text='Generate GCS tables:')
+        self.l_gcs.grid(stick=E, row=6, column=0, pady=15)
+        self.e_gcs = ttk.Button(root, text='Run',
+                                command=lambda: gcs_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2,
+                                                             xs_lengths=self.e_length.get(),
+                                                             xs_spacing=self.e_space.get(), make_plots=self.plots.get()))
+        self.e_gcs.grid(sticky=E, row=6, column=1, pady=15)
+        root.grid_rowconfigure(6, minsize=50)
+
+        self.note2 = ttk.Label(root, text='Verify that cross-section lengths are sufficient before continuing, re-run if necessary!')
+        self.note2.grid(sticky=W, row=7, columnspan=3, pady=pad)
+
+        self.l_gcs = ttk.Label(root, text='GCS nesting analysis:')
+        self.l_gcs.grid(stick=E, row=8, column=0, pady=15)
+        self.e_gcs = ttk.Button(root, text='Run',
+                                command=lambda: nesting_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2))
+        self.e_gcs.grid(sticky=E, row=8, column=1, pady=15)
+        root.grid_rowconfigure(8, minsize=50)
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
