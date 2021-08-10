@@ -15,4 +15,4 @@ The gcs_gui.py script in this package when ran will pull up a graphical-user int
 - seaborn (https://seaborn.pydata.org/)
 
 ### See our documenation before attempting to use this GUI! 
-### https://gcs-gui-documentation.readthedocs.io/en/latest/# 
+### https://gcs-gui-documentation.readthedocs.io
