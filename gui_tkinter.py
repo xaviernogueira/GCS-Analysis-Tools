@@ -741,12 +741,11 @@ class gcs_gui(tk.Frame):
 
         root = self.tabs['GCS analysis']
 
-        def gcs_analysis(detrended_dem, zs, xs_lengths, xs_spacing, make_plots=True):
+        def gcs_analysis(detrended_dem, zs, xs_lengths, xs_spacing, stage_plots=False, nest_plots=False):
             """DUMMY FUNCTION FOR FORMATTING"""
+            print(stage_plots)
+            print(nest_plots)
             print('In the gcs function')
-
-        def nesting_analysis(detrended_dem, zs, xs_spacing):
-            print('nesting')
 
         self.l_detrended2 = ttk.Label(root, text='Detrended DEM:')
         self.l_detrended2.grid(sticky=E, row=0, column=0, pady=pad)
@@ -785,33 +784,40 @@ class gcs_gui(tk.Frame):
                                  text='Integer, in same units as the DEM. Should not be less than the DEM resolution!')
         self.n_space.grid(sticky=W, row=4, column=2, pady=pad)
 
-        self.l_plots = ttk.Label(root, text='Make plots?:')
-        self.l_plots.grid(sticky=E, row=5, column=0)
+        self.note2 = ttk.Label(root,
+                               text='Verify that cross-section lengths are sufficient before making plots to save processing time!')
+        self.note2.grid(sticky=W, row=5, columnspan=3, pady=pad)
+
+        self.l_plots = ttk.Label(root, text='Make GCS stage plots?:')
+        self.l_plots.grid(sticky=E, row=6, column=0)
         self.plots = BooleanVar()
-        self.plots.set(True)
+        self.plots.set(False)
         self.r_plots_y = ttk.Radiobutton(root, text='Yes', variable=self.plots, value=True)
-        self.r_plots_y.grid(sticky=W, row=5, column=1)
+        self.r_plots_y.grid(sticky=W, row=6, column=1)
         self.r_plots_n = ttk.Radiobutton(root, text='No', variable=self.plots,
                                          value=False)
-        self.r_plots_n.grid(sticky=W, row=5, column=2, pady=pad)
-        root.grid_rowconfigure(5, minsize=30)
+        self.r_plots_n.grid(sticky=W, row=6, column=2, pady=pad)
+        root.grid_rowconfigure(7, minsize=30)
 
-        self.l_gcs = ttk.Label(root, text='Generate GCS tables:')
-        self.l_gcs.grid(stick=E, row=6, column=0, pady=15)
+        self.l_plots2 = ttk.Label(root, text='Make GCS nesting plots?:')
+        self.l_plots2.grid(sticky=E, row=7, column=0)
+        self.plots2 = BooleanVar()
+        self.plots2.set(False)
+        self.r_plots_y2 = ttk.Radiobutton(root, text='Yes', variable=self.plots2, value=True)
+        self.r_plots_y2.grid(sticky=W, row=7, column=1)
+        self.r_plots_n2 = ttk.Radiobutton(root, text='No', variable=self.plots2,
+                                          value=False)
+        self.r_plots_n2.grid(sticky=W, row=7, column=2, pady=pad)
+        root.grid_rowconfigure(7, minsize=30)
+
+        self.l_gcs = ttk.Label(root, text='GCS analysis:')
+        self.l_gcs.grid(stick=E, row=8, column=0, pady=15)
         self.e_gcs = ttk.Button(root, text='Run',
                                 command=lambda: gcs_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2,
                                                              xs_lengths=self.e_length.get(),
-                                                             xs_spacing=self.e_space.get(), make_plots=self.plots.get()))
-        self.e_gcs.grid(sticky=E, row=6, column=1, pady=15)
-        root.grid_rowconfigure(6, minsize=50)
-
-        self.note2 = ttk.Label(root, text='Verify that cross-section lengths are sufficient before continuing, re-run if necessary!')
-        self.note2.grid(sticky=W, row=7, columnspan=3, pady=pad)
-
-        self.l_gcs = ttk.Label(root, text='GCS nesting analysis:')
-        self.l_gcs.grid(stick=E, row=8, column=0, pady=15)
-        self.e_gcs = ttk.Button(root, text='Run',
-                                command=lambda: nesting_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2))
+                                                             xs_spacing=self.e_space.get(),
+                                                             stage_plots=self.plots.get(),
+                                                             nest_plots=self.plots2.get()))
         self.e_gcs.grid(sticky=E, row=8, column=1, pady=15)
         root.grid_rowconfigure(8, minsize=50)
 
