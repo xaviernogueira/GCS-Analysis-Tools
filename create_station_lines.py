@@ -8,13 +8,10 @@ import logging
 
 arcpy.env.overwriteOutput = True
 
-
 @err_info
 def create_station_lines_function(line_shp, spacing, xs_length):
-    '''
-    Creates station lines perpendicular to line_shp with given longitudinal spacing and lateral XS length
-    (lengths are in units of input line coordinate system).
-    '''
+    """Creates station lines perpendicular to line_shp with given longitudinal spacing and lateral XS length
+    (lengths are in units of input line coordinate system)."""
 
     # convert line to route feature
     # *** include coordinate priority so we automatically have stationing oriented DOWNSTREAM
@@ -23,12 +20,10 @@ def create_station_lines_function(line_shp, spacing, xs_length):
     init_logger(__file__)  # Initiate log file
 
     # Initiate temp files folder
-    temp_files = line_dir + '\\temp_files'
+    temp_files = os.path.dirname(line_dir) + '\\temp_files'
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
-
-    logging.info('Converting input line to route...')
 
     line_fields = [field.name for field in arcpy.ListFields(line_shp)]
     id = [x for x in ['Id', 'arcid', 'ObjectID'] if x in line_fields][0]
@@ -36,9 +31,6 @@ def create_station_lines_function(line_shp, spacing, xs_length):
         raise Exception(r'Couldn\'t find Id Field in %s' % line_shp)
 
     route = arcpy.CreateRoutes_lr(line_shp, id, line_shp.replace('.shp', '_rt.shp'))
-
-    logging.info('OK.')
-
     route_id, total_length = 0, 0
 
     # get route id and total length of route (only considering case of one line for input shapefile)
@@ -50,7 +42,6 @@ def create_station_lines_function(line_shp, spacing, xs_length):
     num_xs = int(total_length / spacing)
 
     # make route events tables
-    logging.info('Creating route events table...')
     locations = [spacing * x for x in range(num_xs)] * 2
     offsets = [xs_length * 1.0 / 2] * num_xs + [-xs_length * 1.0 / 2] * num_xs
     route_ids = [route_id] * 2 * num_xs
@@ -88,3 +79,4 @@ def create_station_lines_function(line_shp, spacing, xs_length):
     logging.info('Finished. Output: %s' % out_name)
 
     return out_name
+
