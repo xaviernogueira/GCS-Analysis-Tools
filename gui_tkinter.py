@@ -13,6 +13,8 @@ import dem_detrending_functions
 from dem_detrending_functions import *
 import wetted_area_functions
 from wetted_area_functions import *
+import gcs_analysis_functions
+from gcs_analysis_functions import *
 import warnings
 
 
@@ -741,10 +743,12 @@ class gcs_gui(tk.Frame):
 
         root = self.tabs['GCS analysis']
 
-        def gcs_analysis(detrended_dem, zs, xs_lengths, xs_spacing, clip_poly='', stage_plots=False, nest_plots=False):
+        def gcs_analysis(detrended_dem, zs, xs_lengths, xs_spacing, analysis, clip_poly='', stage_plots=False, nest_plots=False):
             """DUMMY FUNCTION FOR FORMATTING"""
-            if not stage_plots and not nest_plots:
-                print('Extract')
+            if not analysis:
+                print('Extract GCS series...' )
+                extract_gcs(detrended_dem, zs, xs_lengths, xs_spacing, clip_poly=clip_poly)
+                print('Done')
             elif stage_plots and not nest_plots:
                 print('Stage plots')
             elif stage_plots and nest_plots:
@@ -806,20 +810,19 @@ class gcs_gui(tk.Frame):
                                 text='Allows AOI to be updated, if unchanged leave empty!')
         self.n_clip.grid(sticky=W, row=5, column=3, pady=pad)
 
-
         self.l_gcs = ttk.Label(root, text='Extract GCS series:')
         self.l_gcs.grid(stick=E, row=6, column=0, pady=15)
         self.e_gcs = ttk.Button(root, text='Run',
-                                command=lambda: gcs_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2,
+                                command=lambda: gcs_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2.get(),
                                                              xs_lengths=self.e_length.get(),
                                                              xs_spacing=self.e_space.get(),
                                                              clip_poly=self.e_clip.get(),
-                                                             stage_plots=False, nest_plots=False))
+                                                             analysis=False))
         self.e_gcs.grid(sticky=E, row=6, column=1, pady=15)
         root.grid_rowconfigure(6, minsize=50)
 
         self.note2 = ttk.Label(root,
-                               text='Verify that cross-section lengths are sufficient before continuing! Re-run above if necessary.')
+                               text='Verify that cross-section lengths are sufficient before continuing! Re-run above if necessary. Must have extracted GCS series first.')
         self.note2.grid(sticky=W, row=7, columnspan=3, pady=pad)
 
         self.l_plots = ttk.Label(root, text='Run GCS stage analysis?:')
@@ -847,9 +850,10 @@ class gcs_gui(tk.Frame):
         self.l_gcs = ttk.Label(root, text='GCS analysis:')
         self.l_gcs.grid(stick=E, row=10, column=0, pady=15)
         self.e_gcs = ttk.Button(root, text='Run',
-                                command=lambda: gcs_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2,
+                                command=lambda: gcs_analysis(detrended_dem=self.e_detrended2.get(), zs=self.e_zs2.get(),
                                                              xs_lengths=self.e_length.get(),
                                                              xs_spacing=self.e_space.get(),
+                                                             analysis=False,
                                                              clip_poly=self.e_clip.get(),
                                                              stage_plots=self.plots.get(),
                                                              nest_plots=self.plots2.get()))
