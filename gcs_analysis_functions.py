@@ -156,13 +156,7 @@ def extract_gcs(detrended_dem, zs, xs_lengths, spacing, clip_poly=''):
     og_dem = dem_dir + '\\las_dem.tif'
 
     # Get units for string labeling
-    spatial_ref = arcpy.Describe(detrended_dem).spatialReference
-    unit = spatial_ref.linearUnitName
-
-    if unit == 'Meter':
-        u = 'm'
-    else:
-        u = 'ft'
+    u, unit, spatial_ref = file_functions.get_label_units(detrended_dem)
 
     for i, z in enumerate(zs):
         z_str = float_keyz_format(z)

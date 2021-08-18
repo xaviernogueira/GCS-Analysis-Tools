@@ -271,3 +271,19 @@ def string_to_list(string, format=''):
     else:
         out_list = []
     return out_list
+
+
+def get_label_units(projected_file):
+    """Input: Any file with a projected spatial reference
+    Returns: list storing unit label for filenames, linear unit itself, and the spatial reference file
+    Example return: ['m', 'Meters', *spatial_ref_object*]"""
+
+    spatial_ref = arcpy.Describe(projected_file).spatialReference
+    unit = spatial_ref.linearUnitName
+
+    if unit == 'Meter':
+        u = 'm'
+    else:
+        u = 'ft'
+
+    return [u, unit, spatial_ref]

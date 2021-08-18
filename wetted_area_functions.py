@@ -45,15 +45,13 @@ def prep_small_inc(detrended_dem, max_stage):
         os.makedirs(int_files)
 
     # Use detrended dem spatial reference to determine stage intervals
-    spatial_ref = arcpy.Describe(detrended_dem).spatialReference
-    unit = spatial_ref.linearUnitName
+    u, unit, spatial_ref = file_functions.get_label_units(detrended_dem)
+
     if unit == 'Meter':
         interval = 0.03
-        u = 'm'
         n = 2
     else:
         interval = 0.1
-        u = 'ft'
         n = 1
     print('Units are %s' % unit)
 
