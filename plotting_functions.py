@@ -358,10 +358,6 @@ def landform_pie_charts(detrended_dem, zs, together=False):
 
     return out_dir
 
-    ####################################
-
-
-
 
 def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
     """Creates Sankey diagrams showing nested landform relationships. Can be done across a class, transition occurences are normalized as a % for each reach."""
