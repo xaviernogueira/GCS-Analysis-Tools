@@ -107,9 +107,9 @@ def violin_ttest(df, z_labels, threshold, out_dir):
     out_dict = {'from stage': [], 'from elevation': [], 'to variable': [], 'mean': [], 'std': [],
                 'median': [], 'max': [], 'min': [], 'range': [], 'welch_ttest_p': []}
     topos = ['High Zs, > %s' % threshold, 'Low Zs, < -%s' % threshold]
-    subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold], df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
 
     for i, lower in enumerate(z_labels[:-1]):
+        subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold], df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
         if i == 1:
             higher_col = 'Flood stage Ws'  # This is left b/c of the last cell changing the W_s_vf column header
         else:
@@ -145,6 +145,117 @@ def violin_ttest(df, z_labels, threshold, out_dir):
     out_df.to_csv(out_csv)
 
     return out_csv
+
+
+def runs_test(series, spacing=0):
+    '''
+    Does WW runs test for values above/below median of series
+
+    Args:
+        series (list): a list of values for which to perform the Wald-Wolfowitz runs test for values below/above median
+
+    Returns:
+        A dataframe containing the following:
+            number of runs
+            number of expected runs (if random)
+            expected standard deviation of number of runs (if random)
+            Z: number of standard deviations difference between actual and expected number of run (standard deviation of num. of runs if random)
+    '''
+
+    m = np.median(series)
+    # omit values from series equal to the median
+    test_series = [x for x in series if x != m]
+    run_lengths = []
+    count = 0
+    num_in_sequence = 0
+    for i, vals in enumerate(zip(test_series, test_series[1:])):
+        x1, x2 = vals
+        count += 1
+        # if transition between value above median to value equal or below median, end the run
+        if (x1 > m and x2 < m) or (x1 < m and x2 > m):
+            run_lengths.append(count)
+            count = 0
+        else:
+            num_in_sequence += 1
+        # if on the last value, but no transition, then last value is part of current run
+        if i == len(test_series) - 2:
+            count += 1
+            run_lengths.append(count)
+            count = 0
+
+    # total number of values (excluding median values)
+    n = len(test_series)
+    # num of values above median
+    n_plus = sum([1 for x in test_series if x > m])
+    # num of values below median
+    n_minus = n - n_plus
+    # expected number of runs if random
+    exp_runs = ((2 * n_plus * n_minus * 1.0) / n) + 1
+    # actual number of runs
+    num_runs = len(run_lengths) # Based of the Enginering Statistics Handbook. Removing 'runs' of one seems like it could make sense.
+    # standard deviation of expected num of runs if random
+    exp_run_std = np.sqrt((exp_runs - 1) * (exp_runs - 2) * 1.0 / (n - 1))
+    # number of standard deviations (of epxected run length) that the actual run count differs from WW expected run count
+    z_diff_expected = (num_runs - exp_runs) * 1.0 / exp_run_std
+    # Median length of a run
+    median_run_length = np.mean(np.array(run_lengths))
+    # Significance value of the absolute value of the Z statistic
+    p_value = scipy.stats.norm.cdf(abs(z_diff_expected))
+
+    if p_value >= 0.99:
+        p_value = str(round(p_value, 5)) + '**'
+    elif p_value >= 0.95:
+        p_value = str(round(p_value, 5)) + '*'
+
+    if spacing != 0:
+        mean_run_length = median_run_length * spacing
+        data = {'Runs': num_runs,
+                'Expected Runs': round(exp_runs, 2),
+                'Expected Run StDev': round(exp_run_std, 2),
+                'abs(Z)': abs(round(z_diff_expected, 2)),
+                'p value': p_value,
+                'Percent of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
+                'Median run length (ft)': round(median_run_length * spacing, 2)
+                }
+    else:
+        data = {'Runs': num_runs,
+                'Expected Runs': round(exp_runs, 2),
+                'Expected Run StDev': round(exp_run_std, 2),
+                'abs(Z)': abs(round(z_diff_expected, 2)),
+                'p value': p_value,
+                '% of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
+                'Median run length': round(median_run_length, 2)
+                }
+    num_runs = 0
+
+    return data
+
+
+def runs_test_to_xlsx(ws, gcs_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs']):
+    base_row = start_cors[0]
+    base_col = start_cors[1]
+
+    ws.cell(row=base_row, column=base_col).value = 'Wald-Wolfowitz runs test'
+    ws.cell(row=base_row + 1, column=base_col).value = 'Field:'
+
+    gcs_df.sort_values(by=['dist_down'], inplace=True)
+    spacing = int(gcs_df.iloc[1]['dist_down'] - gcs_df.iloc[0]['dist_down'])
+
+    for count, field in enumerate(fields):
+        col = base_col + 1 + count
+        ws.cell(row=base_row + 1, column=base_col + 1 + count).value = field
+        series = gcs_df.loc[:, [field]].squeeze()
+        out_dict = runs_test(series, spacing=int(spacing))
+
+        # add runs test outputs
+        if count == 0:
+            for i, key in enumerate(out_dict.keys()):
+                ws.cell(row=base_row + 2 + i, column=base_col).value = str(key)
+
+        for j, key in enumerate(out_dict.values()):
+            ws.cell(row=base_row + 2 + j, column=col).value = str(key)
+
+    return ws
 
 
 def descriptive_stats_xlxs(detrended_dem, zs):
@@ -221,6 +332,10 @@ def descriptive_stats_xlxs(detrended_dem, zs):
 
         wb.save(stats_xl)
 
+        # run wald's runs test and add results to the flow stage sheet
+        ws = runs_test_to_xlsx(ws, stage_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs'])
+
+        # calculate descriptive statistics for cross-sections classified as each landform
         landform_dict = {-2: 'Oversized', -1: 'Constricted pool', 0: 'Normal', 1: 'Wide riffle', 2: 'Nozzle'}
         codes = landform_dict.keys()
 
