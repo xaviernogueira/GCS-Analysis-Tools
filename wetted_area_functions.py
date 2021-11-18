@@ -246,7 +246,7 @@ def stage_centerlines(dem, zs, drafting=True):
 
     # majority filter, boundary clean, raster to polygon, polygon to centerline, remove spurs
     if drafting:
-        for z in zs:
+        for i, z in enumerate(zs):
 
             z_str = float_keyz_format(z)
             in_name = wetted_dir + '\\noval_%s%s.tif' % (z_str, u)
@@ -255,7 +255,7 @@ def stage_centerlines(dem, zs, drafting=True):
             mf = arcpy.sa.MajorityFilter(in_name, 'EIGHT')
             bc =arcpy.sa.BoundaryClean(mf)
 
-            temp_poly = temp_files + '\\smooth_poly_%s%s.shp' % (z_str, u)
+            temp_poly = temp_files + '\\sp%s.shp' % i  # smoothed polygon
             arcpy.RasterToPolygon_conversion(bc, temp_poly)
 
             w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
