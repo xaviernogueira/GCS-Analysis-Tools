@@ -162,7 +162,7 @@ def make_centerline(DEM, channel, lidar_extent, source, smooth_distance):
         centerline shapefile
     '''
     outdir = os.path.dirname(DEM)
-    arcpy.env.extent = lidar_extent
+    # arcpy.env.extent = lidar_extent - causes a sneaky exception but work around may need to be introduced
     init_logger(__file__)  # Initiate log file
 
     check_use([DEM,
