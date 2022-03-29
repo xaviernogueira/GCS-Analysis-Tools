@@ -246,10 +246,9 @@ def float_keyz_format(z):
     ex: 5.3 -> 5p3, or 10.0 -> 10p0'''
 
     z_str = ''
-    if z >= 10.0 and isinstance(z, float):
-        z_str = (str(z)[0:2] + 'p' + str(z)[3])
-    elif z < 10.0 and isinstance(z, float):
-        z_str = (str(z)[0] + 'p' + str(z)[2])
+    if isinstance(z, float):
+        z1, z2 = str(z).split('.', 1)
+        z_str = f'{z1}p{z2}'
     elif isinstance(z, int):
         z_str = str(z) + 'p0'
 
