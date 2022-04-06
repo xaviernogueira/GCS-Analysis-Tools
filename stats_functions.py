@@ -1,3 +1,4 @@
+import logging
 import os
 import pandas as pd
 import numpy as np
@@ -260,14 +261,14 @@ def runs_test_to_xlsx(ws, gcs_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs
 
 def descriptive_stats_xlxs(detrended_dem, zs):
     if detrended_dem == '':
-        print('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
+        logging.error('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
         return
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        print(
-            'Error: Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        logging.error('Error: Key flow stage parameter input incorrectly. \
+            Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -462,4 +463,6 @@ def descriptive_stats_xlxs(detrended_dem, zs):
             row_num += 8
 
         wb.save(stats_xl)
-        print('Descriptive statistics table saved @ %s' % stats_xl)
+        logging.info('Descriptive statistics table saved @ %s' % stats_xl)
+
+

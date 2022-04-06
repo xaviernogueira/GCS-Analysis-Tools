@@ -821,8 +821,8 @@ class gcs_gui(tk.Frame):
         self.e_gcs.grid(sticky=E, row=6, column=1, pady=15)
         root.grid_rowconfigure(6, minsize=50)
 
-        self.note2 = ttk.Label(root,
-                               text='Verify that cross-section lengths are sufficient before continuing! Re-run above if necessary. Must have extracted GCS series first.')
+        self.note2 = ttk.Label(root, text='Verify that cross-section lengths are sufficient before continuing! \
+                                Re-run above if necessary. Must have extracted GCS series first.')
         self.note2.grid(sticky=W, row=7, columnspan=3, pady=pad)
 
         self.l_plots = ttk.Label(root, text='Run GCS stage analysis?:')

@@ -20,6 +20,7 @@ import seaborn as sns
 import file_functions
 import openpyxl as xl
 
+
 def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False):
     """This function makes longitudinal profile plots for given fields across each key z saving them to a folder.
      If aligned_table is defined as the aligned csv, plots showing each key z profile as sub-plots for a given field are saved as well."""

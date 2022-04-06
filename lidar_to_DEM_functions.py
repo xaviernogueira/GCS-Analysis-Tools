@@ -1,3 +1,5 @@
+import logging
+
 import arcpy
 from arcpy import env
 from arcpy.sa import *
@@ -253,6 +255,13 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         # Create least cost centerline from 15x filtered raster
         print("Smoothed DEM made, least-cost centerline being calculated...")
         lidar_foot = dem_dir + '\\las_footprint.shp'
+
+        # check for LiDAR Footprint file
+        if not os.path.exists(lidar_foot):
+            logging.error(f'Could not for the previously generated las_footprint.shp file in {dem_dir} \
+            ...please re-make the shapefile or move it back to the default folder.')
+            logging.error('WARNING: The following process may run but will propduce incorrect outputs!')
+
         create_centerline.make_centerline(smooth_ras, aoi_shp, lidar_foot, flow_poly, smooth_distance=10)
 
         for ticker in range(filt_passes + 1):  # Delete intermediate filtered rasters
