@@ -4,7 +4,6 @@ import numpy as np
 from arcpy import env
 from arcpy.sa import *
 import os
-import matplotlib
 from matplotlib import pyplot as plt
 import file_functions
 from file_functions import *
@@ -65,7 +64,8 @@ def prep_small_inc(detrended_dem, max_stage):
 
     for inc in stages:
         inc_str = float_keyz_format(inc, n)
-        temp_names = [int_files + '\\noval_%s%s.tif' % (inc_str, u), int_files + '\\dt_clp_%s%s.tif' % (inc_str, u)]
+        temp_names = [int_files + '\\noval_%s%s.tif' %
+                      (inc_str, u), int_files + '\\dt_clp_%s%s.tif' % (inc_str, u)]
         out_name = out_dir + '\\wetted_poly_%s%s.shp' % (inc_str, u)
 
         # Only generate polygons that have not already been generated
@@ -77,7 +77,8 @@ def prep_small_inc(detrended_dem, max_stage):
             clip_ras.save(temp_names[1])
 
             # Turn the wetted area raster into a polygon, delete intermediate rasters
-            arcpy.RasterToPolygon_conversion(in_raster=wetted_ras, out_polygon_features=out_name, simplify=False)
+            arcpy.RasterToPolygon_conversion(
+                in_raster=wetted_ras, out_polygon_features=out_name, simplify=False)
 
     return out_dir
 
@@ -95,7 +96,8 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
 
     # Find all wetted area polygons in their out folder
     wetted_areas = []
-    wetted_polys = [in_dir + '\\%s' % f for f in os.listdir(in_dir) if f[:11] == 'wetted_poly' and f[-4:] == '.shp']
+    wetted_polys = [in_dir + '\\%s' % f for f in os.listdir(
+        in_dir) if f[:11] == 'wetted_poly' and f[-4:] == '.shp']
 
     # Set units based on the end of the wetted polygons name
     if wetted_polys[0][-5] == 'm':
@@ -184,7 +186,8 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     plt.grid(b=True, which='minor', color='#666666', linestyle='-')
     plt.xlim(0, max(x3))
     plt.ylim(0, max_stage)
-    plt.xticks(np.arange(0, int(max(x3)), step=round(max(x3) / 10)), fontsize='x-small')
+    plt.xticks(np.arange(0, int(max(x3)), step=round(
+        max(x3) / 10)), fontsize='x-small')
     plt.yticks(np.arange(0, int(max(y3)), step=1), fontsize='x-small')
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
@@ -224,11 +227,15 @@ def stage_centerlines(dem, zs, drafting=True):
 
     # set up messages
     if drafting:
-        messages = ['Generating draft center-lines for flow stage heights %s...' % zs,
-                    'Draft center-lines @ %s. \nManually edit (must see documentation) and run the next step. \nDone' % out_dir]
+        messages = [
+            'Generating draft center-lines for flow stage heights %s...' % zs,
+            'Draft center-lines @ %s. \nManually edit (must see documentation) and run the next step. \nDone' % out_dir,
+        ]
     else:
-        messages = ['Generating final center-lines for flow stage heights %s...' % zs,
-                    'Final center-lines @ %s \nDone.' % out_dir]
+        messages = [
+            'Generating final center-lines for flow stage heights %s...' % zs,
+            'Final center-lines @ %s \nDone.' % out_dir,
+        ]
 
     print(messages[0])
 
@@ -253,20 +260,27 @@ def stage_centerlines(dem, zs, drafting=True):
             out_name = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
 
             mf = arcpy.sa.MajorityFilter(in_name, 'EIGHT')
-            bc =arcpy.sa.BoundaryClean(mf)
+            bc = arcpy.sa.BoundaryClean(mf)
 
             temp_poly = temp_files + '\\sp%s.shp' % i  # smoothed polygon
             arcpy.RasterToPolygon_conversion(bc, temp_poly)
 
             w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
             rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
-            spurs = str(arcpy.PolygonToCenterline_topographic(temp_poly, w_spurs))
+            
+            spurs = str(
+                arcpy.PolygonToCenterline_topographic(
+                    temp_poly,
+                    w_spurs,
+                ),
+            )
             create_centerline.remove_spurs(spurs, spur_length=spur_lim)
 
             arcpy.CopyFeatures_management(rm_spur, out_name)
             drafts.append(out_name)
 
-        print('Please see centerline_info.txt in %s for information about editing centerlines')
+        print(
+            'Please see centerline_info.txt in %s for information about editing centerlines')
         # print message, make .txt file in the centerline folder with instructions on editing
 
     elif not drafting:
@@ -274,19 +288,26 @@ def stage_centerlines(dem, zs, drafting=True):
             z_str = float_keyz_format(z)
             draft = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
             out_name = draft.replace('_draft.shp', '.shp')
-            diss = temp_files + os.path.basename(draft).replace('_draft.shp', 'diss.shp')
+            diss = temp_files + \
+                os.path.basename(draft).replace('_draft.shp', 'diss.shp')
 
             # make into multipart, then slightly smooth
-            arcpy.Dissolve_management(draft, diss, dissolve_field='ObjectID')
-            arcpy.SmoothLine_cartography(diss, out_name, 'PAEK', smooth)
-            arcpy.AddField_management(out_name, 'Id', 'Short')
+            arcpy.Dissolve_management(
+                draft,
+                diss,
+                dissolve_field='ObjectID',
+            )
+            arcpy.SmoothLine_cartography(
+                diss,
+                out_name,
+                'PAEK',
+                smooth,
+            )
+            arcpy.AddField_management(
+                out_name,
+                'Id',
+                'Short',
+            )
 
     print(messages[1])
     return out_dir
-
-
-
-
-
-
-

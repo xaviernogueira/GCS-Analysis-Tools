@@ -1,29 +1,26 @@
 import logging
-
 import arcpy
 from arcpy import env
 from arcpy.sa import *
-import file_functions
-from file_functions import *
-import create_centerline
-import create_station_lines
+import pandas as pd
+import numpy as np
+from file_functions import tableToCSV, delete_gis_files, cmd
+from create_centerline import make_centerline
 from create_station_lines import create_station_lines_function
 import os
 from os import listdir
 from os.path import isfile, join
-import xlrd
 import shutil
-from openpyxl.workbook import Workbook
-from openpyxl.reader.excel import load_workbook, InvalidFileException
 
 
-def lidar_footptint(lasbin, lidardir, spatialref_shp):
+def lidar_footprint(lasbin, lidardir, spatialref_shp):
     """This function converts LAZ files to LAS file format as well as producing a LiDAR extent polygon.
     in_folder must be a directory containing nothing but raw LAZ files
     spatial_ref must be an ArcGIS spatial reference object with units of feet.
     las_tools_bin must be the location of the 'bin' folder installed with LAStools by rapidlasso
     Returns: A shapefile w/ LiDAR coverage to be used to make a ground polygon for LAStools processing"""
-    files_in_direct = [f for f in listdir(lidardir) if isfile(join(lidardir, f))]
+    files_in_direct = [f for f in listdir(
+        lidardir) if isfile(join(lidardir, f))]
 
     laspath = lidardir + '\\las_files'
 
@@ -47,12 +44,17 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
                 if lasbin[-1] != 'n':
                     lasbin = lasbin[:-1]
 
-                cmd("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" % (lasbin, lidardir, f, laspath, f[:-4]))
-                print("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" % (lasbin, lidardir, f, laspath, f[:-4]))
-                cmd("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" % (lasbin, laspath, f[:-4], laspath, f[:-4]))
-                print("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" % (lasbin, laspath, f[:-4], laspath, f[:-4]))
+                cmd("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
+                    (lasbin, lidardir, f, laspath, f[:-4]))
+                print("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
+                      (lasbin, lidardir, f, laspath, f[:-4]))
+                cmd("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
+                    (lasbin, laspath, f[:-4], laspath, f[:-4]))
+                print("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
+                      (lasbin, laspath, f[:-4], laspath, f[:-4]))
 
-        files_in_laspath = [f for f in listdir(laspath) if isfile(join(laspath, f))]
+        files_in_laspath = [f for f in listdir(
+            laspath) if isfile(join(laspath, f))]
 
         # Delete unnecessary index files
         for f in files_in_laspath:
@@ -62,10 +64,17 @@ def lidar_footptint(lasbin, lidardir, spatialref_shp):
             if f[-5] == 'j':
                 os.remove(laspath + "\\%s" % f)
 
-        raw_las_dataset = arcpy.CreateLasDataset_management(laspath, lidardir + "\\raw_las_dataset.lasd",
-                                                            spatial_reference=in_spatial_ref, compute_stats=True)
+        raw_las_dataset = arcpy.CreateLasDataset_management(
+            laspath,
+            lidardir + "\\raw_las_dataset.lasd",
+            spatial_reference=in_spatial_ref,
+            compute_stats=True,
+        )
         lidar_ras = CreateConstantRaster(1, extent=raw_las_dataset)
-        lidar_footprint = arcpy.RasterToPolygon_conversion(lidar_ras, lidardir + '\\las_footprint.shp')
+        lidar_footprint = arcpy.RasterToPolygon_conversion(
+            lidar_ras, 
+            lidardir + '\\las_footprint.shp',
+        )
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
@@ -93,24 +102,53 @@ def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_s
 
     if len(naip_imagery) > 1:
         add_to_mosaic = [naipdir + "\\" + f for f in naip_imagery]
-        naip_imagery = arcpy.MosaicToNewRaster_management(add_to_mosaic, output_location=lidardir,
-                                                          raster_dataset_name_with_extension="NAIP_mos.tif",
-                                                          coordinate_system_for_the_raster=in_spatial_ref,
-                                                          number_of_bands=4)
+        naip_imagery = arcpy.MosaicToNewRaster_management(
+            add_to_mosaic,
+            output_location=lidardir,
+            raster_dataset_name_with_extension="NAIP_mos.tif",
+            coordinate_system_for_the_raster=in_spatial_ref,
+            number_of_bands=4,
+        )
     else:
         naip_imagery = (naipdir + "\\%s" % naip_imagery[0])
-        naip_imagery = arcpy.ProjectRaster_management(naip_imagery, lidardir + "\\NAIP_prj.tif", in_spatial_ref)
+        naip_imagery = arcpy.ProjectRaster_management(
+            naip_imagery,
+            lidardir + "\\NAIP_prj.tif",
+            in_spatial_ref,
+        )
 
     try:
         # Extract bands 1 (red) and 4 (NIR)
-        red_lyr = arcpy.MakeRasterLayer_management(naip_imagery, temp_files + "\\rd_lyr", band_index=0)
-        nir_lyr = arcpy.MakeRasterLayer_management(naip_imagery, temp_files + "\\nr_lyr", band_index=4)
+        red_lyr = arcpy.MakeRasterLayer_management(
+            naip_imagery,
+            temp_files + "\\rd_lyr",
+            band_index=0,
+        )
+        nir_lyr = arcpy.MakeRasterLayer_management(
+            naip_imagery,
+            temp_files + "\\nr_lyr",
+            band_index=4,
+        )
 
-        red_lyr = arcpy.SaveToLayerFile_management(red_lyr, temp_files + "\\red_ras.lyr")
-        nir_lyr = arcpy.SaveToLayerFile_management(nir_lyr, temp_files + "\\nir_ras.lyr")
+        red_lyr = arcpy.SaveToLayerFile_management(
+            red_lyr,
+            temp_files + "\\red_ras.lyr",
+        )
+        nir_lyr = arcpy.SaveToLayerFile_management(
+            nir_lyr,
+            temp_files + "\\nir_ras.lyr",
+        )
 
-        red_ras = arcpy.CopyRaster_management(red_lyr, temp_files + "\\red_ras.tif", format="TIFF")
-        nir_ras = arcpy.CopyRaster_management(nir_lyr, temp_files + "\\nir_ras.tif", format="TIFF")
+        red_ras = arcpy.CopyRaster_management(
+            red_lyr,
+            temp_files + "\\red_ras.tif",
+            format="TIFF",
+        )
+        nir_ras = arcpy.CopyRaster_management(
+            nir_lyr,
+            temp_files + "\\nir_ras.tif",
+            format="TIFF",
+        )
 
         red_ras = Raster(red_ras)
         nir_ras = Raster(nir_ras)
@@ -122,21 +160,49 @@ def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_s
 
         veg_ras_raw = Con(arcpy.sa.Raster(ndvi) >= ndvi_thresh, 1)
         veg_ras_raw.save(temp_files + "\\veg_ras_raw.tif")
-        veg_ras = MajorityFilter(veg_ras_raw, "EIGHT", "MAJORITY")
+
+        veg_ras = MajorityFilter(
+            veg_ras_raw,
+            "EIGHT",
+            "MAJORITY",
+        )
         veg_ras.save(temp_files + "\\veg_ras.tif")
-        veg_poly = arcpy.RasterToPolygon_conversion(veg_ras, lidardir + "\\veg_poly_ndvi.shp", simplify=FALSE)
+
+        veg_poly = arcpy.RasterToPolygon_conversion(
+            veg_ras,
+            lidardir + "\\veg_poly_ndvi.shp",
+            simplify="FALSE",
+        )
 
         # Make polygon representing bare ground
         if aoi_shp != '':
-            ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, temp_files + "\\ground_poly_full.shp")
-            aoi_prj = arcpy.Project_management(aoi_shp, temp_files + "\\aoi_prj_to_inref.shp",
-                                               out_coor_system=in_spatial_ref)
-            ground_poly = arcpy.Clip_analysis(ground_poly, aoi_prj, lidardir + "\\ground_poly.shp")
+            ground_poly = arcpy.Erase_analysis(
+                lidar_footprint,
+                veg_poly,
+                temp_files + "\\ground_poly_full.shp",
+            )
+            aoi_prj = arcpy.Project_management(
+                aoi_shp,
+                temp_files + "\\aoi_prj_to_inref.shp",
+                out_coor_system=in_spatial_ref,
+            )
+            ground_poly = arcpy.Clip_analysis(
+                ground_poly,
+                aoi_prj,
+                lidardir + "\\ground_poly.shp",
+            )
 
         else:
-            ground_poly = arcpy.Erase_analysis(lidar_footprint, veg_poly, lidardir + "\\ground_poly.shp")
+            ground_poly = arcpy.Erase_analysis(
+                lidar_footprint,
+                veg_poly,
+                lidardir + "\\ground_poly.shp",
+            )
 
-        ground_poly = arcpy.DefineProjection_management(ground_poly, in_spatial_ref)
+        ground_poly = arcpy.DefineProjection_management(
+            ground_poly,
+            in_spatial_ref,
+        )
         print("AOI bare-ground polygon @ %s" % ground_poly)
 
     except arcpy.ExecuteError:
@@ -186,13 +252,26 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
 
     try:
         no_prj_dem = temp_files + '\\noprj_dem.tif'
-        las_dataset = arcpy.CreateLasDataset_management(ground_lasdir, out_las, spatial_reference=in_spatial_ref,
-                                                        compute_stats=True)
-        lidar_raster = arcpy.LasDatasetToRaster_conversion(las_dataset, value_field='ELEVATION', data_type='FLOAT',
-                                                           interpolation_type=method_str, sampling_type='CELLSIZE',
-                                                           sampling_value=cell_size)
+        las_dataset = arcpy.CreateLasDataset_management(
+            ground_lasdir,
+            out_las,
+            spatial_reference=in_spatial_ref,
+            compute_stats=True,
+        )
+        lidar_raster = arcpy.LasDatasetToRaster_conversion(
+            las_dataset,
+            value_field='ELEVATION',
+            data_type='FLOAT',
+            interpolation_type=method_str,
+            sampling_type='CELLSIZE',
+            sampling_value=cell_size,
+        )
         arcpy.CopyRaster_management(lidar_raster, no_prj_dem)
-        arcpy.ProjectRaster_management(no_prj_dem, out_raster=out_dem, out_coor_system=out_spatial_ref)
+        arcpy.ProjectRaster_management(
+            no_prj_dem,
+            out_raster=out_dem,
+            out_coor_system=out_spatial_ref,
+        )
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
@@ -206,7 +285,8 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
         print('DEM units are Feet')
 
     else:
-        print('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' % os.path.basename(out_spatial_ref))
+        print('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' %
+              os.path.basename(out_spatial_ref))
 
     return out_dem
 
@@ -246,7 +326,10 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         filter_out.save(temp_files + "\\filter_out%s" % ticker)
 
         while ticker < filt_passes:  # Apply an iterative low pass filter 15x to the raster to smooth the topography
-            filter_out = arcpy.sa.Filter((temp_files + "\\filter_out%s" % ticker), "LOW")
+            filter_out = arcpy.sa.Filter(
+                (temp_files + "\\filter_out%s" % ticker),
+                "LOW",
+            )
             filter_out.save(temp_files + "\\filter_out%s" % (ticker + 1))
             ticker += 1
         smooth_ras = (dem_dir + "\\filt_ras.tif")
@@ -260,11 +343,19 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         if not os.path.exists(lidar_foot):
             logging.error(f'Could not for the previously generated las_footprint.shp file in {dem_dir} \
             ...please re-make the shapefile or move it back to the default folder.')
-            logging.error('WARNING: The following process may run but will propduce incorrect outputs!')
+            logging.error(
+                'WARNING: The following process may run but will propduce incorrect outputs!')
 
-        create_centerline.make_centerline(smooth_ras, aoi_shp, lidar_foot, flow_poly, smooth_distance=10)
+        make_centerline(
+            smooth_ras,
+            aoi_shp,
+            lidar_foot,
+            flow_poly,
+            smooth_distance=10,
+        )
 
-        for ticker in range(filt_passes + 1):  # Delete intermediate filtered rasters
+        # Delete intermediate filtered rasters
+        for ticker in range(filt_passes + 1):
             file = (temp_files + "\\filter_out%s" % ticker)
             if os.path.exists(file):
                 try:
@@ -280,28 +371,59 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         centerline = dem_dir + "\\thalweg_centerline.shp"
 
         # Define location of intermediate files, some of which will be deleted
-        intermediates = ["thalweg_centerline_XS.shp", 'thalweg_station_points.shp', 'thalweg_station_points1.shp',
-                         'sp_elevation_table.dbf']
+        intermediates = [
+            'thalweg_centerline_XS.shp',
+            'thalweg_station_points.shp',
+            'thalweg_station_points1.shp',
+            'sp_elevation_table.dbf',
+        ]
         intermediates = [temp_files + '\\%s' % i for i in intermediates]
 
         # Create a station point shapefile evenly sampling the thalweg centerline
-        station_lines = create_station_lines.create_station_lines_function(centerline, spacing=params[0],
-                                                                           xs_length=params[0])
-        station_points = arcpy.Intersect_analysis([intermediates[0], centerline], out_feature_class=intermediates[2],
-                                                  join_attributes="ALL", output_type="POINT")
-        station_points = arcpy.MultipartToSinglepart_management(station_points, intermediates[1])
+        station_lines = create_station_lines_function(
+            centerline,
+            spacing=params[0],
+            xs_length=params[0],
+        )
+        station_points = arcpy.Intersect_analysis(
+            [intermediates[0], centerline],
+            out_feature_class=intermediates[2],
+            join_attributes="ALL",
+            output_type="POINT",
+        )
+        station_points = arcpy.MultipartToSinglepart_management(
+            station_points,
+            intermediates[1],
+        )
         station_points = arcpy.AddXY_management(station_points)
 
         # Extract elevation values from each station point, and export to a .csv file
-        elevation_table = arcpy.ExtractValuesToTable_ga(station_points, in_rasters=dem, out_table=intermediates[3])
-        station_points = arcpy.JoinField_management(station_points, in_field="ORIG_FID", join_table=elevation_table,
-                                                    join_field="SrcID_Feat", fields=["Value"])
+        elevation_table = arcpy.ExtractValuesToTable_ga(
+            station_points,
+            in_rasters=dem,
+            out_table=intermediates[3],
+        )
+        station_points = arcpy.JoinField_management(
+            station_points,
+            in_field="ORIG_FID",
+            join_table=elevation_table,
+            join_field="SrcID_Feat",
+            fields=["Value"],
+        )
 
         # Add fields to override, but first adjust detrending functions
         elevation_table = dem_dir + '\\xyz_elevation_table.csv'
-        elevation_table = file_functions.tableToCSV(input_table=station_points, csv_filepath=elevation_table,
-                                                    fld_to_remove_override=['FID_thal_1', 'Id_1', 'InLine_FID',
-                                                                            'ORIG_FID'], keep_fields=[])
+        elevation_table = tableToCSV(
+            input_table=station_points,
+            csv_filepath=elevation_table,
+            fld_to_remove_override=[
+                'FID_thal_1',
+                'Id_1',
+                'InLine_FID',
+                'ORIG_FID'
+            ],
+            keep_fields=[],
+        )
         elevation_df = pd.read_csv(elevation_table)
 
         # Flip rows if upside down

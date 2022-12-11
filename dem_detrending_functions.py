@@ -1,15 +1,10 @@
-import openpyxl as xl
 import arcpy
+from arcpy import env
 import os
 import pandas
 import pandas as pd
-from arcpy import env
-from openpyxl import Workbook
-from openpyxl import load_workbook
-import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
-import csv
 
 # Define detrending functions
 ######################################################################
@@ -95,7 +90,8 @@ def linear_fit(location_np, z_np, xyz_table_loc, bp_list=[]):
         i = 0
         while i < len(lengths):
             for j in range(lengths[i]):
-                z_fit_list.append(split_locs_list[i][j] * fit_params[i][0] + fit_params[i][1])
+                z_fit_list.append(
+                    split_locs_list[i][j] * fit_params[i][0] + fit_params[i][1])
             i += 1
 
     else:
@@ -155,8 +151,14 @@ def detrend_that_raster(xyz_csv, in_dem, aoi_shp=''):
     xyz_df = pandas.read_csv(xyz_csv, usecols=cols)
 
     # Generate station points with fitted z values
-    points = arcpy.MakeXYEventLayer_management(xyz_csv, "POINT_X", "POINT_Y", out_layer='fit_station_points',
-                                               spatial_reference=spatial_ref, in_z_field=fit_col)
+    points = arcpy.MakeXYEventLayer_management(
+        xyz_csv,
+        "POINT_X",
+        "POINT_Y",
+        out_layer='fit_station_points',
+        spatial_reference=spatial_ref,
+        in_z_field=fit_col,
+    )
     points = arcpy.SaveToLayerFile_management(points, 'fit_station_points.lyr')
     points = arcpy.CopyFeatures_management(points)
 
@@ -169,8 +171,20 @@ def detrend_that_raster(xyz_csv, in_dem, aoi_shp=''):
     print("Creating Thiessen polygons...")
     cell_size1 = arcpy.GetRasterProperties_management(in_dem, "CELLSIZEX")
     cell_size = float(cell_size1.getOutput(0))
-    thiessen = arcpy.CreateThiessenPolygons_analysis(points, "thiespoly.shp", fields_to_copy='ALL')
-    z_fit_ras = arcpy.PolygonToRaster_conversion(thiessen, fit_col, 'theis_ras.tif', cell_assignment="MAXIMUM_AREA", cellsize=cell_size)
+
+    thiessen = arcpy.CreateThiessenPolygons_analysis(
+        points,
+        "thiespoly.shp",
+        fields_to_copy='ALL',
+    )
+
+    z_fit_ras = arcpy.PolygonToRaster_conversion(
+        thiessen,
+        fit_col,
+        'theis_ras.tif',
+        cell_assignment="MAXIMUM_AREA",
+        cellsize=cell_size,
+    )
 
     # Detrend in_dem by subtracting thiessen raster values from it
     detrended_dem = arcpy.Raster(in_dem) - arcpy.Raster(z_fit_ras)
@@ -180,7 +194,12 @@ def detrend_that_raster(xyz_csv, in_dem, aoi_shp=''):
     else:
         no_clip = temp_files + '\\ras_dt_nc.tif'
         detrended_dem.save(no_clip)
-        arcpy.Clip_management(no_clip, out_raster=out_dem, in_template_dataset=aoi_shp, clipping_geometry='ClippingGeometry')
+        arcpy.Clip_management(
+            no_clip,
+            out_raster=out_dem,
+            in_template_dataset=aoi_shp,
+            clipping_geometry='ClippingGeometry',
+        )
 
     return out_dem
 
@@ -234,7 +253,8 @@ def linear_fit_plot(location_np, z_np, fit_params, fit_np, out_dir):
 
     # Initiate plot
     plt.plot(location_np, y1_plot, 'r', label="Thalweg elevation profile")
-    plt.plot(location_np, fit_np, 'b', label='Piecewise linear fit', linewidth=0.75)
+    plt.plot(location_np, fit_np, 'b',
+             label='Piecewise linear fit', linewidth=0.75)
 
     # Define plotting extent
     plt.xlim(min(location_np), max(location_np))
@@ -313,9 +333,11 @@ def fit_params_txt(fit_params, bp_list, out_dir):
     # Write to and save .txt file
     for count, params in enumerate(fit_params):
         if len(bp_list) != 0:
-            text_file.write('From %s to %s: %.4f * dist_downstream + %.4f\n' % (bps_form[count], bps_form[count+1], params[0], params[1]))
+            text_file.write('From %s to %s: %.4f * dist_downstream + %.4f\n' %
+                            (bps_form[count], bps_form[count+1], params[0], params[1]))
         else:
-            text_file.write('For full reach: %.4f * dist_downstream + %.4f\n' % (params[0], params[1]))
+            text_file.write(
+                'For full reach: %.4f * dist_downstream + %.4f\n' % (params[0], params[1]))
     text_file.close()
 
     return text_dir

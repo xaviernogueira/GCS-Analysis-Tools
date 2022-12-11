@@ -23,11 +23,19 @@ def las_files(directory):
     return l
 
 
-# input working directory for LAStools and directory containing .las/.laz files
-# creates a .txt file for LAStools containing list of .las/.laz file names
-# returns the name of the .txt file.
-def lof_text(pwd, src):
-    """creates a .txt file in pwd (LAStools bin) containing a list of .las/.laz filenames from src directory"""
+def lof_text(
+    pwd: str,
+    src: str,
+) -> str:
+    """Creates a .txt file in pwd (LAStools bin) containing a list of .las/.laz filenames from src directory
+    
+    Args:
+        pwd: LAStools bin path
+        src: working directory path for LAStools and directory containing .las/.laz files
+    
+    Returns:
+        The name of the .txt file.
+    """
     filename = pwd + 'file_list.txt'
 
     f = open(filename, 'w+')
@@ -44,9 +52,11 @@ def lof_text(pwd, src):
     return filename
 
 
-# input .las/.laz filename, outputs point density (after running lasinfo)
-def pd(filename):
-    """returns point density from lasinfo output .txt file"""
+def point_density(
+    filename: str,
+) -> float:
+    """Returns point density from lasinfo output .txt file via the .las/.laz filename"""
+
     # name of txt output file from lasinfo
     filename = filename[:-4] + '.txt'
     f = open(filename, 'r')
@@ -75,7 +85,8 @@ def pts(filename, lastoolsdir):
     """returns number of points in las file"""
 
     # call lasinfo on the file
-    cmd('%slasinfo.exe -i %s -otxt -histo number_of_returns 1' % (lastoolsdir, filename))
+    cmd('%slasinfo.exe -i %s -otxt -histo number_of_returns 1' %
+        (lastoolsdir, filename))
     # name of txt output file from lasinfo
     txt = filename[:-4] + '.txt'
     f = open(txt, 'r')
@@ -87,111 +98,116 @@ def pts(filename, lastoolsdir):
             return int(d)
 
 
-# the main function that runs when 'run' button is clicked
 @err_info
-def process_lidar(lastoolsdir,
-                  lidardir,
-                  ground_poly,
-                  cores,
-                  units_code,
-                  keep_orig_pts,
-                  coarse_step,
-                  coarse_bulge,
-                  coarse_spike,
-                  coarse_down_spike,
-                  coarse_offset,
-                  fine_step,
-                  fine_bulge,
-                  fine_spike,
-                  fine_down_spike,
-                  fine_offset
-                  ):
+def process_lidar(
+    lastoolsdir,
+    lidardir,
+    ground_poly,
+    cores,
+    units_code,
+    keep_orig_pts,
+    coarse_step,
+    coarse_bulge,
+    coarse_spike,
+    coarse_down_spike,
+    coarse_offset,
+    fine_step,
+    fine_bulge,
+    fine_spike,
+    fine_down_spike,
+    fine_offset,
+) -> None:
     """Executes main LAStools processing workflow. See readme for more info."""
 
     # initialize the logger
     init_logger(__file__)
 
-    classes = ['01-Default',
-               '02-Ground',
-               '05-Vegetation',
-               '06-Building'
-               ]
+    classes = [
+        '01-Default',
+        '02-Ground',
+        '05-Vegetation',
+        '06-Building',
+    ]
 
     if (ground_poly != '') and (keep_orig_pts == True):
         # run on coarse and fine settings, need to clip and remove duplicates after merging
-        outdirs = ['00_separated',
-                   '00_declassified',
-                   '01_tiled',
-                   '02a_lasground_new_coarse',
-                   '02b_lasground_new_fine',
-                   '03a_lasheight_coarse',
-                   '03b_lasheight_fine',
-                   '04a_lasclassify_coarse',
-                   '04b_lasclassify_fine',
-                   '05a_lastile_rm_buffer_coarse',
-                   '05b_lastile_rm_buffer_fine',
-                   '06a_separated_coarse',
-                   '06b_separated_fine',
-                   '07a_ground_clipped_coarse',
-                   '07b_ground_clipped_fine',
-                   '08_ground_merged',
-                   '09_ground_rm_duplicates',
-                   '10_veg_new_merged',
-                   '11_veg_new_clipped',
-                   '12_veg_merged',
-                   '13_veg_rm_duplicates'
-                   ]
+        outdirs = [
+            '00_separated',
+            '00_declassified',
+            '01_tiled',
+            '02a_lasground_new_coarse',
+            '02b_lasground_new_fine',
+            '03a_lasheight_coarse',
+            '03b_lasheight_fine',
+            '04a_lasclassify_coarse',
+            '04b_lasclassify_fine',
+            '05a_lastile_rm_buffer_coarse',
+            '05b_lastile_rm_buffer_fine',
+            '06a_separated_coarse',
+            '06b_separated_fine',
+            '07a_ground_clipped_coarse',
+            '07b_ground_clipped_fine',
+            '08_ground_merged',
+            '09_ground_rm_duplicates',
+            '10_veg_new_merged',
+            '11_veg_new_clipped',
+            '12_veg_merged',
+            '13_veg_rm_duplicates',
+        ]
 
     elif (ground_poly == '') and (keep_orig_pts == True):
         # only classify with coarse settings, no clipping, but need to remove duplicates
-        outdirs = ['00_separated',
-                   '00_declassified',
-                   '01_tiled',
-                   '02_lasground_new',
-                   '03_lasheight',
-                   '04_lasclassify',
-                   '05_lastile_rm_buffer',
-                   '06_separated',
-                   '08_ground_merged',
-                   '09_ground_rm_duplicates',
-                   '12_veg_merged',
-                   '13_veg_rm_duplicates'
-                   ]
+        outdirs = [
+            '00_separated',
+            '00_declassified',
+            '01_tiled',
+            '02_lasground_new',
+            '03_lasheight',
+            '04_lasclassify',
+            '05_lastile_rm_buffer',
+            '06_separated',
+            '08_ground_merged',
+            '09_ground_rm_duplicates',
+            '12_veg_merged',
+            '13_veg_rm_duplicates',
+        ]
 
     elif (ground_poly == '') and (keep_orig_pts == False):
         # only classify with coarse setting, no clipping or removing duplicates necessary
-        outdirs = ['00_separated',
-                   '00_declassified',
-                   '01_tiled',
-                   '02_lasground_new',
-                   '03_lasheight',
-                   '04_lasclassify',
-                   '05_lastile_rm_buffer',
-                   '06_separated'
-                   ]
+        outdirs = [
+            '00_separated',
+            '00_declassified',
+            '01_tiled',
+            '02_lasground_new',
+            '03_lasheight',
+            '04_lasclassify',
+            '05_lastile_rm_buffer',
+            '06_separated',
+        ]
 
     elif (ground_poly != '') and (keep_orig_pts == False):
         # run on coarse and fine settings, clip, but no removing duplicates needed
-        outdirs = ['00_separated',
-                   '00_declassified',
-                   '01_tiled',
-                   '02a_lasground_new_coarse',
-                   '02b_lasground_new_fine',
-                   '03a_lasheight_coarse',
-                   '03b_lasheight_fine',
-                   '04a_lasclassify_coarse',
-                   '04b_lasclassify_fine',
-                   '05a_lastile_rm_buffer_coarse',
-                   '05b_lastile_rm_buffer_fine',
-                   '06a_separated_coarse',
-                   '06b_separated_fine',
-                   '07a_ground_clipped_coarse',
-                   '07b_ground_clipped_fine',
-                   '08_ground_merged',
-                   '10_veg_new_merged',
-                   '11_veg_new_clipped',
-                   '12_veg_merged'
-                   ]
+        outdirs = [
+            '00_separated',
+            '00_declassified',
+            '01_tiled',
+            '02a_lasground_new_coarse',
+            '02b_lasground_new_fine',
+            '03a_lasheight_coarse',
+            '03b_lasheight_fine',
+            '04a_lasclassify_coarse',
+            '04b_lasclassify_fine',
+            '05a_lastile_rm_buffer_coarse',
+            '05b_lastile_rm_buffer_fine',
+            '06a_separated_coarse',
+            '06b_separated_fine',
+            '07a_ground_clipped_coarse',
+            '07b_ground_clipped_fine',
+            '08_ground_merged',
+            '10_veg_new_merged',
+            '11_veg_new_clipped',
+            '12_veg_merged',
+        ]
 
     # make new directories for output from each step in processing
     for ind, outdir in enumerate(outdirs):
@@ -205,14 +221,16 @@ def process_lidar(lastoolsdir,
 
     # in each 'separated' folder, create subdirs for each class type
     if ground_poly != '':
-        sepdirs = [lidardir + '00_separated',
-                   lidardir + '06a_separated_coarse',
-                   lidardir + '06b_separated_fine'
-                   ]
+        sepdirs = [
+            lidardir + '00_separated',
+            lidardir + '06a_separated_coarse',
+            lidardir + '06b_separated_fine',
+        ]
     else:
-        sepdirs = [lidardir + '00_separated',
-                   lidardir + '06_separated'
-                   ]
+        sepdirs = [
+            lidardir + '00_separated',
+            lidardir + '06_separated',
+        ]
     for sepdir in sepdirs:
         for class_type in classes:
             class_dir = sepdir + '/' + class_type
@@ -231,7 +249,8 @@ def process_lidar(lastoolsdir,
     for path, subdirs, files in os.walk(lidardir):
         for name in files:
             if name.endswith('.las') or name.endswith('.laz'):
-                lidar_files.append(path + name)  # Used to have a '/' added between path and name
+                # Used to have a '/' added between path and name
+                lidar_files.append(path + name)
 
     if lidar_files == []:
         msg = 'No .las or .laz files in %s or its subdirectories' % lidardir
@@ -255,7 +274,8 @@ def process_lidar(lastoolsdir,
     lof = lof_text(lastoolsdir, lidardir + '00_declassified/')
 
     # call LAStools command to declassify points and get point density
-    cmd('%slasinfo.exe -lof %s -set_classification 1 -otxt -cd' % (lastoolsdir, lof))
+    cmd('%slasinfo.exe -lof %s -set_classification 1 -otxt -cd' %
+        (lastoolsdir, lof))
 
     logging.info('OK')
 
@@ -286,7 +306,7 @@ def process_lidar(lastoolsdir,
     # get point density for each .las file
     ds = []
     for filename in las_files(lidardir + '00_declassified/'):
-        ds.append(pd(filename))
+        ds.append(point_density(filename))
     # use max point density out of all files to determine tile size
     max_d = max(ds)
 
@@ -306,13 +326,15 @@ def process_lidar(lastoolsdir,
     logging.info('OK')
 
     # check to make sure tiles are small enough
-    logging.info('Checking if largest file has < 1.5M pts (to avoid licensing restrictions)...')
+    logging.info(
+        'Checking if largest file has < 1.5M pts (to avoid licensing restrictions)...')
     largest_file = get_largest(odir)
     num = pts(largest_file, lastoolsdir)
     if num < 1500000:
         logging.info('Largest file has %i points, tiles small enough.' % num)
     else:
-        logging.info('Tile size not small enough. Retrying with a smaller tile size...')
+        logging.info(
+            'Tile size not small enough. Retrying with a smaller tile size...')
         while num >= 1500000:
             # delete original set of tiles
             folder = odir
@@ -331,11 +353,13 @@ def process_lidar(lastoolsdir,
             cmd('%slastile.exe -lof %s -cores %i -o tile.las -tile_size %i -buffer 5 -faf -odir %s -olas' % (
                 lastoolsdir, lof, cores, tile_size, odir))
             # recheck largest tile number of points
-            logging.info('Checking if largest file has < 1.5M pts (to avoid licensing restrictions)...')
+            logging.info(
+                'Checking if largest file has < 1.5M pts (to avoid licensing restrictions)...')
             largest_file = get_largest(odir)
             num = pts(largest_file, lastoolsdir)
             if num >= 1500000:
-                logging.info('Tile size not small enough. Retrying with a smaller tile size...')
+                logging.info(
+                    'Tile size not small enough. Retrying with a smaller tile size...')
 
     logging.info('OK')
 
@@ -384,7 +408,7 @@ def process_lidar(lastoolsdir,
                 fine_spike,
                 fine_down_spike,
                 fine_offset,
-                odir
+                odir,
             )
         )
 
@@ -402,13 +426,15 @@ def process_lidar(lastoolsdir,
         lof = lof_text(lastoolsdir, lidardir + '02_lasground_new/')
         odir = lidardir + '03_lasheight/'
 
-    cmd('%slasheight.exe -lof %s -cores %i -odir %s -olas' % (lastoolsdir, lof, cores, odir))
+    cmd('%slasheight.exe -lof %s -cores %i -odir %s -olas' %
+        (lastoolsdir, lof, cores, odir))
 
     if ground_poly != '':
         lof = lof_text(lastoolsdir, lidardir + '02b_lasground_new_fine/')
         odir = lidardir + '03b_lasheight_fine/'
 
-        cmd('%slasheight.exe -lof %s -cores %i -odir %s -olas' % (lastoolsdir, lof, cores, odir))
+        cmd('%slasheight.exe -lof %s -cores %i -odir %s -olas' %
+            (lastoolsdir, lof, cores, odir))
 
     logging.info('OK')
 
@@ -424,7 +450,8 @@ def process_lidar(lastoolsdir,
         lof = lof_text(lastoolsdir, lidardir + '03_lasheight/')
         odir = lidardir + '04_lasclassify/'
 
-    cmd('%slasclassify.exe -lof %s -cores %i %s -odir %s -olas' % (lastoolsdir, lof, cores, units_code, odir))
+    cmd('%slasclassify.exe -lof %s -cores %i %s -odir %s -olas' %
+        (lastoolsdir, lof, cores, units_code, odir))
 
     logging.info('OK')
 
@@ -434,7 +461,8 @@ def process_lidar(lastoolsdir,
         lof = lof_text(lastoolsdir, lidardir + '03b_lasheight_fine/')
         odir = lidardir + '04b_lasclassify_fine/'
 
-        cmd('%slasclassify.exe -lof %s -cores %i %s -odir %s -olas' % (lastoolsdir, lof, cores, units_code, odir))
+        cmd('%slasclassify.exe -lof %s -cores %i %s -odir %s -olas' %
+            (lastoolsdir, lof, cores, units_code, odir))
 
         logging.info('OK')
 
@@ -451,14 +479,16 @@ def process_lidar(lastoolsdir,
         odir = lidardir + '05_lastile_rm_buffer/'
 
     cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
-    cmd('%slastile.exe -lof %s -cores %i -remove_buffer -odir %s -olas' % (lastoolsdir, lof, cores, odir))
+    cmd('%slastile.exe -lof %s -cores %i -remove_buffer -odir %s -olas' %
+        (lastoolsdir, lof, cores, odir))
 
     if ground_poly != '':
         lof = lof_text(lastoolsdir, lidardir + '04b_lasclassify_fine/')
         odir = lidardir + '05b_lastile_rm_buffer_fine/'
 
         cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
-        cmd('%slastile.exe -lof %s -cores %i -remove_buffer -odir %s -olas' % (lastoolsdir, lof, cores, odir))
+        cmd('%slastile.exe -lof %s -cores %i -remove_buffer -odir %s -olas' %
+            (lastoolsdir, lof, cores, odir))
 
     logging.info('OK')
 
@@ -508,10 +538,12 @@ def process_lidar(lastoolsdir,
     ##########################
     # clip ground data sets with ground polygon
     if ground_poly != '':
-        logging.info('Clipping ground points to inverse ground polygon on coarse setting...')
+        logging.info(
+            'Clipping ground points to inverse ground polygon on coarse setting...')
 
         # keep points outside ground polygon for coarse setting (-interior flag)
-        lof = lof_text(lastoolsdir, lidardir + '06a_separated_coarse' + '/' + '02-Ground' + '/')
+        lof = lof_text(lastoolsdir, lidardir +
+                       '06a_separated_coarse' + '/' + '02-Ground' + '/')
         odir = lidardir + '07a_ground_clipped_coarse/'
 
         cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
@@ -520,10 +552,12 @@ def process_lidar(lastoolsdir,
 
         logging.info('OK')
 
-        logging.info('Clipping ground points to ground polygon on fine setting...')
+        logging.info(
+            'Clipping ground points to ground polygon on fine setting...')
 
         # keep points inside ground polygon for fine setting
-        lof = lof_text(lastoolsdir, lidardir + '06b_separated_fine' + '/' + '02-Ground' + '/')
+        lof = lof_text(lastoolsdir, lidardir +
+                       '06b_separated_fine' + '/' + '02-Ground' + '/')
         odir = lidardir + '07b_ground_clipped_fine/'
 
         cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
@@ -548,7 +582,8 @@ def process_lidar(lastoolsdir,
     # just use new points
     elif ground_poly != '':
         logging.info('Merging new ground points...')
-        sources = [lidardir + '07a_ground_clipped_coarse/', lidardir + '07b_ground_clipped_fine/']
+        sources = [lidardir + '07a_ground_clipped_coarse/',
+                   lidardir + '07b_ground_clipped_fine/']
 
     if (keep_orig_pts == True) or (ground_poly != ''):
         lof = lof_text(lastoolsdir, sources)
@@ -571,7 +606,8 @@ def process_lidar(lastoolsdir,
         ground_results = odir
 
         cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
-        cmd('%slasduplicate.exe -lof %s -cores %i -lowest_z -odir %s -olas' % (lastoolsdir, lof, cores, odir))
+        cmd('%slasduplicate.exe -lof %s -cores %i -lowest_z -odir %s -olas' %
+            (lastoolsdir, lof, cores, odir))
 
         logging.info('OK')
 
@@ -579,7 +615,8 @@ def process_lidar(lastoolsdir,
     # merge new veg points
 
     if ground_poly != '':
-        logging.info('Merging new vegetation points from coarse and fine run...')
+        logging.info(
+            'Merging new vegetation points from coarse and fine run...')
 
         sources = [lidardir + '06a_separated_coarse' + '/' + '05-Vegetation' + '/',
                    lidardir + '06b_separated_fine' + '/' + '05-Vegetation' + '/']
@@ -613,10 +650,15 @@ def process_lidar(lastoolsdir,
     if (keep_orig_pts == True):
         logging.info('Merging new and original vegetation points...')
         if ground_poly != '':
-            sources = [lidardir + '11_veg_new_clipped/', lidardir + '00_separated' + '/' + '05-Vegetation' + '/']
+            sources = [
+                lidardir + '11_veg_new_clipped/',
+                lidardir + '00_separated' + '/' + '05-Vegetation' + '/',
+            ]
         else:
-            sources = [lidardir + '06_separated' + '/' + '05-Vegetation' + '/',
-                       lidardir + '00_separated' + '/' + '05-Vegetation' + '/']
+            sources = [
+                lidardir + '06_separated' + '/' + '05-Vegetation' + '/',
+                lidardir + '00_separated' + '/' + '05-Vegetation' + '/',
+            ]
     elif ground_poly != '':
         logging.info('Retiling new vegetation points...')
         sources = [lidardir + '11_veg_new_clipped/']
@@ -641,7 +683,8 @@ def process_lidar(lastoolsdir,
         odir = lidardir + '13_veg_rm_duplicates/'
         veg_results = odir
         cmd('%slasindex.exe -lof %s -cores %i' % (lastoolsdir, lof, cores))
-        cmd('%slasduplicate.exe -lof %s -cores %i -lowest_z -odir %s -olas' % (lastoolsdir, lof, cores, odir))
+        cmd('%slasduplicate.exe -lof %s -cores %i -lowest_z -odir %s -olas' %
+            (lastoolsdir, lof, cores, odir))
 
         logging.info('OK')
 
@@ -652,178 +695,3 @@ def process_lidar(lastoolsdir,
     logging.info(veg_results)
 
     return
-
-
-#####################################################################
-
-if __name__ == '__main__':
-    # initialize the logger
-    init_logger(__file__)
-
-    # make the GUI window
-    root = Tk()
-    root.wm_title('LiDAR Reprocessing App (based on LAStools)')
-
-    # specify relevant directories/files
-
-    L1 = Label(root, text='LAStools /bin/ directory:')
-    L1.grid(sticky=E, row=0, column=1)
-    E1 = Entry(root, bd=5)
-    E1.insert(END, '/'.join(sys.path[0].split('\\')[:-1]) + '/')
-    E1.grid(row=0, column=2)
-    b1 = Button(root, text='Browse', command=lambda: browse(root, E1, select='folder'))
-    b1.grid(sticky=W, row=0, column=3)
-
-    L2 = Label(root, text='LiDAR data directory:')
-    L2.grid(sticky=E, row=1, column=1)
-    E2 = Entry(root, bd=5)
-    E2.insert(END, '/'.join(sys.path[0].split('\\')[:-1]) + '/')
-    E2.grid(row=1, column=2)
-    b2 = Button(root, text='Browse', command=lambda: browse(root, E2, select='folder'))
-    b2.grid(sticky=W, row=1, column=3)
-
-    L3 = Label(root, text='Ground area .shp file (optional):')
-    shp_var = StringVar()
-    L3.grid(sticky=E, row=2, column=1)
-    E3 = Entry(root, bd=5, textvariable=shp_var)
-    E3.grid(row=2, column=2)
-    b3 = Button(root, text='Browse', command=lambda: browse(root, E3, select='file', ftypes=[('Shapefile', '*.shp'),
-                                                                                             ('All files', '*')]
-                                                            )
-                )
-    b3.grid(sticky=W, row=2, column=3)
-
-
-    # if no ground shapefile is provided, disable the fine setting and just run on "coarse"
-    def trace_choice(*args):
-        if shp_var.get() == '':
-            for widget in [E1b, E2b, E3b, E4b, E5b]:
-                widget.config(state=DISABLED)
-        else:
-            for widget in [E1b, E2b, E3b, E4b, E5b]:
-                widget.config(state='normal')
-
-
-    shp_var.trace('w', trace_choice)
-
-    # specify lasground_new parameters
-
-    root.grid_rowconfigure(5, minsize=80)
-
-    LC1 = Label(root, text='standard/coarse classification parameters:')
-    LC1.grid(row=5, column=0, columnspan=2)
-
-    L1a = Label(root, text='step size:')
-    L1a.grid(sticky=E, row=6)
-    E1a = Entry(root, bd=5)
-    E1a.grid(row=6, column=1)
-
-    L2a = Label(root, text='bulge:')
-    L2a.grid(sticky=E, row=7)
-    E2a = Entry(root, bd=5)
-    E2a.grid(row=7, column=1)
-
-    L3a = Label(root, text='spike:')
-    L3a.grid(sticky=E, row=8)
-    E3a = Entry(root, bd=5)
-    E3a.grid(row=8, column=1)
-
-    L4a = Label(root, text='down spike:')
-    L4a.grid(sticky=E, row=9)
-    E4a = Entry(root, bd=5)
-    E4a.grid(row=9, column=1)
-
-    L5a = Label(root, text='offset:')
-    L5a.grid(sticky=E, row=10)
-    E5a = Entry(root, bd=5)
-    E5a.grid(row=10, column=1)
-
-    LC2 = Label(root, text='fine classification parameters (in ground area):')
-    LC2.grid(row=5, column=2, columnspan=2)
-
-    L1b = Label(root, text='step size:')
-    L1b.grid(sticky=E, row=6, column=2)
-    E1b = Entry(root, bd=5, state=DISABLED)
-    E1b.grid(row=6, column=3)
-
-    L2b = Label(root, text='bulge:')
-    L2b.grid(sticky=E, row=7, column=2)
-    E2b = Entry(root, bd=5, state=DISABLED)
-    E2b.grid(row=7, column=3)
-
-    L3b = Label(root, text='spike:')
-    L3b.grid(sticky=E, row=8, column=2)
-    E3b = Entry(root, bd=5, state=DISABLED)
-    E3b.grid(row=8, column=3)
-
-    L4b = Label(root, text='down spike:')
-    L4b.grid(sticky=E, row=9, column=2)
-    E4b = Entry(root, bd=5, state=DISABLED)
-    E4b.grid(row=9, column=3)
-
-    L5b = Label(root, text='offset:')
-    L5b.grid(sticky=E, row=10, column=2)
-    E5b = Entry(root, bd=5, state=DISABLED)
-    E5b.grid(row=10, column=3)
-
-    # specify units
-    L5 = Label(root, text='Units')
-    L5.grid(sticky=W, row=11, column=2)
-    root.grid_rowconfigure(11, minsize=80)
-    unit_var = StringVar()
-    R5m = Radiobutton(root, text='Meters', variable=unit_var, value=' ')
-    R5m.grid(sticky=E, row=12, column=1)
-    R5f = Radiobutton(root, text='US Feet', variable=unit_var, value=' -feet -elevation_feet ')
-    R5f.grid(row=12, column=2)
-    unit_var.set(' ')
-
-    # specify number of cores
-    L4 = Label(root, text='Number of cores for processing')
-    L4.grid(sticky=E, row=13, column=1, columnspan=2)
-    root.grid_rowconfigure(13, minsize=80)
-    core_num = IntVar()
-    R1 = Radiobutton(root, text='1', variable=core_num, value=1)
-    R1.grid(sticky=E, row=14, column=1)
-    R2 = Radiobutton(root, text='2', variable=core_num, value=2)
-    R2.grid(row=14, column=2)
-    R4 = Radiobutton(root, text='4', variable=core_num, value=4)
-    R4.grid(sticky=W, row=14, column=3)
-    R8 = Radiobutton(root, text='8', variable=core_num, value=8)
-    R8.grid(sticky=E, row=15, column=1)
-    R16 = Radiobutton(root, text='16', variable=core_num, value=16)
-    R16.grid(row=15, column=2)
-    R32 = Radiobutton(root, text='32', variable=core_num, value=32)
-    R32.grid(sticky=W, row=15, column=3)
-    core_num.set(16)
-
-    L5 = Label(root, text='Keep original ground/veg points: ')
-    L5.grid(sticky=E, row=16, column=1)
-    keep_originals = BooleanVar()
-    C1 = Checkbutton(root, variable=keep_originals)
-    C1.grid(sticky=W, row=16, column=2)
-    keep_originals.set(True)
-
-    # make 'Run' button in GUI to call the process_lidar() function
-    b = Button(root, text='    Run    ', command=lambda: process_lidar(lastoolsdir=E1.get(),
-                                                                       lidardir=E2.get(),
-                                                                       ground_poly=E3.get(),
-                                                                       cores=core_num.get(),
-                                                                       units_code=unit_var.get()[1:-1],
-                                                                       keep_orig_pts=keep_originals.get(),
-                                                                       coarse_step=E1a.get(),
-                                                                       coarse_bulge=E2a.get(),
-                                                                       coarse_spike=E3a.get(),
-                                                                       coarse_down_spike=E4a.get(),
-                                                                       coarse_offset=E5a.get(),
-                                                                       fine_step=E1b.get(),
-                                                                       fine_bulge=E2b.get(),
-                                                                       fine_spike=E3b.get(),
-                                                                       fine_down_spike=E4b.get(),
-                                                                       fine_offset=E5b.get()
-                                                                       )
-               )
-
-    b.grid(sticky=W, row=17, column=2)
-    root.grid_rowconfigure(17, minsize=80)
-
-    root.mainloop()

@@ -1,9 +1,4 @@
 import os
-import pandas as pd
-import numpy as np
-import scipy.stats as stats
-import itertools
-import tkinter
 from tkinter import *
 from tkinter import messagebox
 from tkinter import filedialog
@@ -30,7 +25,7 @@ def cmd(command):
     """Executes command prompt command"""
     try:
         res = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except:
+    except Exception:
         msg = 'Command failed: %s' % command
         logger.error(msg)
         raise Exception(msg)
@@ -69,13 +64,13 @@ def browse(root, entry, select='file', ftypes=[('All files', '*')]):
 
 def err_info(func):
     """Wrapper to show error message when a command fails"""
+
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
         except Exception as e:
             logger.info(e)
             # showerror('Error', e)
-
     return wrapper
 
 
@@ -84,7 +79,6 @@ def spatial_license(func):
         arcpy.CheckOutExtension('Spatial')
         func(*args, **kwargs)
         arcpy.CheckInExtension('Spatial')
-
     return wrapper
 
 
@@ -170,8 +164,8 @@ def tableToCSV(input_table, csv_filepath, fld_to_remove_override=[], keep_fields
         for field in fld_to_remove_override:
             try:
                 fld_names.remove(field)
-            except:
-                "Can't delete field: %s" % field
+            except Exception:
+                print("Can't delete field: %s" % field)
 
     elif len(keep_fields) > 0:
         fld_names = [i for i in fld_names if i in keep_fields]
@@ -204,6 +198,8 @@ def delete_gis_files(file_loc):
 
     elif suffix == '.csv':
         suf_list = ['.csv']
+    else:
+        suf_list = []
 
     counter = 0
     for suf in suf_list:
@@ -225,7 +221,7 @@ def find_suffix(csv_location):
     Ex: C://documents//2p3ft_gcs_table.csv would return ft_gcs_table as a string"""
     base = os.path.basename(csv_location)
 
-    if str.isnumeric(base[0]) == True:
+    if str.isnumeric(base[0]):
         index = 0
         base_snip = base[0]
         while base_snip != 'f' and base_snip != 'm':
@@ -235,15 +231,16 @@ def find_suffix(csv_location):
         suffix = str(base[index:])
 
     else:
-        print(
-            'csv filename not suitable. Please have stage height and units in name at the start of the filename. Ex: 2p3ft_gcs_table.csv or 1m_gcs_table.csv')
-
+        raise FileNotFoundError(
+            'csv filename not suitable. Please have stage height and units in name at the start of the filename. '
+            'Ex: 2p3ft_gcs_table.csv or 1m_gcs_table.csv'
+        )
     return suffix
 
 
 def float_keyz_format(z):
-    '''This function takes a float key z argument and retrusn its equivalent formatted string.
-    ex: 5.3 -> 5p3, or 10.0 -> 10p0'''
+    """This function takes a float key z argument and returns its equivalent formatted string.
+    ex: 5.3 -> 5p3, or 10.0 -> 10p0"""
 
     z_str = ''
     if isinstance(z, float):
@@ -261,14 +258,13 @@ def float_keyz_format(z):
 def string_to_list(string, format=''):
     """Splits a string at each comma and produces a list. format parameter allows the type of the output to
     be designated"""
+    out_list = []
     if string != '':
         str_split = string.split(',')
         if format == 'int':
             out_list = [int(i) for i in str_split]
         elif format == 'float':
             out_list = [float(i) for i in str_split]
-    else:
-        out_list = []
     return out_list
 
 

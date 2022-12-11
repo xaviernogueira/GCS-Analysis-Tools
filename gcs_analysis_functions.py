@@ -2,7 +2,7 @@ import arcpy
 from arcpy import da
 import file_functions
 from file_functions import *
-import create_station_lines
+from create_station_lines import create_station_lines_function
 import statistics
 import pandas as pd
 import os
@@ -26,13 +26,16 @@ def clean_in_table(
         if replacement_name not in df.columns.tolist():
             if old_name in df.columns.tolist():
                 df.rename(columns={old_name: replacement_name})
-                logging.info('Renamed %s to %s in %s' % (old_name, replacement_name, table))
+                logging.info('Renamed %s to %s in %s' %
+                             (old_name, replacement_name, table))
             else:
-                logging.exception('Cannot find column named %s or %s in %s' % (old_name, replacement_name, table))
+                logging.exception('Cannot find column named %s or %s in %s' % (
+                    old_name, replacement_name, table))
 
     df.to_csv(table, index=False)
 
     return df
+
 
 def standardize(
     table: pd.DataFrame,
@@ -40,7 +43,7 @@ def standardize(
 ) -> pd.DataFrame:
     """Makes standardized version of field in csv table by subtracting each value by mean and dividing by standard deviation.
     Creates a new column Ws_Zs storing C(Ws,Zs) values"""
-    
+
     check_use(table)
     df = pd.read_csv(table)
 
@@ -50,12 +53,14 @@ def standardize(
         df[new_field] = (df[f] - np.mean(df[f])) * 1.0 / np.std(df[f])
         s_fields.append(new_field)
 
-    df['%s_%s' % (s_fields[0], s_fields[1])] = df[s_fields[0]] * df[s_fields[1]]
-    
+    df['%s_%s' % (s_fields[0], s_fields[1])
+       ] = df[s_fields[0]] * df[s_fields[1]]
+
     return df.to_csv(
         table,
         index=False,
     )
+
 
 def landforms(
     table: pd.DataFrame,
@@ -70,7 +75,8 @@ def landforms(
     check_use(table)
     df = pd.read_csv(table)
 
-    df['normal'] = [zs * ws if abs(zs) <= 0.5 or abs(ws) <= 0.5 else na for zs, ws in zip(df[zs_field], df[ws_field])]
+    df['normal'] = [zs * ws if abs(zs) <= 0.5 or abs(ws) <=
+                    0.5 else na for zs, ws in zip(df[zs_field], df[ws_field])]
     df['wide_bar'] = [zs * ws if (zs > 0.5 and ws > 0.5) else na for zs, ws in
                       zip(df[zs_field], df[ws_field])]
     df['const_pool'] = [zs * ws if (zs < -0.5 and ws < -0.5) else na for zs, ws in
@@ -82,10 +88,10 @@ def landforms(
 
     df['code'] = [-2 if df['oversized'][i] != na
                   else -1 if df['const_pool'][i] != na
-    else 0 if df['normal'][i] != na
-    else 1 if df['wide_bar'][i] != na
-    else 2 if df['nozzle'][i] != na
-    else 0
+                  else 0 if df['normal'][i] != na
+                  else 1 if df['wide_bar'][i] != na
+                  else 2 if df['nozzle'][i] != na
+                  else 0
                   # Was na, but since for whatever reason normal channel is not mutually exclusive, we are going to hard code this as 0
                   for i in range(len(df))
                   ]
@@ -115,13 +121,14 @@ def main_classify_landforms(
             adds these computed values to attribute tables of corresponding wetted polygon rectangular XS's
     """
     logging.info('Classifying landforms...')
-    #TODO: verify this behavior
+    # TODO: verify this behavior
     out_polys = []
     fields = [w_field, z_field]
 
     for i in range(len(tables)):
         table = tables[i]
-        clean_in_table(table, w_field=w_field, z_field=z_field, dist_field=dist_field)
+        clean_in_table(table, w_field=w_field,
+                       z_field=z_field, dist_field=dist_field)
         standardize(table, fields=fields)
         landforms(table)
 
@@ -191,7 +198,7 @@ def extract_gcs(
             wetted_dir + '\\wetted_poly_%s.shp' % label,
             temp_files + '\\%s_centerline_XS.shp' % label,
             lines_dir + '\\%s_centerline.shp' % label,
-            ]
+        ]
 
         xs_length = xs_lengths[i]
 
@@ -205,7 +212,8 @@ def extract_gcs(
                     arcpy.Rename_management(file, no_clip_name)
                     del_files.append(no_clip_name)
                 except PermissionError:
-                    print('Permission Error: Could not rename %s file likely because it does not exist or is open' % file)
+                    print(
+                        'Permission Error: Could not rename %s file likely because it does not exist or is open' % file)
 
                 if j != 1:
                     arcpy.Clip_analysis(
@@ -214,7 +222,7 @@ def extract_gcs(
                         out_feature_class=file,
                     )
 
-        create_station_lines.create_station_lines_function(
+        create_station_lines_function(
             in_list[2],
             spacing,
             xs_length,
@@ -308,7 +316,7 @@ def extract_gcs(
             [["LOCATION", "Ascending"]],
         )
         arcpy.Delete_management(no_sort)
-        
+
         width_poly = arcpy.Rename_management(
             width_poly_loc.replace('.shp', '_s.shp'),
             width_poly_loc,
@@ -346,8 +354,9 @@ def extract_gcs(
                     expression,
                     "PYTHON3",
                 )
-        except IndexError: raise ValueError(
-            'Error: Cross-section series not longer than 20, cant establish which side is upstream.'
+        except IndexError:
+            raise ValueError(
+                'Error: Cross-section series not longer than 20, cant establish which side is upstream.'
             )
 
         # Convert width polygon attribute table to a csv and classify landforms
@@ -415,24 +424,27 @@ def prep_locations(
     arcpy.env.extent = detrended_raster
     del_files = []
 
-    #TODO: get these functions working
+    # TODO: get these functions working
     centerline_nums = find_centerline_nums(detrend_folder)
     spacing = find_xs_spacing(detrend_folder)
 
     for num in centerline_nums:
-        line_loc = ('%s\\stage_centerline_%sft_DS.shp' % (centerline_folder, num))
-        station_lines = create_station_lines.create_station_lines_function(
+        line_loc = ('%s\\stage_centerline_%sft_DS.shp' %
+                    (centerline_folder, num))
+        station_lines = create_station_lines_function(
             line_loc,
             spacing=spacing,
             xs_length=5,
             stage=[],
         )
-        station_lines = centerline_folder + ('\\stage_centerline_%sft_DS_XS_%sx5ft.shp' % (num, spacing))
+        station_lines = centerline_folder + \
+            ('\\stage_centerline_%sft_DS_XS_%sx5ft.shp' % (num, spacing))
         del_files.append(station_lines)
 
         station_points = arcpy.Intersect_analysis(
             [station_lines, line_loc],
-            out_feature_class=(centerline_folder + "\\station_points_%sft.shp" % num),
+            out_feature_class=(centerline_folder +
+                               "\\station_points_%sft.shp" % num),
             join_attributes="ALL",
             output_type="POINT",
         )
@@ -460,7 +472,8 @@ def prep_locations(
             for field in [('loc_%sft' % num), 'FID', 'Shape']:
                 try:
                     del_fields.remove(field)
-                except KeyError: print("Can't delete field: %s" % field)
+                except KeyError:
+                    print("Can't delete field: %s" % field)
             arcpy.DeleteField_management(
                 theis_loc,
                 del_fields,
@@ -477,14 +490,16 @@ def prep_locations(
             max_count = counter
         if counter == 1:
             arcpy.Identity_analysis(
-                centerline_folder + "\\station_points_%sft.shp" % min(centerline_nums),
+                centerline_folder +
+                "\\station_points_%sft.shp" % min(centerline_nums),
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
             )
         elif counter > 1:
             arcpy.Identity_analysis(
-                centerline_folder + ("\\align_points%s.shp" % (int(counter - 1))),
+                centerline_folder + ("\\align_points%s.shp" %
+                                     (int(counter - 1))),
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
@@ -523,7 +538,8 @@ def prep_locations(
     )
 
     if flip:
-        loc_fields = [j for j in list(out_aligned_df.columns.values) if j[:3] == 'loc']
+        loc_fields = [j for j in list(
+            out_aligned_df.columns.values) if j[:3] == 'loc']
         loc_nums = []
 
         for loc_field in loc_fields:
@@ -531,7 +547,7 @@ def prep_locations(
                 loc_nums.append(loc_field[4])
             else:
                 loc_nums.append(loc_field[4:6])
-            
+
             temp_max = np.nanmax(out_aligned_df.loc[:, loc_field].to_numpy())
             dist_list = out_aligned_df.loc[:, [loc_field]].squeeze().to_list()
 
