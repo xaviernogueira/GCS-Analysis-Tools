@@ -5,8 +5,8 @@ process of multi-flow stage GCS analysis.
 ### Package contents
 - Graphic user interface executable script (`gcs_gui.py`)
 - Python files defining GUI implemented function/methods
-- Copy of RapidLasso's [LAStools software](http://lastools.org/) `.exe` command line executables.
-- Copy of ['Breeze' GUI theme](https://github.com/MaxPerl/ttk-Breeze)
+- Copy of RapidLasso's [LAStools software](http://lastools.org/) `.exe` command line executables (`LAStools/`).
+- Copy of ['Breeze' GUI theme](https://github.com/MaxPerl/ttk-Breeze) (`ttk-Breeze-master/`)
 
 ### Pre-requisite packages
 - `arcpy` (+ Spatial Analyst licence) -- Comes with the ArcPro Python 3 default environment. 
