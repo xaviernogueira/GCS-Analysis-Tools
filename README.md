@@ -1,6 +1,8 @@
 ## Geomorphic Covariance Structure (GCS) analysis GUI
 The `gcs_gui.py` script in this package when ran will pull up a graphical-user interface / GUI that simplifies the
-process of multi-flow stage GCS analysis.
+process of multi-flow stage GCS analysis. 
+
+For more information on GCS analysis please reference my PI Gregory Pasternack's [video](https://www.youtube.com/watch?v=VSMK72FbTfI) which is part of a series introducing the topic. To see real-world outputs of this software within an appropriate scientific context please reference [this recording](https://www.youtube.com/watch?v=fp1Nag4kN7s) of my graduate/MS exit seminar.
 
 ### Package contents
 - **Graphic User Interface (GUI) executable script (`gcs_gui.py`)**
