@@ -1,8 +1,8 @@
 import arcpy
-from arcpy import env
 import os
 import pandas
 import pandas as pd
+from typing import List, Tuple, Union
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -10,7 +10,10 @@ import numpy as np
 ######################################################################
 
 
-def prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value']):
+def prep_xl_file(
+    xyz_csv: str,
+    in_columns: List[str] = ['LOCATION', 'POINT_X', 'POINT_Y', 'Value'],
+) -> Tuple[np.array, np.array, str]:
     """"This function takes the .csv file exported during detrending prep and returns arrays representing the longitudinal
     thalweg elevation profile.
     Returns: (List) [array of distance downstream, array of thalweg z values, the original xyz csv file]"""
@@ -23,11 +26,16 @@ def prep_xl_file(xyz_csv, in_columns=['LOCATION', 'POINT_X', 'POINT_Y', 'Value']
     location = np.int_(list_of_lists[0])
     z = np.around(list_of_lists[-1], 9)
 
-    return [location, z, xyz_csv]
+    return (location, z, xyz_csv)
 
 
-def linear_fit(location_np, z_np, xyz_table_loc, bp_list=[]):
-    # Applies a linear fit to piecewise sections of the longitudinal profile, each piece is stored in split_list
+def linear_fit(
+    location_np: np.array,
+    z_np: np.array,
+    xyz_table_loc: str,
+    bp_list: List[Union[int, float, None]] = [],
+) -> Tuple[List[List[float]], np.array, np.array, float]:
+    """Applies a linear fit to piecewise sections of the longitudinal profile, each piece is stored in split_list"""
 
     print("Applying linear fit...")
 
@@ -128,20 +136,25 @@ def linear_fit(location_np, z_np, xyz_table_loc, bp_list=[]):
     residual = np.array(residual)
     print('Done')
 
-    return [fit_params, z_fit, residual, r_squared]
+    return (fit_params, z_fit, residual, r_squared)
 
 
-def detrend_that_raster(xyz_csv, in_dem, aoi_shp=''):
+def detrend_that_raster(
+    xyz_csv: str,
+    in_dem: str,
+    aoi_shp: str = '',
+) -> str:
     """Generates a detrended DEM from a the fitted xyz .csv file and an input .tif dem"""
     # Set up directory structure and environment
     out_dir = os.path.dirname(xyz_csv)
     temp_files = out_dir + '\\temp_files'
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
+
     arcpy.env.workspace = temp_files
+    arcpy.overwriteoutput = True
 
     out_dem = out_dir + '\\ras_detren.tif'
-    arcpy.overwriteoutput = True
     spatial_ref = arcpy.Describe(in_dem).spatialReference
     arcpy.env.extent = arcpy.Describe(in_dem).extent
 
@@ -207,9 +220,13 @@ def detrend_that_raster(xyz_csv, in_dem, aoi_shp=''):
 # Define plotting functions
 ######################################################################
 
-def diagnostic_quick_plot(location_np, z_np, out_dir):
+def diagnostic_quick_plot(
+    location_np: np.array,
+    z_np: np.array,
+    out_dir: str,
+) -> str:
     """Generates a basic plot showing the thalweg elevation profile.
-    Inputs: Numpy array of distance downstream, thalweg z values. A folder where plots can be saved (sub-folder generated)."""
+    A folder where plots can be saved (sub-folder generated)."""
     x_plot = location_np
     y_plot = z_np
     plt.plot(x_plot, y_plot, 'r', label='Thalweg elevation profile')
@@ -232,14 +249,25 @@ def diagnostic_quick_plot(location_np, z_np, out_dir):
     # Save plot, return address
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
+
     out_png = out_dir + '\\thalweg_z_plot.png'
-    plt.savefig(out_png, dpi=300, bbox_inches='tight')
+    plt.savefig(
+        out_png,
+        dpi=300,
+        bbox_inches='tight',
+    )
     plt.cla()
 
     return out_png
 
 
-def linear_fit_plot(location_np, z_np, fit_params, fit_np, out_dir):
+def linear_fit_plot(
+    location_np: np.array,
+    z_np: np.array,
+    fit_params: List[List[float]],
+    fit_np: np.array,
+    out_dir: str,
+) -> str:
     """Generates a plot showing linear fit models between breakpoints
     Inputs: Numpy array of distance downstream, thalweg z values. List of fit parameters output from detrending function.
     A folder where plots can be saved (sub-folder generated)."""
@@ -283,7 +311,12 @@ def linear_fit_plot(location_np, z_np, fit_params, fit_np, out_dir):
     return out_png
 
 
-def make_residual_plot(location_np, residual_np, r2, out_dir):
+def make_residual_plot(
+    location_np: np.array,
+    residual_np: np.array,
+    r2: float,
+    out_dir: str,
+) -> str:
     """Plots residuals across the longitudinal profile, shows the R^2 value. Outlier values removed for view-ability.
     Inputs: Numpy arrays of distance downstream and fit residuals. A R-squared value (float).
     A folder where plots can be saved (sub-folder generated).
@@ -322,7 +355,11 @@ def make_residual_plot(location_np, residual_np, r2, out_dir):
     return out_png
 
 
-def fit_params_txt(fit_params, bp_list, out_dir):
+def fit_params_txt(
+    fit_params: List[List[float]],
+    bp_list: List[Union[int, float]],
+    out_dir: str,
+) -> str:
     """Generates a text file in the same folder as the detrending plots that lists applied linear fit equations"""
 
     # Create .txt file and copy breakpoint list

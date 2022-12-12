@@ -1444,7 +1444,7 @@ class GCSGraphicUserInterface(tk.Frame):
                 os.makedirs(out_dir)
 
             # make arrays. Save and display (pop up) the thalweg elevation plot
-            out_list = prep_xl_file(
+            out_tuple = prep_xl_file(
                 xyz_csv,
                 in_columns=[
                     'LOCATION',
@@ -1477,7 +1477,7 @@ class GCSGraphicUserInterface(tk.Frame):
             )
 
             # apply linear fit to input csv
-            out_list = prep_xl_file(
+            out_tuple = prep_xl_file(
                 xyz_csv,
                 in_columns=[
                     'LOCATION',

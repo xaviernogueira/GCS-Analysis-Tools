@@ -1,26 +1,28 @@
 import logging
-import arcpy
-from arcpy import env
-from arcpy.sa import *
 import pandas as pd
 import numpy as np
+from typing import Union
+import arcpy
+from arcpy.sa import Raster, Filter, Con, CreateConstantRaster, MajorityFilter
 from file_functions import table_to_csv, delete_gis_files, cmd
 from create_centerline import make_centerline
 from create_station_lines import create_station_lines_function
 import os
-from os import listdir
-from os.path import isfile, join
 import shutil
 
 
-def lidar_footprint(lasbin, lidardir, spatialref_shp):
+def lidar_footprint(
+    lasbin: str,
+    lidardir: str,
+    spatialref_shp: str,
+) -> arcpy.FeatureClass:
     """This function converts LAZ files to LAS file format as well as producing a LiDAR extent polygon.
     in_folder must be a directory containing nothing but raw LAZ files
     spatial_ref must be an ArcGIS spatial reference object with units of feet.
     las_tools_bin must be the location of the 'bin' folder installed with LAStools by rapidlasso
     Returns: A shapefile w/ LiDAR coverage to be used to make a ground polygon for LAStools processing"""
-    files_in_direct = [f for f in listdir(
-        lidardir) if isfile(join(lidardir, f))]
+    files_in_direct = [f for f in os.listdir(
+        lidardir) if os.path.isfile(os.path.join(lidardir, f))]
 
     laspath = lidardir + '\\las_files'
 
@@ -53,8 +55,8 @@ def lidar_footprint(lasbin, lidardir, spatialref_shp):
                 print("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
                       (lasbin, laspath, f[:-4], laspath, f[:-4]))
 
-        files_in_laspath = [f for f in listdir(
-            laspath) if isfile(join(laspath, f))]
+        files_in_laspath = [f for f in os.listdir(
+            laspath) if os.path.isfile(os.path.join(laspath, f))]
 
         # Delete unnecessary index files
         for f in files_in_laspath:
@@ -82,7 +84,13 @@ def lidar_footprint(lasbin, lidardir, spatialref_shp):
     return lidar_footprint
 
 
-def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_shp):
+def define_ground_polygon(
+    lidar_footprint: str,
+    lidardir: str,
+    naipdir: str,
+    ndvi_thresh: float,
+    aoi_shp: str,
+) -> arcpy.FeatureClass:
     """This function takes the defined lidar footprint from the lidar_footprint() function, as well as a defined NAIP imagery location (in .jpg2)
     and makes a polygon of vegeation using a NDVI threshold of >0.4. This polygon is erased from the lidar footprint to give a ground_polygon used
     to define processing settings"""
@@ -92,7 +100,8 @@ def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_s
     in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
 
     # Find NAIP imagery in folder
-    naip_imagery = [f for f in listdir(naipdir) if isfile(join(naipdir, f))]
+    naip_imagery = [f for f in os.listdir(
+        naipdir) if os.path.isfile(os.path.join(naipdir, f))]
 
     # Initiate temp files folder
     temp_files = lidardir + '\\temp_files'
@@ -158,7 +167,7 @@ def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_s
         ndvi_ras = ((nir_ras - red_ras) / (nir_ras + red_ras))
         ndvi_ras.save(ndvi)
 
-        veg_ras_raw = Con(arcpy.sa.Raster(ndvi) >= ndvi_thresh, 1)
+        veg_ras_raw = Con(Raster(ndvi) >= ndvi_thresh, 1)
         veg_ras_raw.save(temp_files + "\\veg_ras_raw.tif")
 
         veg_ras = MajorityFilter(
@@ -207,9 +216,18 @@ def define_ground_polygon(lidar_footprint, lidardir, naipdir, ndvi_thresh, aoi_s
 
     except arcpy.ExecuteError:
         print(arcpy.GetMessages())
+    return ground_poly
 
 
-def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, void_meth, m_cell_size=1):
+def lidar_to_raster(
+    lidardir: str,
+    spatialref_shp: str,
+    aoi_shp: str,
+    sample_meth: str,
+    tri_meth: str,
+    void_meth: str,
+    m_cell_size: Union[float, int] = 1,
+) -> str:
     """Converts processed LAS files to a LAS dataset, and then to a raster with cell size of 1m
     Args: Folder containing LAS files, desired cell size in meters (default is 1m), and ft spatial reference
     Returns: Raster name for use in detrending """
@@ -291,7 +309,15 @@ def lidar_to_raster(lidardir, spatialref_shp, aoi_shp, sample_meth, tri_meth, vo
     return out_dem
 
 
-def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1, centerline_verified=False):
+def detrend_prep(
+    dem: str,
+    flow_poly: str,
+    aoi_shp: str,
+    filt_passes: int,
+    smooth_dist: Union[int, float],
+    m_spacing: Union[int, float] = 1,
+    centerline_verified: bool = False,
+) -> str:
     """This function takes the Lidar raster, creates a least-cost thalweg centerline from a smoothed raster. Station points are
     generated along the centerline at defined spacing (1/20th of channel width is a starting point) which are given the values of the lidar raster.
 
@@ -322,11 +348,11 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
         print('Generating smooth thalweg centerline...')
         print("Smoothing DEM w/ %sx low pass filters..." % filt_passes)
         ticker = 0
-        filter_out = arcpy.sa.Filter(dem, "LOW")
+        filter_out = Filter(dem, "LOW")
         filter_out.save(temp_files + "\\filter_out%s" % ticker)
 
         while ticker < filt_passes:  # Apply an iterative low pass filter 15x to the raster to smooth the topography
-            filter_out = arcpy.sa.Filter(
+            filter_out = Filter(
                 (temp_files + "\\filter_out%s" % ticker),
                 "LOW",
             )
@@ -360,7 +386,7 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
             if os.path.exists(file):
                 try:
                     shutil.rmtree(file)
-                except:
+                except Exception:
                     print("Could not remove %s " % file)
             else:
                 print("Path %s does not exist and can't be deleted...")

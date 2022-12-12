@@ -278,4 +278,4 @@ def get_label_units(projected_file) -> Tuple[str, str, arcpy.SpatialReference]:
     else:
         u = 'ft'
 
-    return [u, unit, spatial_ref]
+    return (u, unit, spatial_ref)

@@ -1,9 +1,8 @@
 import os
 import numpy as np
-from typing import Union
+from typing import Union, List
 from matplotlib import pyplot as plt
-from arcpy import Dissolve_management, SmoothLine_cartography, AddField_management, \
-    RasterToPolygon_conversion, CopyFeatures_management, PolygonToCenterline_topographic, Describe
+import arcpy
 from arcpy.sa import Raster, Con, BoundaryClean, MajorityFilter
 from arcpy.da import SearchCursor
 from file_functions import get_label_units, string_to_list
@@ -83,7 +82,7 @@ def prep_small_inc(
             clip_ras.save(temp_names[1])
 
             # Turn the wetted area raster into a polygon, delete intermediate rasters
-            RasterToPolygon_conversion(
+            arcpy.RasterToPolygon_conversion(
                 in_raster=wetted_ras,
                 out_polygon_features=out_name,
                 simplify=False,
@@ -92,7 +91,11 @@ def prep_small_inc(
     return out_dir
 
 
-def pdf_cdf_plotting(in_dir, out_folder, max_stage):
+def pdf_cdf_plotting(
+    in_dir: str,
+    out_folder: str,
+    max_stage: Union[float, int],
+) -> List[str]:
     """Doc string goes here
     Returns: A list containing the locations of the three generated wetted area plots"""
     print('Wetted area vs stage height analysis initiated...')
@@ -249,7 +252,7 @@ def stage_centerlines(dem, zs, drafting=True):
     print(messages[0])
 
     # set up units string
-    spatial_ref = Describe(dem).spatialReference
+    spatial_ref = arcpy.Describe(dem).spatialReference
     unit = spatial_ref.linearUnitName
     if unit == 'Meter':
         u = 'm'
@@ -272,20 +275,20 @@ def stage_centerlines(dem, zs, drafting=True):
             bc = BoundaryClean(mf)
 
             temp_poly = temp_files + '\\sp%s.shp' % i  # smoothed polygon
-            RasterToPolygon_conversion(bc, temp_poly)
+            arcpy.RasterToPolygon_conversion(bc, temp_poly)
 
             w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
             rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
 
             spurs = str(
-                PolygonToCenterline_topographic(
+                arcpy.PolygonToCenterline_topographic(
                     temp_poly,
                     w_spurs,
                 ),
             )
             remove_spurs(spurs, spur_length=spur_lim)
 
-            CopyFeatures_management(rm_spur, out_name)
+            arcpy.CopyFeatures_management(rm_spur, out_name)
             drafts.append(out_name)
 
         print(
@@ -301,18 +304,18 @@ def stage_centerlines(dem, zs, drafting=True):
                 os.path.basename(draft).replace('_draft.shp', 'diss.shp')
 
             # make into multipart, then slightly smooth
-            Dissolve_management(
+            arcpy.Dissolve_management(
                 draft,
                 diss,
                 dissolve_field='ObjectID',
             )
-            SmoothLine_cartography(
+            arcpy.SmoothLine_cartography(
                 diss,
                 out_name,
                 'PAEK',
                 smooth,
             )
-            AddField_management(
+            arcpy.AddField_management(
                 out_name,
                 'Id',
                 'Short',
