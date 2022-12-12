@@ -1,16 +1,19 @@
-import arcpy
-import numpy
-import numpy as np
-from arcpy import env
-from arcpy.sa import *
 import os
+import numpy as np
+from typing import Union
 from matplotlib import pyplot as plt
-import file_functions
-from file_functions import *
-import create_centerline
+from arcpy import Dissolve_management, SmoothLine_cartography, AddField_management, \
+    RasterToPolygon_conversion, CopyFeatures_management, PolygonToCenterline_topographic, Describe
+from arcpy.sa import Raster, Con, BoundaryClean, MajorityFilter
+from arcpy.da import SearchCursor
+from file_functions import get_label_units, string_to_list
+from create_centerline import remove_spurs
 
 
-def float_keyz_format(z, n=1):
+def float_keyz_format(
+    z: float,
+    n: int = 1,
+) -> str:
     """This function takes a float key z argument and retrusn its equivalent formatted string.
     ex: 5.3 -> 5p3, or 10.0 -> 10p0
     If the n parameter (default=1) is altered, more digits past the decimal as converted"""
@@ -28,7 +31,10 @@ def float_keyz_format(z, n=1):
         print('Key z list parameters not valid. Please fill list with int or float.')
 
 
-def prep_small_inc(detrended_dem, max_stage):
+def prep_small_inc(
+    detrended_dem: str,
+    max_stage: Union[float, int],
+) -> str:
     """IN: Folder containing detrended DEM ras_detren.tif, an stage interval length, a maximum flood stafe height.
     RETURNS: Directory with wetted polygons"""
     # Set up an out directory for wetted area polygons
@@ -44,7 +50,7 @@ def prep_small_inc(detrended_dem, max_stage):
         os.makedirs(int_files)
 
     # Use detrended dem spatial reference to determine stage intervals
-    u, unit, spatial_ref = file_functions.get_label_units(detrended_dem)
+    u, unit, spatial_ref = get_label_units(detrended_dem)
 
     if unit == 'Meter':
         interval = 0.03
@@ -60,7 +66,7 @@ def prep_small_inc(detrended_dem, max_stage):
 
     # Make wetted area polygons at 0.1ft / 0.03m intervals
     print('Making wetted polygons...')
-    in_ras = arcpy.sa.Raster(detrended_dem)
+    in_ras = Raster(detrended_dem)
 
     for inc in stages:
         inc_str = float_keyz_format(inc, n)
@@ -71,14 +77,17 @@ def prep_small_inc(detrended_dem, max_stage):
         # Only generate polygons that have not already been generated
         if not os.path.exists(out_name):
             # Create intermediate rasters and detrended dems clipped at each wetted interval
-            wetted_ras = arcpy.sa.Con(in_ras <= inc, 1)
-            clip_ras = arcpy.sa.Con(in_ras <= inc, in_ras)
+            wetted_ras = Con(in_ras <= inc, 1)
+            clip_ras = Con(in_ras <= inc, in_ras)
             wetted_ras.save(temp_names[0])
             clip_ras.save(temp_names[1])
 
             # Turn the wetted area raster into a polygon, delete intermediate rasters
-            arcpy.RasterToPolygon_conversion(
-                in_raster=wetted_ras, out_polygon_features=out_name, simplify=False)
+            RasterToPolygon_conversion(
+                in_raster=wetted_ras,
+                out_polygon_features=out_name,
+                simplify=False,
+            )
 
     return out_dir
 
@@ -111,7 +120,7 @@ def pdf_cdf_plotting(in_dir, out_folder, max_stage):
     print('Calculating wetted areas...')
     for poly in wetted_polys:
         poly_area = 0
-        for row in arcpy.da.SearchCursor(poly, ["SHAPE@AREA"]):
+        for row in SearchCursor(poly, ["SHAPE@AREA"]):
             poly_area += float(row[0])
         wetted_areas.append(poly_area)
 
@@ -240,7 +249,7 @@ def stage_centerlines(dem, zs, drafting=True):
     print(messages[0])
 
     # set up units string
-    spatial_ref = arcpy.Describe(dem).spatialReference
+    spatial_ref = Describe(dem).spatialReference
     unit = spatial_ref.linearUnitName
     if unit == 'Meter':
         u = 'm'
@@ -259,24 +268,24 @@ def stage_centerlines(dem, zs, drafting=True):
             in_name = wetted_dir + '\\noval_%s%s.tif' % (z_str, u)
             out_name = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
 
-            mf = arcpy.sa.MajorityFilter(in_name, 'EIGHT')
-            bc = arcpy.sa.BoundaryClean(mf)
+            mf = MajorityFilter(in_name, 'EIGHT')
+            bc = BoundaryClean(mf)
 
             temp_poly = temp_files + '\\sp%s.shp' % i  # smoothed polygon
-            arcpy.RasterToPolygon_conversion(bc, temp_poly)
+            RasterToPolygon_conversion(bc, temp_poly)
 
             w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
             rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
-            
+
             spurs = str(
-                arcpy.PolygonToCenterline_topographic(
+                PolygonToCenterline_topographic(
                     temp_poly,
                     w_spurs,
                 ),
             )
-            create_centerline.remove_spurs(spurs, spur_length=spur_lim)
+            remove_spurs(spurs, spur_length=spur_lim)
 
-            arcpy.CopyFeatures_management(rm_spur, out_name)
+            CopyFeatures_management(rm_spur, out_name)
             drafts.append(out_name)
 
         print(
@@ -292,18 +301,18 @@ def stage_centerlines(dem, zs, drafting=True):
                 os.path.basename(draft).replace('_draft.shp', 'diss.shp')
 
             # make into multipart, then slightly smooth
-            arcpy.Dissolve_management(
+            Dissolve_management(
                 draft,
                 diss,
                 dissolve_field='ObjectID',
             )
-            arcpy.SmoothLine_cartography(
+            SmoothLine_cartography(
                 diss,
                 out_name,
                 'PAEK',
                 smooth,
             )
-            arcpy.AddField_management(
+            AddField_management(
                 out_name,
                 'Id',
                 'Short',
