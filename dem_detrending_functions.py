@@ -5,6 +5,7 @@ import pandas as pd
 from typing import List, Tuple, Union
 from matplotlib import pyplot as plt
 import numpy as np
+from file_functions import err_info, spatial_license
 
 # Define detrending functions
 ######################################################################
@@ -138,7 +139,8 @@ def linear_fit(
 
     return (fit_params, z_fit, residual, r_squared)
 
-
+@err_info
+@spatial_license
 def detrend_that_raster(
     xyz_csv: str,
     in_dem: str,

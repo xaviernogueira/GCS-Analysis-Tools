@@ -11,7 +11,7 @@ from dem_detrending_functions import fit_params_txt, make_residual_plot, linear_
     diagnostic_quick_plot, detrend_that_raster, linear_fit, prep_xl_file
 from wetted_area_functions import prep_small_inc, pdf_cdf_plotting, stage_centerlines
 from gcs_analysis_functions import extract_gcs
-from file_functions import string_to_list
+from file_functions import string_to_list, init_logger
 from arcpy import HillShade_3d
 
 
@@ -21,7 +21,7 @@ class GCSGraphicUserInterface(tk.Frame):
     def __init__(
             self,
             master=None,
-    ):
+    ) -> None:
 
         # Initialize the tk frame that will hold all tabs holding each processing step
         tk.Frame.__init__(
@@ -2635,4 +2635,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
 
 if __name__ == '__main__':
+    # initialize the logger
+    init_logger(__file__)
+
     GCSGraphicUserInterface().mainloop()

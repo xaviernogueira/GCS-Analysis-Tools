@@ -5,6 +5,7 @@ from file_functions import *
 from create_station_lines import create_station_lines_function
 import statistics
 import pandas as pd
+import numpy as np
 import os
 from typing import List, Union
 
@@ -106,7 +107,7 @@ def main_classify_landforms(
     w_field: str,
     z_field: str,
     dist_field: str
-):
+) -> List[str]:
     """Classifies river segments as normal, wide bar, constricted pool, oversized, or nozzle
 
     Args:
@@ -140,7 +141,7 @@ def main_classify_landforms(
 # Main function that conducts GCS analysis
 ############################################
 
-
+@err_info
 def extract_gcs(
     detrended_dem: str,
     zs: Union[str, List[Union[int, float]]],
@@ -361,11 +362,13 @@ def extract_gcs(
 
         # Convert width polygon attribute table to a csv and classify landforms
         csv_loc = out_dir + "\\%s_gcs_table.csv" % label
+
         table_to_csv(
             width_poly,
             csv_filepath=csv_loc,
             fld_to_remove_override=[],
         )
+
         df = pd.read_csv(csv_loc)
         df.rename(
             {
@@ -381,6 +384,7 @@ def extract_gcs(
             by=['dist_down'],
             inplace=True,
         )
+
         df = df[['location', 'dist_down', 'Z_no_detrend', 'W', 'Z']]
         df.to_csv(csv_loc)
 
@@ -391,8 +395,10 @@ def extract_gcs(
             z_field='Z',
             dist_field='dist_down',
         )
+
         gcs_df = pd.read_csv(csv_loc)
         gcs_df.to_csv(csv_loc)
+
         print('GCS csv file made for stage %s...' % label)
         out_csvs.append(csv_loc)
 

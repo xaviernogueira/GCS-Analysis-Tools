@@ -15,7 +15,8 @@ def sankey_chi_squared(detrended_dem, zs):
     Returns: two dataframes, one containing transitions %, expected %, and p value for both base->bf and bf->vf"""
 
     col_labels = ['base', 'bf', 'vf']
-    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB', 2: 'NZ'}  # code number and corresponding MU
+    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB',
+                 2: 'NZ'}  # code number and corresponding MU
     landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide bar', 'Nozzle']
     outs = []
 
@@ -46,13 +47,16 @@ def sankey_chi_squared(detrended_dem, zs):
 
     aligned_df = pd.read_csv(gcs_dir + '\\aligned_gcs_table.csv')
     data = aligned_df.dropna()
-    out_dict = {'from': [], 'to': [], 'to_landform': [], 'expected_freq': [], 'expected_proportion': []}
+    out_dict = {'from': [], 'to': [], 'to_landform': [],
+                'expected_freq': [], 'expected_proportion': []}
 
     # for each step-wise stage transition, calculate chi-squared test result
     for i in range(len(zs) - 1):
-        print('Chi Squares test for landform transitions: %s -> %s' % (z_labels[i], z_labels[i + 1]))
+        print('Chi Squares test for landform transitions: %s -> %s' %
+              (z_labels[i], z_labels[i + 1]))
 
-        type_df = data.dropna(axis=0, subset=['code_%s' % z_labels[i], 'code_%s' % z_labels[i + 1]])
+        type_df = data.dropna(
+            axis=0, subset=['code_%s' % z_labels[i], 'code_%s' % z_labels[i + 1]])
 
         total_rows = int(type_df.shape[0])
         lower = z_labels[i]
@@ -62,10 +66,12 @@ def sankey_chi_squared(detrended_dem, zs):
             out_dict['from'].append(lower)
             out_dict['to'].append(higher)
             out_dict['to_landform'].append(landforms[num + 2])
-            num_df = type_df.loc[lambda type_df: type_df['code_%s' % col_labels[i + 1]] == num]
+            num_df = type_df.loc[lambda type_df: type_df['code_%s' %
+                                                         col_labels[i + 1]] == num]
 
             out_dict['expected_freq'].append(num_df.shape[0])
-            out_dict['expected_proportion'].append(num_df.shape[0] / total_rows)
+            out_dict['expected_proportion'].append(
+                num_df.shape[0] / total_rows)
 
         for j, form in enumerate(landforms):
             if i == 0:
@@ -83,15 +89,18 @@ def sankey_chi_squared(detrended_dem, zs):
                 high_index = z - 2
                 high_code = 'code_%s' % z_labels[i + 1]
 
-                sub_df = form_df.loc[lambda form_df: form_df[high_code] == high_index]
+                sub_df = form_df.loc[lambda form_df: form_df[high_code]
+                                     == high_index]
                 freq = sub_df.shape[0]
                 out_dict['from_' + form + '_freq'].append(freq)
-                out_dict['from_' + form + '_proportion'].append(freq / form_rows_count)
+                out_dict['from_' + form +
+                         '_proportion'].append(freq / form_rows_count)
 
             obs = np.array(out_dict['from_' + form + '_freq'])
             expect = np.array(out_dict['Expected_freq'])
             test_out = stats.chisquare(obs, expect)
-            out_dict['p_value_from_%s' % form].extend([test_out[1] for i in range(5)])  # Add p values
+            out_dict['p_value_from_%s' % form].extend(
+                [test_out[1] for i in range(5)])  # Add p values
 
     out_df = pd.DataFrame.from_dict(out_dict)
     out_name = out_dir + '\\landform_transitions_chi_square.csv'
@@ -110,9 +119,11 @@ def violin_ttest(df, z_labels, threshold, out_dir):
     topos = ['High Zs, > %s' % threshold, 'Low Zs, < -%s' % threshold]
 
     for i, lower in enumerate(z_labels[:-1]):
-        subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold], df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
+        subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold],
+                df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
         if i == 1:
-            higher_col = 'Flood stage Ws'  # This is left b/c of the last cell changing the W_s_vf column header
+            # This is left b/c of the last cell changing the W_s_vf column header
+            higher_col = 'Flood stage Ws'
         else:
             higher_col = 'Ws_%s' % z_labels[i + 1]
 
@@ -129,10 +140,12 @@ def violin_ttest(df, z_labels, threshold, out_dir):
             out_dict['median'].append(sub.loc[:, higher_col].median())
             out_dict['max'].append(sub.loc[:, higher_col].max())
             out_dict['min'].append(sub.loc[:, higher_col].min())
-            out_dict['range'].append(sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min())
+            out_dict['range'].append(
+                sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min())
             t_ins.append(sub.loc[:, higher_col].to_numpy())
 
-        t, p = stats.ttest_ind(t_ins[0], t_ins[1], equal_var=False, nan_policy='omit')
+        t, p = stats.ttest_ind(
+            t_ins[0], t_ins[1], equal_var=False, nan_policy='omit')
         out_dict['welch_ttest_p'].append(p)
         out_dict['welch_ttest_p'].append(p)
 
@@ -193,7 +206,8 @@ def runs_test(series, spacing=0):
     # expected number of runs if random
     exp_runs = ((2 * n_plus * n_minus * 1.0) / n) + 1
     # actual number of runs
-    num_runs = len(run_lengths) # Based of the Enginering Statistics Handbook. Removing 'runs' of one seems like it could make sense.
+    # Based of the Enginering Statistics Handbook. Removing 'runs' of one seems like it could make sense.
+    num_runs = len(run_lengths)
     # standard deviation of expected num of runs if random
     exp_run_std = np.sqrt((exp_runs - 1) * (exp_runs - 2) * 1.0 / (n - 1))
     # number of standard deviations (of epxected run length) that the actual run count differs from WW expected run count
@@ -261,7 +275,8 @@ def runs_test_to_xlsx(ws, gcs_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs
 
 def descriptive_stats_xlxs(detrended_dem, zs):
     if detrended_dem == '':
-        logging.error('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
+        logging.error(
+            'Error: Must input detrended DEM parameter in the GUI to set up output folder location')
         return
 
     if type(zs) == str:
@@ -329,15 +344,18 @@ def descriptive_stats_xlxs(detrended_dem, zs):
             ws.cell(row=3, column=(2 + field_index)).value = stds[field_index]
             ws.cell(row=4, column=(2 + field_index)).value = high[field_index]
             ws.cell(row=5, column=(2 + field_index)).value = low[field_index]
-            ws.cell(row=6, column=(2 + field_index)).value = medians[field_index]
+            ws.cell(row=6, column=(2 + field_index)
+                    ).value = medians[field_index]
 
         wb.save(stats_xl)
 
         # run wald's runs test and add results to the flow stage sheet
-        ws = runs_test_to_xlsx(ws, stage_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs'])
+        ws = runs_test_to_xlsx(ws, stage_df, start_cors=[
+                               16, 1], fields=['Ws', 'Zs', 'Ws_Zs'])
 
         # calculate descriptive statistics for cross-sections classified as each landform
-        landform_dict = {-2: 'Oversized', -1: 'Constricted pool', 0: 'Normal', 1: 'Wide riffle', 2: 'Nozzle'}
+        landform_dict = {-2: 'Oversized', -1: 'Constricted pool',
+                         0: 'Normal', 1: 'Wide riffle', 2: 'Nozzle'}
         codes = landform_dict.keys()
 
         ws['F1'].value = '*Code: -2 for oversized, -1 for constricted pool, 0 for normal channel, 1 for wide riffle, and 2 for nozzle'
@@ -377,7 +395,8 @@ def descriptive_stats_xlxs(detrended_dem, zs):
             elif abs(row['Ws_Zs']) >= (0.5 * std):
                 abs_above_half_list[2] += 1
 
-            for field_index, field in enumerate(list_of_fields[3:]):  # List splice: ['W_s', 'Z_s']
+            # List splice: ['W_s', 'Z_s']
+            for field_index, field in enumerate(list_of_fields[3:]):
                 if row[field] >= 1:
                     above_1_list[field_index] += 1
                     above_half_list[field_index] += 1
@@ -403,16 +422,21 @@ def descriptive_stats_xlxs(detrended_dem, zs):
         ws.cell(row=11, column=1).value = "% abs(value) >= 0.5 STD"
         ws.cell(row=12, column=1).value = "% abs(value) >= 1 STD"
         ws.cell(row=14, column=1).value = "% C(Ws,Zs) > 0"
-        ws.cell(row=14, column=2).value = float((cwz_above_zero / total_rows) * 100)
+        ws.cell(row=14, column=2).value = float(
+            (cwz_above_zero / total_rows) * 100)
 
         # calculates % of W, Z, and W_s_Z_s that are greater than 0.5 and 1 of their standard deviations
         for index in range(len(above_1_list)):
-            above_half_percent = float((above_half_list[index] / total_rows) * 100)
+            above_half_percent = float(
+                (above_half_list[index] / total_rows) * 100)
             above_1_percent = float((above_1_list[index] / total_rows) * 100)
-            below_half_percent = float((below_half_list[index] / total_rows) * 100)
+            below_half_percent = float(
+                (below_half_list[index] / total_rows) * 100)
             below_1_percent = float((below_1_list[index] / total_rows) * 100)
-            abs_percent_above_half = float((abs_above_half_list[index] / total_rows) * 100)
-            abs_percent_above_1 = float((abs_above_1_list[index] / total_rows) * 100)
+            abs_percent_above_half = float(
+                (abs_above_half_list[index] / total_rows) * 100)
+            abs_percent_above_1 = float(
+                (abs_above_1_list[index] / total_rows) * 100)
             ws.cell(row=7, column=(2 + index)).value = above_half_percent
             ws.cell(row=8, column=(2 + index)).value = above_1_percent
             ws.cell(row=9, column=(2 + index)).value = below_half_percent
@@ -423,8 +447,10 @@ def descriptive_stats_xlxs(detrended_dem, zs):
         # calculating same descriptive stats for each landform, each table is spaced 7 cells apart
         row_num = 2
         for code in codes:
-            code_df = stage_df.loc[stage_df['code'] == code, ['dist_down', 'W', 'Ws', 'Z', 'Zs', 'Ws_Zs']]
-            ws.cell(row=row_num, column=7).value = (str(landform_dict[code]))  # Preparing the table
+            code_df = stage_df.loc[stage_df['code'] == code, [
+                'dist_down', 'W', 'Ws', 'Z', 'Zs', 'Ws_Zs']]
+            ws.cell(row=row_num, column=7).value = (
+                str(landform_dict[code]))  # Preparing the table
             ws.cell(row=row_num + 1, column=7).value = 'MEAN'
             ws.cell(row=row_num + 2, column=7).value = 'STD'
             ws.cell(row=row_num + 3, column=7).value = 'MAX'
@@ -435,7 +461,8 @@ def descriptive_stats_xlxs(detrended_dem, zs):
             if len(code_df.index) == 0:
                 for field in list_of_fields:
                     field_index = int(list_of_fields.index(field))
-                    ws.cell(row=row_num, column=(8 + field_index)).value = str(field)
+                    ws.cell(row=row_num, column=(
+                        8 + field_index)).value = str(field)
                     ws.cell(row=row_num + 1, column=(8 + field_index)).value = 0
                     ws.cell(row=row_num + 2, column=(8 + field_index)).value = 0
                     ws.cell(row=row_num + 3, column=(8 + field_index)).value = 0
@@ -445,7 +472,8 @@ def descriptive_stats_xlxs(detrended_dem, zs):
             else:
                 for field in list_of_fields:
                     field_index = int(list_of_fields.index(field))
-                    ws.cell(row=row_num, column=(8 + field_index)).value = str(field)
+                    ws.cell(row=row_num, column=(
+                        8 + field_index)).value = str(field)
                     ws.cell(row=row_num + 1, column=(8 + field_index)).value = (
                         np.mean(code_df.loc[:, field].to_numpy()))
                     ws.cell(row=row_num + 2, column=(8 + field_index)).value = (
@@ -458,11 +486,10 @@ def descriptive_stats_xlxs(detrended_dem, zs):
                         np.median(code_df.loc[:, field].to_numpy()))
 
             # Calculates % of XS with the given landform designation
-            ws.cell(row_num + 6, column=8).value = float(code_df.shape[0] / total_rows) * 100
+            ws.cell(
+                row_num + 6, column=8).value = float(code_df.shape[0] / total_rows) * 100
 
             row_num += 8
 
         wb.save(stats_xl)
         logging.info('Descriptive statistics table saved @ %s' % stats_xl)
-
-

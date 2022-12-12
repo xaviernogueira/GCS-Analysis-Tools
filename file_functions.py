@@ -1,14 +1,12 @@
 import os
 from typing import List, Tuple, Union
 from tkinter import *
-from tkinter import filedialog
 import subprocess
 import logging
 import arcpy
 import csv
 
 arcpy.env.overwriteOutput = True
-arcpy.CheckOutExtension('Spatial')
 logger = logging.getLogger(__name__)
 
 
@@ -50,44 +48,6 @@ def cmd(command) -> None:
     if 'http://lastools.org/LICENSE.txt' not in msg_str and len(msg_str) > 0:
         logger.info(msg)
     return
-
-
-def browse(
-    root,
-    entry,
-    select='file',
-    ftypes=[('All files', '*')],
-) -> None:
-    """GUI button command: opens browser window and adds selected file/folder to entry"""
-    if select == 'file':
-        filename = filedialog.askopenfilename(
-            parent=root,
-            title='Choose a file',
-            filetypes=ftypes,
-        )
-        if filename != None:
-            entry.delete(0, END)
-            entry.insert(END, filename)
-
-    elif select == 'files':
-        files = filedialog.askopenfilenames(
-            parent=root,
-            title='Choose files',
-            filetypes=ftypes,
-        )
-        l = root.tk.splitlist(files)
-        entry.delete(0, END)
-        entry.insert(END, l)
-
-    elif select == 'folder':
-        dirname = filedialog.askdirectory(
-            parent=root,
-            initialdir=entry.get(),
-            title='Choose a directory',
-        )
-        if len(dirname) > 0:
-            entry.delete(0, END)
-            entry.insert(END, dirname + '/')
 
 
 def err_info(func) -> function:
@@ -250,7 +210,7 @@ def float_keyz_format(z) -> str:
 
 
 def string_to_list(
-    string,
+    string: str,
     format: str = '',
 ) -> List[Union[None, str]]:
     """Splits a string at each comma and produces a list. format parameter allows the type of the output to

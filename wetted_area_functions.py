@@ -5,7 +5,8 @@ from matplotlib import pyplot as plt
 import arcpy
 from arcpy.sa import Raster, Con, BoundaryClean, MajorityFilter
 from arcpy.da import SearchCursor
-from file_functions import get_label_units, string_to_list
+from file_functions import get_label_units, string_to_list, \
+    err_info, spatial_license
 from create_centerline import remove_spurs
 
 
@@ -30,12 +31,14 @@ def float_keyz_format(
         print('Key z list parameters not valid. Please fill list with int or float.')
 
 
+@err_info
+@spatial_license
 def prep_small_inc(
     detrended_dem: str,
     max_stage: Union[float, int],
 ) -> str:
-    """IN: Folder containing detrended DEM ras_detren.tif, an stage interval length, a maximum flood stafe height.
-    RETURNS: Directory with wetted polygons"""
+    """Creates wetted polygons using ras_detren.tif at 0.1 m increments up to param:max_stage.
+    Returns: Directory path strin with wetted polygons"""
     # Set up an out directory for wetted area polygons
     in_dir = os.path.dirname(detrended_dem)
     out_dir = in_dir + '\\wetted_polygons'
@@ -88,6 +91,127 @@ def prep_small_inc(
                 simplify=False,
             )
 
+    return out_dir
+
+
+@err_info
+@spatial_license
+def stage_centerlines(
+    dem: str,
+    zs: Union[str, List[str]],
+    drafting: bool = True,
+) -> str:
+    """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). Zs, a list
+    containing N number of stage heights (floats) or a string with key xs separated by commas (ex: '0.2,0.7,2.6')"""
+    # convert from string to list if necessary
+
+    if type(zs) == str:
+        zs = string_to_list(zs, format='float')
+
+    # set up directories
+    dem_dir = os.path.dirname(dem)
+
+    if len(dem_dir) == 0:
+        print('Error: Please select valid detrended DEM file')
+        return
+
+    out_dir = dem_dir + '\\centerlines'
+    wetted_dir = dem_dir + '\\wetted_polygons\\wetted_area_rasters'
+    temp_files = dem_dir + '\\temp_files'
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    if not os.path.exists(temp_files):
+        os.makedirs(temp_files)
+
+    drafts = []
+
+    # set up messages
+    if drafting:
+        messages = [
+            'Generating draft center-lines for flow stage heights %s...' % zs,
+            'Draft center-lines @ %s. \nManually edit (must see documentation) and run the next step. \nDone' % out_dir,
+        ]
+    else:
+        messages = [
+            'Generating final center-lines for flow stage heights %s...' % zs,
+            'Final center-lines @ %s \nDone.' % out_dir,
+        ]
+
+    print(messages[0])
+
+    # set up units string
+    spatial_ref = arcpy.Describe(dem).spatialReference
+    unit = spatial_ref.linearUnitName
+    if unit == 'Meter':
+        u = 'm'
+        spur_lim = 100
+        smooth = 20
+    else:
+        u = 'ft'
+        spur_lim = (100 * 3.28)
+        smooth = 60
+
+    # majority filter, boundary clean, raster to polygon, polygon to centerline, remove spurs
+    if drafting:
+        for i, z in enumerate(zs):
+
+            z_str = float_keyz_format(z)
+            in_name = wetted_dir + '\\noval_%s%s.tif' % (z_str, u)
+            out_name = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
+
+            mf = MajorityFilter(in_name, 'EIGHT')
+            bc = BoundaryClean(mf)
+
+            temp_poly = temp_files + '\\sp%s.shp' % i  # smoothed polygon
+            arcpy.RasterToPolygon_conversion(bc, temp_poly)
+
+            w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
+            rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
+
+            spurs = str(
+                arcpy.PolygonToCenterline_topographic(
+                    temp_poly,
+                    w_spurs,
+                ),
+            )
+            remove_spurs(spurs, spur_length=spur_lim)
+
+            arcpy.CopyFeatures_management(rm_spur, out_name)
+            drafts.append(out_name)
+
+        print(
+            'Please see centerline_info.txt in %s for information about editing centerlines')
+        # print message, make .txt file in the centerline folder with instructions on editing
+
+    elif not drafting:
+        for z in zs:
+            z_str = float_keyz_format(z)
+            draft = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
+            out_name = draft.replace('_draft.shp', '.shp')
+            diss = temp_files + \
+                os.path.basename(draft).replace('_draft.shp', 'diss.shp')
+
+            # make into multipart, then slightly smooth
+            arcpy.Dissolve_management(
+                draft,
+                diss,
+                dissolve_field='ObjectID',
+            )
+            arcpy.SmoothLine_cartography(
+                diss,
+                out_name,
+                'PAEK',
+                smooth,
+            )
+            arcpy.AddField_management(
+                out_name,
+                'Id',
+                'Short',
+            )
+
+    print(messages[1])
     return out_dir
 
 
@@ -208,118 +332,3 @@ def pdf_cdf_plotting(
     plt.close('all')
 
     return [title1, title2, title3]
-
-
-def stage_centerlines(dem, zs, drafting=True):
-    """Inputs: A folder containing key stage wetted area polygons (including intermediate file folder). Zs, a list
-    containing N number of stage heights (floats) or a string with key xs separated by commas (ex: '0.2,0.7,2.6')"""
-    # convert from string to list if necessary
-
-    if type(zs) == str:
-        zs = string_to_list(zs, format='float')
-
-    # set up directories
-    dem_dir = os.path.dirname(dem)
-
-    if len(dem_dir) == 0:
-        print('Error: Please select valid detrended DEM file')
-        return
-
-    out_dir = dem_dir + '\\centerlines'
-    wetted_dir = dem_dir + '\\wetted_polygons\\wetted_area_rasters'
-    temp_files = dem_dir + '\\temp_files'
-
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    if not os.path.exists(temp_files):
-        os.makedirs(temp_files)
-
-    drafts = []
-
-    # set up messages
-    if drafting:
-        messages = [
-            'Generating draft center-lines for flow stage heights %s...' % zs,
-            'Draft center-lines @ %s. \nManually edit (must see documentation) and run the next step. \nDone' % out_dir,
-        ]
-    else:
-        messages = [
-            'Generating final center-lines for flow stage heights %s...' % zs,
-            'Final center-lines @ %s \nDone.' % out_dir,
-        ]
-
-    print(messages[0])
-
-    # set up units string
-    spatial_ref = arcpy.Describe(dem).spatialReference
-    unit = spatial_ref.linearUnitName
-    if unit == 'Meter':
-        u = 'm'
-        spur_lim = 100
-        smooth = 20
-    else:
-        u = 'ft'
-        spur_lim = (100 * 3.28)
-        smooth = 60
-
-    # majority filter, boundary clean, raster to polygon, polygon to centerline, remove spurs
-    if drafting:
-        for i, z in enumerate(zs):
-
-            z_str = float_keyz_format(z)
-            in_name = wetted_dir + '\\noval_%s%s.tif' % (z_str, u)
-            out_name = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
-
-            mf = MajorityFilter(in_name, 'EIGHT')
-            bc = BoundaryClean(mf)
-
-            temp_poly = temp_files + '\\sp%s.shp' % i  # smoothed polygon
-            arcpy.RasterToPolygon_conversion(bc, temp_poly)
-
-            w_spurs = temp_files + '\\%s%s_spur_cl.shp' % (z_str, u)
-            rm_spur = w_spurs.replace('.shp', '_rm_spurs.shp')
-
-            spurs = str(
-                arcpy.PolygonToCenterline_topographic(
-                    temp_poly,
-                    w_spurs,
-                ),
-            )
-            remove_spurs(spurs, spur_length=spur_lim)
-
-            arcpy.CopyFeatures_management(rm_spur, out_name)
-            drafts.append(out_name)
-
-        print(
-            'Please see centerline_info.txt in %s for information about editing centerlines')
-        # print message, make .txt file in the centerline folder with instructions on editing
-
-    elif not drafting:
-        for z in zs:
-            z_str = float_keyz_format(z)
-            draft = out_dir + '\\%s%s_centerline_draft.shp' % (z_str, u)
-            out_name = draft.replace('_draft.shp', '.shp')
-            diss = temp_files + \
-                os.path.basename(draft).replace('_draft.shp', 'diss.shp')
-
-            # make into multipart, then slightly smooth
-            arcpy.Dissolve_management(
-                draft,
-                diss,
-                dissolve_field='ObjectID',
-            )
-            arcpy.SmoothLine_cartography(
-                diss,
-                out_name,
-                'PAEK',
-                smooth,
-            )
-            arcpy.AddField_management(
-                out_name,
-                'Id',
-                'Short',
-            )
-
-    print(messages[1])
-    return out_dir

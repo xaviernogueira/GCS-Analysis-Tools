@@ -1,7 +1,6 @@
 from tkinter import *
 from file_functions import *
 import os
-import sys
 import shutil
 import numpy as np
 import logging
@@ -13,7 +12,9 @@ gc.collect()
 ##########################
 # first let's define some functions that will be helpful
 
-def las_files(directory):
+def las_files(
+    directory: str,
+) -> List[str]:
     """returns list of all .las/.laz files in directory (at top level)"""
     l = []
     for name in os.listdir(directory):
@@ -28,11 +29,11 @@ def lof_text(
     src: str,
 ) -> str:
     """Creates a .txt file in pwd (LAStools bin) containing a list of .las/.laz filenames from src directory
-    
+
     Args:
         pwd: LAStools bin path
         src: working directory path for LAStools and directory containing .las/.laz files
-    
+
     Returns:
         The name of the .txt file.
     """
@@ -68,7 +69,9 @@ def point_density(
             return float(d)
 
 
-def get_largest(directory):
+def get_largest(
+    directory: str,
+) -> str:
     """returns name of largest file in directory"""
     largest_so_far = 0
     filename = ''
@@ -81,7 +84,10 @@ def get_largest(directory):
     return os.path.join(directory, filename)
 
 
-def pts(filename, lastoolsdir):
+def pts(
+    filename: str,
+    lastoolsdir: str,
+) -> int:
     """returns number of points in las file"""
 
     # call lasinfo on the file
@@ -118,9 +124,6 @@ def process_lidar(
     fine_offset,
 ) -> None:
     """Executes main LAStools processing workflow. See readme for more info."""
-
-    # initialize the logger
-    init_logger(__file__)
 
     classes = [
         '01-Default',
