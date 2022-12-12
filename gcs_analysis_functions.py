@@ -361,7 +361,7 @@ def extract_gcs(
 
         # Convert width polygon attribute table to a csv and classify landforms
         csv_loc = out_dir + "\\%s_gcs_table.csv" % label
-        tableToCSV(
+        table_to_csv(
             width_poly,
             csv_filepath=csv_loc,
             fld_to_remove_override=[],
@@ -510,7 +510,7 @@ def prep_locations(
     aligned_csv = landform_folder + '\\aligned_locations.csv'
 
     aligned_df = pd.read_csv(
-        file_functions.tableToCSV(
+        file_functions.table_to_csv(
             out_points,
             csv_filepath=aligned_csv,
             fld_to_remove_override=['FID_statio', 'FID_thiess'],

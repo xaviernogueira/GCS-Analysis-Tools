@@ -432,10 +432,7 @@ class GCSGraphicUserInterface(tk.Frame):
             row=6,
             column=2,
         )
-        root.grid_rowconfigure(
-            17,
-            minsize=80,
-        )
+        root.grid_rowconfigure(17, minsize=80)
 
         self.instruct = ttk.Label(
             root,
@@ -1177,16 +1174,11 @@ class GCSGraphicUserInterface(tk.Frame):
             row=20,
             column=3,
         )
-        root.grid_rowconfigure(
-            20,
-            minsize=40,
-        )
+        root.grid_rowconfigure(20, minsize=40)
 
         # Generate thalweg centerline and extract elevation profile
         ######################################################################
-        root = self.tabs[
-            'Thalweg centerline',
-        ]
+        root = self.tabs['Thalweg centerline']
 
         self.remind = ttk.Label(
             root,
@@ -1438,16 +1430,11 @@ class GCSGraphicUserInterface(tk.Frame):
             column=0,
             pady=15,
         )
-        root.grid_rowconfigure(
-            6,
-            minsize=50,
-        )
+        root.grid_rowconfigure(6, minsize=50)
 
         # DEM detrending
         ######################################################################
-        root = self.tabs[
-            'Detrend DEM',
-        ]
+        root = self.tabs['Detrend DEM']
 
         def show_plot(xyz_csv):
             """Plots thalweg elevation profile is plotted but not saved"""
@@ -1774,17 +1761,12 @@ class GCSGraphicUserInterface(tk.Frame):
             column=0,
             pady=15,
         )
-        root.grid_rowconfigure(
-            6,
-            minsize=50,
-        )
+        root.grid_rowconfigure(6, minsize=50)
 
         # Flow-stage modeling
         ######################################################################
 
-        root = self.tabs[
-            'Flow-stage modeling',
-        ]
+        root = self.tabs['Flow-stage modeling']
 
         self.top_label = ttk.Label(
             root,
@@ -1939,10 +1921,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
             pady=15,
         )
-        root.grid_rowconfigure(
-            2,
-            minsize=50,
-        )
+        root.grid_rowconfigure(2, minsize=50)
 
         self.note1 = ttk.Label(
             root,
@@ -2013,10 +1992,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
             pady=15,
         )
-        root.grid_rowconfigure(
-            2,
-            minsize=50,
-        )
+        root.grid_rowconfigure(2, minsize=50)
 
         self.note2 = ttk.Label(
             root,
@@ -2055,17 +2031,12 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
             pady=15,
         )
-        root.grid_rowconfigure(
-            2,
-            minsize=50,
-        )
+        root.grid_rowconfigure(2, minsize=50)
 
         # Generate GCS series .csv files w/ landform classifications
         ######################################################################
 
-        root = self.tabs[
-            'GCS analysis',
-        ]
+        root = self.tabs['GCS analysis']
 
         def gcs_analysis(
                 detrended_dem,
@@ -2317,10 +2288,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
             pady=15,
         )
-        root.grid_rowconfigure(
-            6,
-            minsize=50,
-        )
+        root.grid_rowconfigure(6, minsize=50)
 
         self.note2 = ttk.Label(
             root,
@@ -2371,10 +2339,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
             pady=pad,
         )
-        root.grid_rowconfigure(
-            8,
-            minsize=30,
-        )
+        root.grid_rowconfigure(8, minsize=30)
 
         self.l_plots2 = ttk.Label(
             root,
@@ -2413,10 +2378,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
             pady=pad,
         )
-        root.grid_rowconfigure(
-            9,
-            minsize=30,
-        )
+        root.grid_rowconfigure(9, minsize=30)
 
         self.l_gcs = ttk.Label(
             root,
@@ -2449,19 +2411,13 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
             pady=15,
         )
-        root.grid_rowconfigure(
-            10,
-            minsize=50,
-        )
+        root.grid_rowconfigure(10, minsize=50)
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
-        root = self.tabs[
-            'River Builder prep',
-        ]
+        root = self.tabs['River Builder prep']
 
         # TODO: make this work
-
         def river_builder_harmonics(
                 in_csv,
                 index_field,
@@ -2675,10 +2631,7 @@ class GCSGraphicUserInterface(tk.Frame):
             row=7,
             column=2,
         )
-        root.grid_rowconfigure(
-            4,
-            minsize=80,
-        )
+        root.grid_rowconfigure(4, minsize=80)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ from arcpy import env
 from arcpy.sa import *
 import pandas as pd
 import numpy as np
-from file_functions import tableToCSV, delete_gis_files, cmd
+from file_functions import table_to_csv, delete_gis_files, cmd
 from create_centerline import make_centerline
 from create_station_lines import create_station_lines_function
 import os
@@ -72,7 +72,7 @@ def lidar_footprint(lasbin, lidardir, spatialref_shp):
         )
         lidar_ras = CreateConstantRaster(1, extent=raw_las_dataset)
         lidar_footprint = arcpy.RasterToPolygon_conversion(
-            lidar_ras, 
+            lidar_ras,
             lidardir + '\\las_footprint.shp',
         )
 
@@ -413,7 +413,7 @@ def detrend_prep(dem, flow_poly, aoi_shp, filt_passes, smooth_dist, m_spacing=1,
 
         # Add fields to override, but first adjust detrending functions
         elevation_table = dem_dir + '\\xyz_elevation_table.csv'
-        elevation_table = tableToCSV(
+        elevation_table = table_to_csv(
             input_table=station_points,
             csv_filepath=elevation_table,
             fld_to_remove_override=[
