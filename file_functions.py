@@ -49,7 +49,7 @@ def cmd(command) -> None:
     return
 
 
-def err_info(func) -> function:
+def err_info(func) -> callable:
     """Wrapper to show error message when a command fails"""
     def wrapper(*args, **kwargs):
         try:
@@ -59,7 +59,7 @@ def err_info(func) -> function:
     return wrapper
 
 
-def spatial_license(func) -> function:
+def spatial_license(func) -> callable:
     def wrapper(*args, **kwargs):
         arcpy.CheckOutExtension('Spatial')
         func(*args, **kwargs)

@@ -18,7 +18,7 @@ def lidar_footprint(
     lasbin: str,
     lidardir: str,
     spatialref_shp: str,
-) -> arcpy.FeatureClass:
+) -> str:
     """This function converts LAZ files to LAS file format as well as producing a LiDAR extent polygon.
     in_folder must be a directory containing nothing but raw LAZ files
     spatial_ref must be an ArcGIS spatial reference object with units of feet.
@@ -91,7 +91,7 @@ def define_ground_polygon(
     naipdir: str,
     ndvi_thresh: float,
     aoi_shp: str,
-) -> arcpy.FeatureClass:
+) -> str:
     """This function takes the defined lidar footprint from the lidar_footprint() function, as well as a defined NAIP imagery location (in .jpg2)
     and makes a polygon of vegeation using a NDVI threshold of >0.4. This polygon is erased from the lidar footprint to give a ground_polygon used
     to define processing settings"""
