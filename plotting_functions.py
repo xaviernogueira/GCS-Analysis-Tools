@@ -1,9 +1,8 @@
-import csv
 import os
+import logging
 import math
 import numpy as np
 import pandas as pd
-import scipy
 from scipy.stats import variation
 from os import listdir
 from os.path import isfile, join
@@ -26,17 +25,18 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
      If aligned_table is defined as the aligned csv, plots showing each key z profile as sub-plots for a given field are saved as well."""
 
     if detrended_dem == '':
-        print('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
+        raise ValueError(
+            'Must input detrended DEM parameter in the GUI to set up output folder location')
         return
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        print(
-            'Error: Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
     if len(zs) == 0:
-        print('Error: Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
-        return
+        raise ValueError(
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
     zs.sort()
 
     # set up directories
@@ -94,20 +94,24 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
                 ax[count].plot(x, full_ys[count], color=colors[2])
                 for i, y in enumerate(ys[count]):
                     ax[count].plot(x, y, color=colors[i], label=landforms[i])
-                    temp_max = np.amax(np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
+                    temp_max = np.amax(
+                        np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
                     if temp_max >= ymax and ymax <= 5:
                         ymax = math.ceil(temp_max)
                     elif ymax > 5:
                         ymax = 5
                 ax[count].set_ylim(-1 * ymax, ymax)
                 ax[count].set_ylabel(field)
-                ax[count].set_yticks(np.arange(-1 * ymax, ymax, 1), minor=False)
-                ax[count].grid(True, which='both', color='gainsboro', linestyle='--')
+                ax[count].set_yticks(
+                    np.arange(-1 * ymax, ymax, 1), minor=False)
+                ax[count].grid(True, which='both',
+                               color='gainsboro', linestyle='--')
                 ax[count].set_xlim(0.0, np.max(x))
                 ax[count].set_xticks(np.arange(0, np.max(x), 250))
 
             ax[count].set_xlabel('Thalweg distance downstream (ft)')
-            ax[count].legend(loc='lower center', ncol=len(landforms), fontsize=8)  # Adds legend to the bottom plot
+            ax[count].legend(loc='lower center', ncol=len(
+                landforms), fontsize=8)  # Adds legend to the bottom plot
             fig.set_size_inches(12, 6)
             plt.savefig(fig_name, dpi=300, bbox_inches='tight')
             plt.cla()
@@ -148,7 +152,8 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
                 ax[count].plot(x, full_ys[count], color=colors[2])
                 for i, y in enumerate(ys[count]):
                     ax[count].plot(x, y, color=colors[i], label=landforms[i])
-                    temp_max = np.amax(np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
+                    temp_max = np.amax(
+                        np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
                     if temp_max >= ymax and ymax <= 5:
                         ymax = math.ceil(temp_max)
                     elif ymax > 5:
@@ -156,18 +161,21 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
 
                 ax[count].set_ylim(-1 * ymax, ymax)
                 ax[count].set_ylabel(field)
-                ax[count].set_yticks(np.arange(-1 * ymax, ymax, 1), minor=False)
-                ax[count].grid(True, which='both', color='gainsboro', linestyle='--')
+                ax[count].set_yticks(
+                    np.arange(-1 * ymax, ymax, 1), minor=False)
+                ax[count].grid(True, which='both',
+                               color='gainsboro', linestyle='--')
                 ax[count].set_xlim(0.0, np.max(x))
                 ax[count].set_xticks(np.arange(0, np.max(x), 250))
 
             ax[count].set_xlabel('Thalweg distance downstream (ft)')
-            ax[count].legend(loc='lower center', ncol=len(landforms), fontsize=8)  # Adds legend to the bottom plot
+            ax[count].legend(loc='lower center', ncol=len(
+                landforms), fontsize=8)  # Adds legend to the bottom plot
             fig.set_size_inches(12, 6)
             plt.savefig(fig_name, dpi=300, bbox_inches='tight')
             plt.cla()
         plt.close('all')
-    print('GCS plots saved @ %s' % out_dir)
+    logging.info('GCS plots saved @ %s' % out_dir)
 
 
 def heat_plotter(detrended_dem, zs, together=False):
@@ -175,17 +183,17 @@ def heat_plotter(detrended_dem, zs, together=False):
     Returns: png heat-plot(s) for each input flow stage either all on one plot (together=True), or separately (together=False)"""
 
     if detrended_dem == '':
-        print('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
-        return
+        raise ValueError(
+            'Error: Must input detrended DEM parameter in the GUI to set up output folder location')
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        print(
-            'Error: Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
     if len(zs) == 0:
-        print('Error: Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
-        return
+        raise ValueError(
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -211,10 +219,12 @@ def heat_plotter(detrended_dem, zs, together=False):
     # set up subplot arrangement
     for sub_zs in top_zs:
         if len(sub_zs) > 6:
-            print('Warning: > 6 flow stages input for nesting analysis, may seriously impair plot/analysis quality!')
+            logging.warning(
+                '> 6 flow stages input for nesting analysis, may seriously impair plot/analysis quality!')
             fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
         elif len(sub_zs) == 4 or len(sub_zs) == 6:
-            fig, axs = plt.subplots(nrows=2, ncols=int(len(sub_zs) / 2), figsize=(10, 3))
+            fig, axs = plt.subplots(nrows=2, ncols=int(
+                len(sub_zs) / 2), figsize=(10, 3))
         else:
             fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
 
@@ -237,15 +247,23 @@ def heat_plotter(detrended_dem, zs, together=False):
             ax.set_aspect('equal', adjustable='box')
             ax.hexbin(x, y, gridsize=30, cmap='YlOrRd', extent=(-3, 3, -3, 3))
             ax.set(xlim=(-3, 3), ylim=(-3, 3))
-            ax.axhline(y=0.5, xmin=0, xmax=0.4167, color='#9e9e9e', linestyle='--')
-            ax.axhline(y=0.5, xmin=0.583, xmax=1, color='#9e9e9e', linestyle='--')
-            ax.axhline(y=-0.5, xmin=0, xmax=0.4167, color='#9e9e9e', linestyle='--')
-            ax.axhline(y=-0.5, xmin=0.583, xmax=1, color='#9e9e9e', linestyle='--')
+            ax.axhline(y=0.5, xmin=0, xmax=0.4167,
+                       color='#9e9e9e', linestyle='--')
+            ax.axhline(y=0.5, xmin=0.583, xmax=1,
+                       color='#9e9e9e', linestyle='--')
+            ax.axhline(y=-0.5, xmin=0, xmax=0.4167,
+                       color='#9e9e9e', linestyle='--')
+            ax.axhline(y=-0.5, xmin=0.583, xmax=1,
+                       color='#9e9e9e', linestyle='--')
 
-            ax.axvline(x=-0.5, ymin=0, ymax=0.4167, color='#9e9e9e', linestyle='--')
-            ax.axvline(x=-0.5, ymin=0.583, ymax=1, color='#9e9e9e', linestyle='--')
-            ax.axvline(x=0.5, ymin=0, ymax=0.4167, color='#9e9e9e', linestyle='--')
-            ax.axvline(x=0.5, ymin=0.583, ymax=1, color='#9e9e9e', linestyle='--')
+            ax.axvline(x=-0.5, ymin=0, ymax=0.4167,
+                       color='#9e9e9e', linestyle='--')
+            ax.axvline(x=-0.5, ymin=0.583, ymax=1,
+                       color='#9e9e9e', linestyle='--')
+            ax.axvline(x=0.5, ymin=0, ymax=0.4167,
+                       color='#9e9e9e', linestyle='--')
+            ax.axvline(x=0.5, ymin=0.583, ymax=1,
+                       color='#9e9e9e', linestyle='--')
 
             ax.text(0.20, 0.05, 'Const. Pool', horizontalalignment='center', verticalalignment='center',
                     transform=ax.transAxes)
@@ -265,7 +283,8 @@ def heat_plotter(detrended_dem, zs, together=False):
         plt.savefig(title, dpi=300, bbox_inches='tight')
         plt.clf()
         plt.close('all')
-        print('A plot with heat-plots for all stage heights %s is @ %s' % (zs, title))
+        logging.info('A plot with heat-plots for all stage heights %s is @ %s' %
+                     (zs, title))
 
     return out_dir
 
@@ -276,17 +295,17 @@ def landform_pie_charts(detrended_dem, zs, together=False):
     colors = ['black', 'blue', 'grey', 'orange', 'red']
 
     if detrended_dem == '':
-        print('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
-        return
+        raise ValueError(
+            'Must input detrended DEM parameter in the GUI to set up output folder location')
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        print(
-            'Error: Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
     if len(zs) == 0:
-        print('Error: Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
-        return
+        raise ValueError(
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -312,10 +331,12 @@ def landform_pie_charts(detrended_dem, zs, together=False):
     # set up subplot arrangement
     for sub_zs in top_zs:
         if len(sub_zs) > 6:
-            print('Warning: > 6 flow stages input for nesting analysis, may seriously impair plot/analysis quality!')
+            logging.warning(
+                '> 6 flow stages input for nesting analysis, may seriously impair plot/analysis quality!')
             fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
         elif len(sub_zs) == 4 or len(sub_zs) == 6:
-            fig, axs = plt.subplots(nrows=2, ncols=int(len(sub_zs) / 2), figsize=(10, 3))
+            fig, axs = plt.subplots(nrows=2, ncols=int(
+                len(sub_zs) / 2), figsize=(10, 3))
         else:
             fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
 
@@ -340,12 +361,14 @@ def landform_pie_charts(detrended_dem, zs, together=False):
                 temp_percents.append((count / total) * 100)
                 percents.append(np.array(temp_percents))
 
-            ax.pie(percents[count], labels=labels, labeldistance=None, autopct='%1.1f%%', textprops={'color': "w"}, colors=colors)
+            ax.pie(percents[count], labels=labels, labeldistance=None,
+                   autopct='%1.1f%%', textprops={'color': "w"}, colors=colors)
             ax.set_title(label)
             ax.title.set_position([0.5, 0.92])
 
         # Adds legend to the bottom middle of the plot
-        axs[middle_index].legend(bbox_to_anchor=(0.32, 0.07), bbox_transform=ax.transAxes, ncol=len(labels), fontsize=8)
+        axs[middle_index].legend(bbox_to_anchor=(
+            0.32, 0.07), bbox_transform=ax.transAxes, ncol=len(labels), fontsize=8)
 
         if not together:
             title = out_dir + '\\%s_landform_pies.png' % label
@@ -355,7 +378,7 @@ def landform_pie_charts(detrended_dem, zs, together=False):
         plt.savefig(title, dpi=300, bbox_inches='tight')
         plt.clf()
         plt.close('all')
-        print('Pie plots for landform abundances @ %s' % out_dir)
+        logging.info('Pie plots for landform abundances @ %s' % out_dir)
 
     return out_dir
 
@@ -364,14 +387,14 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
     """Creates Sankey diagrams showing nested landform relationships. Can be done across a class, transition occurences are normalized as a % for each reach."""
 
     if detrended_dem == '':
-        print('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
-        return
+        raise ValueError(
+            'Must input detrended DEM parameter in the GUI to set up output folder location')
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        print(
-            'Error: Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -384,8 +407,9 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
     # get units for labeling
     u = file_functions.get_label_units(detrended_dem)[0]
 
-    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB', 2: 'NZ'}  # code number and corresponding MU
-    print('Sankey landform diagram plotting comencing...')
+    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB',
+                 2: 'NZ'}  # code number and corresponding MU
+    logging.info('Sankey landform diagram plotting comencing...')
 
     source = []
     target = []
@@ -410,7 +434,8 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
 
     # initialize list of lists to count abundance
     unique_nests = [list(set(i)) for i in transitions]
-    unique_nest_counts = [list(np.zeros(len(i), dtype=int)) for i in unique_nests]
+    unique_nest_counts = [list(np.zeros(len(i), dtype=int))
+                          for i in unique_nests]
 
     # Calculates totals of occurences for each incrementing flow stage transition, ex: 0.2->0.7, 0.7->2.6, 2.6->5.2
     for j, zipped in enumerate(transitions):
@@ -418,7 +443,8 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
             i = unique_nests[j].index(pair)
             unique_nest_counts[j][i] += 1
 
-    nest_abundances = [list(zip(unique_nests[i], unique_nest_counts[i])) for i in range(len(unique_nests))]
+    nest_abundances = [list(zip(unique_nests[i], unique_nest_counts[i]))
+                       for i in range(len(unique_nests))]
 
     # set up lists to store Sankey diagram node information
     label_list = []
@@ -429,14 +455,16 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
 
     for z in zs:
         if not ignore_normal:
-            label_list.extend(['Oversized', 'Const.Pool', 'Normal', 'Wide Bar', 'Nozzle'])
+            label_list.extend(['Oversized', 'Const.Pool',
+                              'Normal', 'Wide Bar', 'Nozzle'])
             x_list.extend([x_num for j in range(5)])
             x_num += 0.4
             y_list.extend([0.1, 0.3, 0.5, 0.7, 0.9])
             colors_list.extend(['black', 'blue', 'grey', 'orange', 'red'])
 
         else:
-            label_list.extend(['Oversized', 'Const.Pool', 'Wide Bar', 'Nozzle'])
+            label_list.extend(
+                ['Oversized', 'Const.Pool', 'Wide Bar', 'Nozzle'])
             x_list.extend([x_num for j in range(4)])
             x_num += 0.4
             y_list.extend([0.2, 0.4, 0.6, 0.8])
@@ -477,7 +505,4 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
             "value": value}))
 
     fig.write_image(out_dir + '\\landform_transitions.png', scale=5)
-    print('Sankey landform transition plots saved @ %s' % out_dir)
-
-
-
+    logging.info('Sankey landform transition plots saved @ %s' % out_dir)

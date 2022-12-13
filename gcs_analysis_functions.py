@@ -1,12 +1,12 @@
+import os
+import logging
 import arcpy
-from arcpy import da
 import file_functions
 from file_functions import *
 from create_station_lines import create_station_lines_function
 import statistics
 import pandas as pd
 import numpy as np
-import os
 from typing import List, Union
 
 arcpy.env.overwriteOutput = True
@@ -170,14 +170,14 @@ def extract_gcs(
         try:
             spacing = int(spacing)
         except TypeError:
-            print('Error: Cross-section spacing parameter must be a integer!')
+            raise TypeError(
+                'Cross-section spacing parameter must be a integer!')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
 
     if len(dem_dir) == 0:
-        print('Error: Please select valid detrended DEM file')
-        return
+        raise ValueError('Please select valid detrended DEM file')
 
     lines_dir = dem_dir + '\\centerlines'
     wetted_dir = dem_dir + '\\wetted_polygons'
@@ -213,8 +213,8 @@ def extract_gcs(
                     arcpy.Rename_management(file, no_clip_name)
                     del_files.append(no_clip_name)
                 except PermissionError:
-                    print(
-                        'Permission Error: Could not rename %s file likely because it does not exist or is open' % file)
+                    raise PermissionError(
+                        'Could not rename %s file likely because it does not exist or is open' % file)
 
                 if j != 1:
                     arcpy.Clip_analysis(
@@ -260,7 +260,7 @@ def extract_gcs(
             expression,
             "PYTHON3",
         )
-        print('Width polygons for %sft stage created...' % z)
+        logging.info('Width polygons for %sft stage created...' % z)
 
         arcpy.AddField_management(
             width_poly_loc,
@@ -399,13 +399,13 @@ def extract_gcs(
         gcs_df = pd.read_csv(csv_loc)
         gcs_df.to_csv(csv_loc)
 
-        print('GCS csv file made for stage %s...' % label)
+        logging.info('GCS csv file made for stage %s...' % label)
         out_csvs.append(csv_loc)
 
     for file in del_files:
         file_functions.delete_gis_files(file)
 
-    print('GCS tables completed @ %s' % out_dir)
+    logging.info('GCS tables completed @ %s' % out_dir)
     return out_csvs
 
 
@@ -418,7 +418,8 @@ def prep_locations(
     When flip==True (false is default) locations are flipped to correctlyly link to an ALREADY FLIPPED GCS stage table. If neither table is flipped, use
     the flipped table function in plotting functions file!'''
 
-    print('Creating aligned_locations.csv with aligned centerline locations / dist_down...')
+    logging.info(
+        'Creating aligned_locations.csv with aligned centerline locations / dist_down...')
     detrended_raster = detrend_folder + '\\ras_detren.tif'
     landform_folder = detrend_folder + '\\landform_analysis'
     centerline_folder = detrend_folder + "\\analysis_centerline_and_XS"
@@ -479,7 +480,7 @@ def prep_locations(
                 try:
                     del_fields.remove(field)
                 except KeyError:
-                    print("Can't delete field: %s" % field)
+                    logging.warning('Cant delete field: %s' % field)
             arcpy.DeleteField_management(
                 theis_loc,
                 del_fields,
@@ -570,9 +571,9 @@ def prep_locations(
     else:
         out_aligned_df.to_csv(aligned_csv)
 
-    print('Deleting files: %s' % del_files)
+    logging.info('Deleting files: %s' % del_files)
     for file in del_files:
         file_functions.delete_gis_files(file)
 
-    print('Empty aligned csv created @ %s!' % aligned_csv)
+    logging.info('Empty aligned csv created @ %s!' % aligned_csv)
     return aligned_csv

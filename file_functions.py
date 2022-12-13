@@ -7,7 +7,6 @@ import arcpy
 import csv
 
 arcpy.env.overwriteOutput = True
-logger = logging.getLogger(__name__)
 
 
 def init_logger(filename) -> None:
@@ -36,7 +35,7 @@ def cmd(command) -> None:
         )
     except Exception:
         msg = 'Command failed: %s' % command
-        logger.error(msg)
+        logging.error(msg)
         raise Exception(msg)
 
     msg = res.communicate()[1]
@@ -46,7 +45,7 @@ def cmd(command) -> None:
     # 'Please note that LAStools is not "free" (see http://lastools.org/LICENSE.txt) contact martin.isenburg@rapidlasso.com to clarify licensing terms if needed.',
 
     if 'http://lastools.org/LICENSE.txt' not in msg_str and len(msg_str) > 0:
-        logger.info(msg)
+        logging.info(msg)
     return
 
 
@@ -56,7 +55,7 @@ def err_info(func) -> function:
         try:
             func(*args, **kwargs)
         except Exception as e:
-            logger.error(e)
+            logging.error(e)
     return wrapper
 
 
@@ -115,7 +114,7 @@ def table_to_csv(
             try:
                 fld_names.remove(field)
             except Exception:
-                print("Can't delete field: %s" % field)
+                logging.warning("Can't delete field: %s" % field)
 
     elif len(keep_fields) > 0:
         fld_names = [i for i in fld_names if i in keep_fields]
@@ -126,7 +125,7 @@ def table_to_csv(
         with arcpy.da.SearchCursor(input_table, fld_names) as cursor:
             for row in cursor:
                 writer.writerow(row)
-        print(csv_filepath + " CREATED")
+        logging.info(csv_filepath + " CREATED")
     csv_file.close()
 
     return csv_filepath
@@ -159,12 +158,12 @@ def delete_gis_files(file_loc) -> None:
         if os.path.exists(file):
             try:
                 os.remove(file)
-            except:
-                print("Couldn't delete %s" % file)
+            except Exception:
+                logging.warning("Couldn't delete %s" % file)
         else:
             counter += 1
 
-    print(
+    logging.warning(
         f'Couldnt find {counter} files sub-files. '
         'Not normally and issue but if overwrite errors raise this could be the culprit!'
     )
@@ -206,7 +205,8 @@ def float_keyz_format(z) -> str:
     try:
         return z_str
     except z_str == '':
-        print('Key z list parameters not valid. Please fill list with int or float.')
+        raise ValueError(
+            'Key z list parameters not valid. Please fill list with int or float.')
 
 
 def string_to_list(

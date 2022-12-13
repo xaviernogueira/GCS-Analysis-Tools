@@ -1,4 +1,5 @@
 import os
+import logging
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -182,16 +183,16 @@ class GCSGraphicUserInterface(tk.Frame):
             """This function is ran by the LiDAR Data prep tab.
              Outputs: A 1m (or other resolution) DEM modeling bare ground LiDAR returns"""
 
-            print('Unzipping LAZ files...')
-            lidar_footprint(
+            logging.info('Unzipping LAZ files...')
+            lidar_footprint.info(
                 lasbin,
                 lidardir,
                 spatial_shp,
             )
-            print('Done')
+            logging.info('Done')
 
-            print('Generating inputs for LiDAR processing...')
-            foot = lidardir + '\\las_footprint.shp'
+            logging.info('Generating inputs for LiDAR processing...')
+            foot = lidardir + '\\las_footlogging.info.shp'
             define_ground_polygon(
                 foot,
                 lidardir,
@@ -199,7 +200,7 @@ class GCSGraphicUserInterface(tk.Frame):
                 ndvi_thresh,
                 aoi_shp,
             )
-            print('Done')
+            logging.info('Done')
 
         self.l_lasbin1 = ttk.Label(
             root,
@@ -479,7 +480,7 @@ class GCSGraphicUserInterface(tk.Frame):
             to a high resolution DEM (1m resolution is default)"""
 
             # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
-            print('Processing LiDAR to remove vegetation points...')
+            logging.info('Processing LiDAR to remove vegetation points...')
             las_folder = lidardir + '\\las_files\\'
             process_lidar(
                 lastoolsdir + '\\',
@@ -499,9 +500,9 @@ class GCSGraphicUserInterface(tk.Frame):
                 fine_down_spike,
                 fine_offset,
             )
-            print('Done')
+            logging.info('Done')
 
-            print('Generating a %sm resolution DEM...' % dem_resolution)
+            logging.info('Generating a %sm resolution DEM...' % dem_resolution)
             dem = lidar_to_raster(
                 lidardir,
                 ground_poly,
@@ -511,15 +512,15 @@ class GCSGraphicUserInterface(tk.Frame):
                 void_meth,
                 m_cell_size=float(dem_resolution),
             )
-            print('Done')
+            logging.info('Done')
 
-            print('Generating hillshade raster for the DEM...')
+            logging.info('Generating hillshade raster for the DEM...')
             hill_out = lidardir + '\\hillshade.tif'
             HillShade_3d(
                 dem,
                 hill_out,
             )
-            print('Done')
+            logging.info('Done')
 
         self.l_lasbin = ttk.Label(
             root,
@@ -1455,13 +1456,13 @@ class GCSGraphicUserInterface(tk.Frame):
             )
 
             plot = diagnostic_quick_plot(
-                location_np=out_list[0],
-                z_np=out_list[1],
+                location_np=out_tuple[0],
+                z_np=out_tuple[1],
                 out_dir=out_dir,
             )
 
             open_popup('Thalweg elevation profile', plot)
-            print('Displaying thalweg elevation profile plot!')
+            logging.info('Displaying thalweg elevation profile plot!')
 
         def show_fit_plots(xyz_csv, breakpoints):
             """Linear fit and residuals are plotted but not saved"""
@@ -1488,23 +1489,23 @@ class GCSGraphicUserInterface(tk.Frame):
             )
 
             fit_out = linear_fit(
-                location_np=out_list[0],
-                z_np=out_list[1],
+                location_np=out_tuple[0],
+                z_np=out_tuple[1],
                 xyz_table_loc=xyz_csv,
                 bp_list=breakpoint_list,
             )
 
             # save and display (pop up) linear fit and residual plots. Generate txt
             fit_plot = linear_fit_plot(
-                location_np=out_list[0],
-                z_np=out_list[1],
+                location_np=out_tuple[0],
+                z_np=out_tuple[1],
                 fit_params=fit_out[0],
                 fit_np=fit_out[1],
                 out_dir=out_dir,
             )
 
             res_plot = make_residual_plot(
-                location_np=out_list[0],
+                location_np=out_tuple[0],
                 residual_np=fit_out[2],
                 r2=fit_out[3],
                 out_dir=out_dir,
@@ -1524,7 +1525,8 @@ class GCSGraphicUserInterface(tk.Frame):
                 'Residual plot w/ breakpoints: %s' % breakpoint_list,
                 res_plot,
             )
-            print('Text file listing linear piecewise fit components @ %s' % txt)
+            logging.info(
+                'Text file listing linear piecewise fit components @ %s' % txt)
 
         def detrend(
                 xyz_csv,
@@ -1533,14 +1535,14 @@ class GCSGraphicUserInterface(tk.Frame):
         ) -> None:
             """Detrends the input raster based on .csv stored x, y, z, z_fit values for thalweg points"""
 
-            print('Detrending DEM...')
+            logging.info('Detrending DEM...')
             detrended_dem = detrend_that_raster(
                 xyz_csv=xyz_csv,
                 in_dem=in_dem,
                 aoi_shp=aoi_shp,
             )
-            print('Done')
-            print('Detrended DEM @ %s' % detrended_dem)
+            logging.info('Done')
+            logging.info('Detrended DEM @ %s' % detrended_dem)
 
         self.l_xyz = ttk.Label(
             root,
@@ -1794,21 +1796,21 @@ class GCSGraphicUserInterface(tk.Frame):
                 # ff you run for the first time it starts from 0 to max stage, generating shapefiles and plotting
                 # or the updated max_stage is higher, shapefiles are made for the missing stages, and plots are updated
                 if self.runs == 0 or self.switch:
-                    print('Making wetted area polygons...')
+                    logging.info('Making wetted area polygons...')
                     prep_small_inc(
                         detrended_dem=detrended_dem,
                         max_stage=max_stage,
                     )
-                    print('Done')
+                    logging.info('Done')
 
-                    print('Creating flow stage analysis plots...')
+                    logging.info('Creating flow stage analysis plots...')
                     imgs = pdf_cdf_plotting(
                         in_dir=wet_dir,
                         out_folder=out_dir,
                         max_stage=max_stage,
                     )
-                    print('Done')
-                    print('Plots @ %s' % os.path.dirname(imgs[0]))
+                    logging.info('Done')
+                    logging.info('Plots @ %s' % os.path.dirname(imgs[0]))
 
                     for img in imgs:
                         name = os.path.basename(img)[:-4]
@@ -1817,14 +1819,14 @@ class GCSGraphicUserInterface(tk.Frame):
 
                 # ff the max stage is less than on equal to the previous max stage, plots are updated
                 else:
-                    print('Creating flow stage analysis plots...')
+                    logging.info('Creating flow stage analysis plots...')
                     imgs = pdf_cdf_plotting(
                         in_dir=wet_dir,
                         out_folder=out_dir,
                         max_stage=max_stage,
                     )
-                    print('Done')
-                    print('Plots @ %s' % os.path.dirname(imgs[0]))
+                    logging.info('Done')
+                    logging.info('Plots @ %s' % os.path.dirname(imgs[0]))
 
                     for img in imgs:
                         open_popup('Flow stage vs wetted area', img)
@@ -2050,7 +2052,7 @@ class GCSGraphicUserInterface(tk.Frame):
         ) -> None:
             """DUMMY FUNCTION FOR FORMATTING"""
             if not analysis:
-                print('Extract GCS series...')
+                logging.info('Extract GCS series...')
                 extract_gcs(
                     detrended_dem,
                     zs,
@@ -2058,19 +2060,19 @@ class GCSGraphicUserInterface(tk.Frame):
                     xs_spacing,
                     clip_poly=clip_poly,
                 )
-                print('Done')
+                logging.info('Done')
 
             # TODO: finish this
             elif stage_plots and not nest_plots:
-                print('Stage plots')
+                logging.info('Stage plots')
             elif stage_plots and nest_plots:
-                print('Both plots')
+                logging.info('Both plots')
             elif not stage_plots and nest_plots:
-                print('Nest plots')
+                logging.info('Nest plots')
 
-            print(stage_plots)
-            print(nest_plots)
-            print('In the gcs function')
+            logging.info(stage_plots)
+            logging.info(nest_plots)
+            logging.info('In the gcs function')
 
         self.l_detrended2 = ttk.Label(
             root,
@@ -2428,7 +2430,7 @@ class GCSGraphicUserInterface(tk.Frame):
                 methods,
         ) -> None:
             """DUMMY FUNCTION FOR FORMATTING"""
-            print('In the RB function')
+            logging.info('In the RB function')
 
         self.l_csv = ttk.Label(
             root,

@@ -1,6 +1,6 @@
 import arcpy
 import os
-import pandas
+import logging
 import pandas as pd
 from typing import List, Tuple, Union
 from matplotlib import pyplot as plt
@@ -38,7 +38,7 @@ def linear_fit(
 ) -> Tuple[List[List[float]], np.array, np.array, float]:
     """Applies a linear fit to piecewise sections of the longitudinal profile, each piece is stored in split_list"""
 
-    print("Applying linear fit...")
+    logging.info("Applying linear fit...")
 
     # Initiate lists for breakpoint based linear fit
     split_locs_list = []
@@ -49,9 +49,9 @@ def linear_fit(
     if len(bp_list) != 0:
         bp_list.insert(0, 0)
         bp_list.append(int(location_np[-1]))
-        print("Breakpoints imported...")
+        logging.info("Breakpoints imported...")
     else:
-        print("No breakpoint imported...")
+        logging.info("No breakpoint imported...")
 
     # Set up arrays and calculate point spacing
     location_np = np.int_(location_np)
@@ -76,7 +76,7 @@ def linear_fit(
             elif i == bp_indices[-1]:
                 split_locs_list.append(location_np[bp_indices[index - 1]:])
                 split_z_list.append(z_np[bp_indices[index - 1]:])
-        print("Breakpoints added")
+        logging.info("Breakpoints added")
 
         # Get fit parameters for each section of the data
         if len(split_z_list) == len(split_locs_list):
@@ -88,7 +88,7 @@ def linear_fit(
                 fit_params.append([m, b])
 
         else:
-            print("Something went wrong, list lengths do not match...")
+            logging.info("Something went wrong, list lengths do not match...")
 
         # Make list storing the lengths of each breakpoint split location/z array segment
         lengths = []
@@ -106,7 +106,7 @@ def linear_fit(
     else:
         m, b = np.polyfit(location_np, z_np, 1)
         fit_params = [[m, b]]
-        print("Fit params [m, b]: " + str(fit_params))
+        logging.info("Fit params [m, b]: " + str(fit_params))
 
         location_list = location_np.tolist()
         for j in location_list:
@@ -135,9 +135,10 @@ def linear_fit(
     # Convert residual and z fit values to an array
     z_fit = np.array(z_fit_list)
     residual = np.array(residual)
-    print('Done')
+    logging.info('Done')
 
     return (fit_params, z_fit, residual, r_squared)
+
 
 @err_info
 @spatial_license
@@ -163,7 +164,7 @@ def detrend_that_raster(
     # Create dataframe storing the fitted xyz .csv values
     fit_col = 'z_fit'
     cols = ['FID', 'Shape', 'POINT_X', 'POINT_Y', fit_col]
-    xyz_df = pandas.read_csv(xyz_csv, usecols=cols)
+    xyz_df = pd.read_csv(xyz_csv, usecols=cols)
 
     # Generate station points with fitted z values
     points = arcpy.MakeXYEventLayer_management(
@@ -183,7 +184,7 @@ def detrend_that_raster(
     points = arcpy.DeleteField_management(points, fields2delete)
 
     # Calculate dem cell size and generate thiessen raster from fitted station points
-    print("Creating Thiessen polygons...")
+    logging.info("Creating Thiessen polygons...")
     cell_size1 = arcpy.GetRasterProperties_management(in_dem, "CELLSIZEX")
     cell_size = float(cell_size1.getOutput(0))
 

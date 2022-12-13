@@ -21,14 +21,14 @@ def sankey_chi_squared(detrended_dem, zs):
     outs = []
 
     if detrended_dem == '':
-        print('Error: Must input detrended DEM parameter in the GUI to set up output folder location')
-        return
+        raise ValueError(
+            'Must input detrended DEM parameter in the GUI to set up output folder location')
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        print(
-            'Error: Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -47,13 +47,19 @@ def sankey_chi_squared(detrended_dem, zs):
 
     aligned_df = pd.read_csv(gcs_dir + '\\aligned_gcs_table.csv')
     data = aligned_df.dropna()
-    out_dict = {'from': [], 'to': [], 'to_landform': [],
-                'expected_freq': [], 'expected_proportion': []}
+
+    out_dict = {
+        'from': [],
+        'to': [],
+        'to_landform': [],
+        'expected_freq': [],
+        'expected_proportion': [],
+    }
 
     # for each step-wise stage transition, calculate chi-squared test result
     for i in range(len(zs) - 1):
-        print('Chi Squares test for landform transitions: %s -> %s' %
-              (z_labels[i], z_labels[i + 1]))
+        logging.info('Chi Squares test for landform transitions: %s -> %s' %
+                     (z_labels[i], z_labels[i + 1]))
 
         type_df = data.dropna(
             axis=0, subset=['code_%s' % z_labels[i], 'code_%s' % z_labels[i + 1]])
@@ -106,7 +112,7 @@ def sankey_chi_squared(detrended_dem, zs):
     out_name = out_dir + '\\landform_transitions_chi_square.csv'
     out_df.to_csv(out_name)
 
-    print('results @ %s' % out_name)
+    logging.info('results @ %s' % out_name)
 
 
 def violin_ttest(df, z_labels, threshold, out_dir):
@@ -151,8 +157,8 @@ def violin_ttest(df, z_labels, threshold, out_dir):
 
     out_df = pd.DataFrame.from_dict(out_dict)
 
-    out_df.set_index('Class')
-    print(out_df)
+    out_df.set_index('Class', inplace=True)
+    logging.info(out_df)
 
     thresh_label = file_functions.float_keyz_format(threshold)
     out_csv = out_dir + '\\%s_thresh_violin_stats.csv' % thresh_label
@@ -224,23 +230,25 @@ def runs_test(series, spacing=0):
 
     if spacing != 0:
         mean_run_length = median_run_length * spacing
-        data = {'Runs': num_runs,
-                'Expected Runs': round(exp_runs, 2),
-                'Expected Run StDev': round(exp_run_std, 2),
-                'abs(Z)': abs(round(z_diff_expected, 2)),
-                'p value': p_value,
-                'Percent of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
-                'Median run length (ft)': round(median_run_length * spacing, 2)
-                }
+        data = {
+            'Runs': num_runs,
+            'Expected Runs': round(exp_runs, 2),
+            'Expected Run StDev': round(exp_run_std, 2),
+            'abs(Z)': abs(round(z_diff_expected, 2)),
+            'p value': p_value,
+            'Percent of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
+            'Median run length (ft)': round(median_run_length * spacing, 2),
+        }
     else:
-        data = {'Runs': num_runs,
-                'Expected Runs': round(exp_runs, 2),
-                'Expected Run StDev': round(exp_run_std, 2),
-                'abs(Z)': abs(round(z_diff_expected, 2)),
-                'p value': p_value,
-                '% of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
-                'Median run length': round(median_run_length, 2)
-                }
+        data = {
+            'Runs': num_runs,
+            'Expected Runs': round(exp_runs, 2),
+            'Expected Run StDev': round(exp_run_std, 2),
+            'abs(Z)': abs(round(z_diff_expected, 2)),
+            'p value': p_value,
+            '% of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
+            'Median run length': round(median_run_length, 2),
+        }
     num_runs = 0
 
     return data
@@ -275,15 +283,14 @@ def runs_test_to_xlsx(ws, gcs_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs
 
 def descriptive_stats_xlxs(detrended_dem, zs):
     if detrended_dem == '':
-        logging.error(
-            'Error: Must input detrended DEM parameter in the GUI to set up output folder location')
-        return
+        raise ValueError(
+            'Must input detrended DEM parameter in the GUI to set up output folder location')
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
-        logging.error('Error: Key flow stage parameter input incorrectly. \
-            Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+        raise ValueError('Key flow stage parameter input incorrectly.'
+                         'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)

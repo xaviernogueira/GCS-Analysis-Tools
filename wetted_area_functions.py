@@ -1,4 +1,5 @@
 import os
+import logging
 import numpy as np
 from typing import Union, List
 from matplotlib import pyplot as plt
@@ -25,10 +26,10 @@ def float_keyz_format(
     elif isinstance(z, int):
         z_str = str(z) + 'p0'
 
-    try:
-        return z_str
-    except z_str == '':
-        print('Key z list parameters not valid. Please fill list with int or float.')
+    if z_str == '':
+        raise ValueError(
+            'Key z list parameters not valid. Please fill list with int or float.')
+    return z_str
 
 
 @err_info
@@ -60,14 +61,14 @@ def prep_small_inc(
     else:
         interval = 0.1
         n = 1
-    print('Units are %s' % unit)
+    logging.info('Units are %s' % unit)
 
     # Set up range
     stages = np.arange(0, float(max_stage + interval), interval)
     stages = np.around(stages, n)
 
     # Make wetted area polygons at 0.1ft / 0.03m intervals
-    print('Making wetted polygons...')
+    logging.info('Making wetted polygons...')
     in_ras = Raster(detrended_dem)
 
     for inc in stages:
@@ -112,7 +113,7 @@ def stage_centerlines(
     dem_dir = os.path.dirname(dem)
 
     if len(dem_dir) == 0:
-        print('Error: Please select valid detrended DEM file')
+        logging.error('Please select valid detrended DEM file')
         return
 
     out_dir = dem_dir + '\\centerlines'
@@ -139,7 +140,7 @@ def stage_centerlines(
             'Final center-lines @ %s \nDone.' % out_dir,
         ]
 
-    print(messages[0])
+    logging.info(messages[0])
 
     # set up units string
     spatial_ref = arcpy.Describe(dem).spatialReference
@@ -181,9 +182,8 @@ def stage_centerlines(
             arcpy.CopyFeatures_management(rm_spur, out_name)
             drafts.append(out_name)
 
-        print(
+        logging.info(
             'Please see centerline_info.txt in %s for information about editing centerlines')
-        # print message, make .txt file in the centerline folder with instructions on editing
 
     elif not drafting:
         for z in zs:
@@ -211,7 +211,7 @@ def stage_centerlines(
                 'Short',
             )
 
-    print(messages[1])
+    logging.info(messages[1])
     return out_dir
 
 
@@ -222,7 +222,7 @@ def pdf_cdf_plotting(
 ) -> List[str]:
     """Doc string goes here
     Returns: A list containing the locations of the three generated wetted area plots"""
-    print('Wetted area vs stage height analysis initiated...')
+    logging.info('Wetted area vs stage height analysis initiated...')
 
     # Make new folder to hold plots
     out_folder = out_folder + '\\flow_stage_plots'
@@ -244,7 +244,7 @@ def pdf_cdf_plotting(
         u = 'ft'
 
     # Calculate the wetted area of each wetted area polygon in their folder
-    print('Calculating wetted areas...')
+    logging.info('Calculating wetted areas...')
     for poly in wetted_polys:
         poly_area = 0
         for row in SearchCursor(poly, ["SHAPE@AREA"]):
@@ -260,7 +260,7 @@ def pdf_cdf_plotting(
     wetted_areas = wetted_areas[:len(stages)]
 
     # Calculate the change in wetted area between stages
-    print('Calculating d(wetted area)...')
+    logging.info('Calculating d(wetted area)...')
     d_area = []
     for count, area in enumerate(wetted_areas):
         if count == 0:
@@ -269,7 +269,7 @@ def pdf_cdf_plotting(
             d_area.append(float(area-wetted_areas[count-1]))
 
     # Plot stage height (x axis) vs wetted area (y axis)
-    print('Plotting...')
+    logging.info('Plotting...')
     x1 = stages
     y1 = np.array(wetted_areas)
     title1 = (out_folder + '\\cumulative_area.png')

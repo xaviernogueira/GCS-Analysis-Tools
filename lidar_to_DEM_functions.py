@@ -50,12 +50,12 @@ def lidar_footprint(
 
             cmd("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
                 (lasbin, lidardir, f, laspath, f[:-4]))
-            print("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
-                  (lasbin, lidardir, f, laspath, f[:-4]))
+            logging.info("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
+                         (lasbin, lidardir, f, laspath, f[:-4]))
             cmd("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
                 (lasbin, laspath, f[:-4], laspath, f[:-4]))
-            print("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
-                  (lasbin, laspath, f[:-4], laspath, f[:-4]))
+            logging.info("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
+                         (lasbin, laspath, f[:-4], laspath, f[:-4]))
 
     files_in_laspath = [f for f in os.listdir(
         laspath) if os.path.isfile(os.path.join(laspath, f))]
@@ -212,7 +212,7 @@ def define_ground_polygon(
         ground_poly,
         in_spatial_ref,
     )
-    print("AOI bare-ground polygon @ %s" % ground_poly)
+    logging.info("AOI bare-ground polygon @ %s" % ground_poly)
 
     return ground_poly
 
@@ -251,14 +251,14 @@ def lidar_to_raster(
 
     if in_spatial_ref.linearUnitName == 'Meter':
         cell_size = m_cell_size
-        print('LAS units are Meters')
+        logging.info('LAS units are Meters')
 
     elif in_spatial_ref.linearUnitName == 'Foot_US':
         cell_size = (3.28 * m_cell_size)
-        print('LAS units are Feet')
+        logging.info('LAS units are Feet')
 
     else:
-        return print('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' % os.path.basename(in_spatial_ref))
+        return logging.info('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' % os.path.basename(in_spatial_ref))
 
     # Set up interpolation method string
     if sample_meth == 'BINNING':
@@ -266,7 +266,7 @@ def lidar_to_raster(
 
     else:
         method_str = "%s %s NO_THINNING MAXIMUM 0" % (sample_meth, tri_meth)
-    print('Methods: %s' % method_str)
+    logging.info('Methods: %s' % method_str)
 
     no_prj_dem = temp_files + '\\noprj_dem.tif'
     las_dataset = arcpy.CreateLasDataset_management(
@@ -290,18 +290,18 @@ def lidar_to_raster(
         out_coor_system=out_spatial_ref,
     )
 
-    print("LAS -> DEM output @ %s" % out_dem)
+    logging.info("LAS -> DEM output @ %s" % out_dem)
 
     # Notify the user which units the DEM are in
     if out_spatial_ref.linearUnitName == 'Meter':
-        print('DEM units are Meters')
+        logging.info('DEM units are Meters')
 
     elif out_spatial_ref.linearUnitName == 'Foot_US':
-        print('DEM units are Feet')
+        logging.info('DEM units are Feet')
 
     else:
-        print('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' %
-              os.path.basename(out_spatial_ref))
+        logging.info('Linear unit name for %s uncertain, please use a PROJECTED COORDINATE SYSTEM' %
+                     os.path.basename(out_spatial_ref))
 
     return out_dem
 
@@ -344,8 +344,8 @@ def detrend_prep(
     filt_passes = int(filt_passes)
 
     if not centerline_verified:
-        print('Generating smooth thalweg centerline...')
-        print("Smoothing DEM w/ %sx low pass filters..." % filt_passes)
+        logging.info('Generating smooth thalweg centerline...')
+        logging.info("Smoothing DEM w/ %sx low pass filters..." % filt_passes)
         ticker = 0
         filter_out = Filter(dem, "LOW")
         filter_out.save(temp_files + "\\filter_out%s" % ticker)
@@ -361,7 +361,8 @@ def detrend_prep(
         filter_out.save(dem_dir + "\\filt_ras.tif")
 
         # Create least cost centerline from 15x filtered raster
-        print("Smoothed DEM made, least-cost centerline being calculated...")
+        logging.info(
+            "Smoothed DEM made, least-cost centerline being calculated...")
         lidar_foot = dem_dir + '\\las_footprint.shp'
 
         # check for LiDAR Footprint file
@@ -386,13 +387,13 @@ def detrend_prep(
                 try:
                     shutil.rmtree(file)
                 except Exception:
-                    print("Could not remove %s " % file)
+                    logging.info("Could not remove %s " % file)
             else:
-                print("Path %s does not exist and can't be deleted...")
-        print('Done')
+                logging.info("Path %s does not exist and can't be deleted...")
+        logging.info('Done')
 
     else:
-        print('Generating thalweg elevation profile...')
+        logging.info('Generating thalweg elevation profile...')
         centerline = dem_dir + "\\thalweg_centerline.shp"
 
         # Define location of intermediate files, some of which will be deleted
@@ -466,7 +467,8 @@ def detrend_prep(
         for j in intermediates[2:]:
             delete_gis_files(j)
 
-        print("Thalweg elevation profile (.csv) @ %s " % str(elevation_table))
-        print('Done')
+        logging.info("Thalweg elevation profile (.csv) @ %s " %
+                     str(elevation_table))
+        logging.info('Done')
 
         return elevation_table
