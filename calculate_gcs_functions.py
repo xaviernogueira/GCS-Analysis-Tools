@@ -149,7 +149,7 @@ def extract_gcs(
     spacing: Union[str, List[Union[int, float]]],
     clip_poly: str = ''
 ) -> List[str]:
-    """This function does a full GCS analysis using three key Zs (floats). 
+    """This function does a full GCS analysis using key stage heights / Zs (floats). 
 
     Results are saved to the gcs_ready_tables, as well as plotted. Results are 
     aligned to the existing csv to facilitate landform analysis detrend 

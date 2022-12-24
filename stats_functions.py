@@ -5,182 +5,36 @@ import numpy as np
 import scipy
 import openpyxl
 from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 import scipy.stats as stats
 import file_functions
+from typing import Union, List, Dict, Tuple, Iterable
 
 
-def sankey_chi_squared(detrended_dem, zs):
-    """This function calculates a chi squared test comparing observed landform transitions vs expected, with expected
-    frequencies proportional to relative abundance. Low p values indicate significant transition preferences.
-    Returns: two dataframes, one containing transitions %, expected %, and p value for both base->bf and bf->vf"""
-
-    col_labels = ['base', 'bf', 'vf']
-    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB',
-                 2: 'NZ'}  # code number and corresponding MU
-    landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide bar', 'Nozzle']
-    outs = []
-
-    if detrended_dem == '':
-        raise ValueError(
-            'Must input detrended DEM parameter in the GUI to set up output folder location')
-
-    if type(zs) == str:
-        zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
-
-    # set up directories
-    dem_dir = os.path.dirname(detrended_dem)
-    gcs_dir = dem_dir + '\\gcs_tables'
-    out_dir = dem_dir + '\\nesting_analysis'
-
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
-
-    # prep input data
-    zs.sort()
-    z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
-
-    aligned_df = pd.read_csv(gcs_dir + '\\aligned_gcs_table.csv')
-    data = aligned_df.dropna()
-
-    out_dict = {
-        'from': [],
-        'to': [],
-        'to_landform': [],
-        'expected_freq': [],
-        'expected_proportion': [],
-    }
-
-    # for each step-wise stage transition, calculate chi-squared test result
-    for i in range(len(zs) - 1):
-        logging.info('Chi Squares test for landform transitions: %s -> %s' %
-                     (z_labels[i], z_labels[i + 1]))
-
-        type_df = data.dropna(
-            axis=0, subset=['code_%s' % z_labels[i], 'code_%s' % z_labels[i + 1]])
-
-        total_rows = int(type_df.shape[0])
-        lower = z_labels[i]
-        higher = z_labels[i + 1]
-
-        for num in range(-2, 3):
-            out_dict['from'].append(lower)
-            out_dict['to'].append(higher)
-            out_dict['to_landform'].append(landforms[num + 2])
-            num_df = type_df.loc[lambda type_df: type_df['code_%s' %
-                                                         col_labels[i + 1]] == num]
-
-            out_dict['expected_freq'].append(num_df.shape[0])
-            out_dict['expected_proportion'].append(
-                num_df.shape[0] / total_rows)
-
-        for j, form in enumerate(landforms):
-            if i == 0:
-                out_dict['from_' + form + '_freq'] = []
-                out_dict['from_' + form + '_proportion'] = []
-                out_dict['p_value_from_%s' % form] = []
-
-            low_index = j - 2
-            low_code = 'code_%s' % z_labels[i]
-
-            form_df = type_df.loc[lambda type_df: type_df[low_code] == low_index]
-            form_rows_count = form_df.shape[0]
-
-            for z, high in enumerate(landforms):
-                high_index = z - 2
-                high_code = 'code_%s' % z_labels[i + 1]
-
-                sub_df = form_df.loc[lambda form_df: form_df[high_code]
-                                     == high_index]
-                freq = sub_df.shape[0]
-                out_dict['from_' + form + '_freq'].append(freq)
-                out_dict['from_' + form +
-                         '_proportion'].append(freq / form_rows_count)
-
-            obs = np.array(out_dict['from_' + form + '_freq'])
-            expect = np.array(out_dict['Expected_freq'])
-            test_out = stats.chisquare(obs, expect)
-            out_dict['p_value_from_%s' % form].extend(
-                [test_out[1] for i in range(5)])  # Add p values
-
-    out_df = pd.DataFrame.from_dict(out_dict)
-    out_name = out_dir + '\\landform_transitions_chi_square.csv'
-    out_df.to_csv(out_name)
-
-    logging.info('results @ %s' % out_name)
+# STAGE BASED ANALYSIS FUNCTIONS
 
 
-def violin_ttest(df, z_labels, threshold, out_dir):
-    """Takes the dataframe used to make violin plots and extracts descriptive statistics of each displayed value distribution.
-    Welches t-test is applied to see if distribution mean differences are statistically significant. Results are stored
-    in a csv file saved to the /nested_analysis/ folder"""
-
-    out_dict = {'from stage': [], 'from elevation': [], 'to variable': [], 'mean': [], 'std': [],
-                'median': [], 'max': [], 'min': [], 'range': [], 'welch_ttest_p': []}
-    topos = ['High Zs, > %s' % threshold, 'Low Zs, < -%s' % threshold]
-
-    for i, lower in enumerate(z_labels[:-1]):
-        subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold],
-                df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
-        if i == 1:
-            # This is left b/c of the last cell changing the W_s_vf column header
-            higher_col = 'Flood stage Ws'
-        else:
-            higher_col = 'Ws_%s' % z_labels[i + 1]
-
-        higher_variable = '%s Ws' % z_labels[i + 1]
-
-        t_ins = []
-        for j, topo in enumerate(topos):
-            sub = subs[j]
-            out_dict['from elevation'].append(lower)
-            out_dict['from elevation'].append(topo)
-            out_dict['to variable'].append(higher_variable)
-            out_dict['mean'].append(sub.loc[:, higher_col].mean())
-            out_dict['std'].append(sub.loc[:, higher_col].std())
-            out_dict['median'].append(sub.loc[:, higher_col].median())
-            out_dict['max'].append(sub.loc[:, higher_col].max())
-            out_dict['min'].append(sub.loc[:, higher_col].min())
-            out_dict['range'].append(
-                sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min())
-            t_ins.append(sub.loc[:, higher_col].to_numpy())
-
-        t, p = stats.ttest_ind(
-            t_ins[0], t_ins[1], equal_var=False, nan_policy='omit')
-        out_dict['welch_ttest_p'].append(p)
-        out_dict['welch_ttest_p'].append(p)
-
-    out_df = pd.DataFrame.from_dict(out_dict)
-
-    out_df.set_index('Class', inplace=True)
-    logging.info(out_df)
-
-    thresh_label = file_functions.float_keyz_format(threshold)
-    out_csv = out_dir + '\\%s_thresh_violin_stats.csv' % thresh_label
-    out_df.to_csv(out_csv)
-
-    return out_csv
-
-
-def runs_test(series, spacing=0):
+def runs_test(
+    series: Iterable,
+    spacing=0,
+) -> Dict[str, Union[float, int]]:
     """
-    Does WW runs test for values above/below median of series
+    Does WW runs test for values above/below median of series.
 
     Args:
-        series (list): a list of values for which to perform the Wald-Wolfowitz runs test for values below/above median
+        series (iterable): a list of values for which to perform the Wald-Wolfowitz runs test for values below/above median
 
     Returns:
-        A dataframe containing the following:
+        A dictionary containing the following:
             number of runs
             number of expected runs (if random)
             expected standard deviation of number of runs (if random)
             Z: number of standard deviations difference between actual and expected number of run (standard deviation of num. of runs if random)
     """
+
+    # convert to array if a list
+    if isinstance(series, list):
+        series = np.array(series)
 
     m = np.median(series)
     # omit values from series equal to the median
@@ -237,6 +91,7 @@ def runs_test(series, spacing=0):
             'abs(Z)': abs(round(z_diff_expected, 2)),
             'p value': p_value,
             'Percent of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
+            'Mean run length (ft)': round(mean_run_length, 2),
             'Median run length (ft)': round(median_run_length * spacing, 2),
         }
     else:
@@ -254,9 +109,17 @@ def runs_test(series, spacing=0):
     return data
 
 
-def runs_test_to_xlsx(ws, gcs_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs']):
-    base_row = start_cors[0]
-    base_col = start_cors[1]
+def runs_test_to_xlsx(
+    ws: Worksheet,
+    gcs_df: pd.DataFrame,
+    ws_start_coords: Tuple[int, int] = (16, 1),
+    fields: List[str] = ['Ws', 'Zs', 'Ws_Zs'],
+) -> openpyxl.Workbook:
+    """Writes the output of the WW Runs test to a .xlsx file"""
+
+    # get the starting row, column coordinates on the sheet
+    base_row = ws_start_coords[0]
+    base_col = ws_start_coords[1]
 
     ws.cell(row=base_row, column=base_col).value = 'Wald-Wolfowitz runs test'
     ws.cell(row=base_row + 1, column=base_col).value = 'Field:'
@@ -281,10 +144,17 @@ def runs_test_to_xlsx(ws, gcs_df, start_cors=[16, 1], fields=['Ws', 'Zs', 'Ws_Zs
     return ws
 
 
-def descriptive_stats_xlxs(detrended_dem, zs):
+def descriptive_stats_xlxs(
+    zs: Union[str, List[float, int]],
+    analysis_dir: str,
+    detrended_dem: str,
+) -> str:
+    """Runs stage based descriptive stats analysis and writes to an .xslx file"""
+
     if detrended_dem == '':
         raise ValueError(
-            'Must input detrended DEM parameter in the GUI to set up output folder location')
+            'param:detrended_dem must be valid to find data directory locations + units!'
+        )
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
@@ -295,7 +165,7 @@ def descriptive_stats_xlxs(detrended_dem, zs):
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
     gcs_dir = dem_dir + '\\gcs_tables'
-    out_dir = dem_dir + '\\stage_analysis'
+    out_dir = analysis_dir + '\\stage_analysis'
     stats_xl = out_dir + '\\stage_descriptive_statistics.xslx'
 
     if not os.path.exists(out_dir):
@@ -361,8 +231,13 @@ def descriptive_stats_xlxs(detrended_dem, zs):
                                16, 1], fields=['Ws', 'Zs', 'Ws_Zs'])
 
         # calculate descriptive statistics for cross-sections classified as each landform
-        landform_dict = {-2: 'Oversized', -1: 'Constricted pool',
-                         0: 'Normal', 1: 'Wide riffle', 2: 'Nozzle'}
+        landform_dict = {
+            -2: 'Oversized',
+            -1: 'Constricted pool',
+            0: 'Normal',
+            1: 'Wide riffle',
+            2: 'Nozzle',
+        }
         codes = landform_dict.keys()
 
         ws['F1'].value = '*Code: -2 for oversized, -1 for constricted pool, 0 for normal channel, 1 for wide riffle, and 2 for nozzle'
@@ -426,8 +301,8 @@ def descriptive_stats_xlxs(detrended_dem, zs):
         ws.cell(row=8, column=1).value = "% >= 1 STD"
         ws.cell(row=9, column=1).value = "% <= -0.5 STD"
         ws.cell(row=10, column=1).value = "% <= -1 STD"
-        ws.cell(row=11, column=1).value = "% abs(value) >= 0.5 STD"
-        ws.cell(row=12, column=1).value = "% abs(value) >= 1 STD"
+        ws.cell(row=11, column=1).value = r"% abs(value) >= 0.5 STD"
+        ws.cell(row=12, column=1).value = r"% abs(value) >= 1 STD"
         ws.cell(row=14, column=1).value = "% C(Ws,Zs) > 0"
         ws.cell(row=14, column=2).value = float(
             (cwz_above_zero / total_rows) * 100)
@@ -500,3 +375,174 @@ def descriptive_stats_xlxs(detrended_dem, zs):
 
         wb.save(stats_xl)
         logging.info('Descriptive statistics table saved @ %s' % stats_xl)
+        return stats_xl
+
+
+# NESTING BASED ANALYSIS FUNCTIONS
+
+def sankey_chi_squared(
+    zs: Union[str, List[float, int]],
+    aligned_gcs_csv: str,
+    analysis_dir: str,
+    detrended_dem: str,
+) -> pd.DataFrame:
+    """This function calculates the chi squared significance of landform transitions.
+
+    Chi-Squares compares observed vs expected landform transitiosn, with expected
+    frequencies being proportional to landform relative abundance. 
+    Low p values indicate significant transition preferences.
+
+    Returns: A DataFrame with the results of the Chi-Squares test.
+    """
+
+    col_labels = ['base', 'bf', 'vf']
+    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB',
+                 2: 'NZ'}  # code number and corresponding MU
+    landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide bar', 'Nozzle']
+    outs = []
+
+    if detrended_dem == '':
+        raise ValueError(
+            'param:detrended_dem must be valid to find data directory locations + units!'
+        )
+    if type(zs) == str:
+        zs = file_functions.string_to_list(zs, format='float')
+    elif type(zs) != list:
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+
+    # set up directories
+    out_dir = analysis_dir + '\\nesting_analysis'
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    # get units for labeling
+    u = file_functions.get_label_units(detrended_dem)[0]
+
+    # prep input data
+    zs.sort()
+    z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
+
+    aligned_df = pd.read_csv(aligned_gcs_csv)
+    data = aligned_df.dropna()
+
+    out_dict = {
+        'from': [],
+        'to': [],
+        'to_landform': [],
+        'expected_freq': [],
+        'expected_proportion': [],
+    }
+
+    # for each step-wise stage transition, calculate chi-squared test result
+    for i in range(len(zs) - 1):
+        logging.info('Chi Squares test for landform transitions: %s -> %s' %
+                     (z_labels[i], z_labels[i + 1]))
+
+        type_df = data.dropna(
+            axis=0, subset=['code_%s' % z_labels[i], 'code_%s' % z_labels[i + 1]])
+
+        total_rows = int(type_df.shape[0])
+        lower = z_labels[i]
+        higher = z_labels[i + 1]
+
+        for num in range(-2, 3):
+            out_dict['from'].append(lower)
+            out_dict['to'].append(higher)
+            out_dict['to_landform'].append(landforms[num + 2])
+            num_df = type_df.loc[lambda type_df: type_df['code_%s' %
+                                                         col_labels[i + 1]] == num]
+
+            out_dict['expected_freq'].append(num_df.shape[0])
+            out_dict['expected_proportion'].append(
+                num_df.shape[0] / total_rows)
+
+        for j, form in enumerate(landforms):
+            if i == 0:
+                out_dict['from_' + form + '_freq'] = []
+                out_dict['from_' + form + '_proportion'] = []
+                out_dict['p_value_from_%s' % form] = []
+
+            low_index = j - 2
+            low_code = 'code_%s' % z_labels[i]
+
+            form_df = type_df.loc[lambda type_df: type_df[low_code] == low_index]
+            form_rows_count = form_df.shape[0]
+
+            for z, high in enumerate(landforms):
+                high_index = z - 2
+                high_code = 'code_%s' % z_labels[i + 1]
+
+                sub_df = form_df.loc[lambda form_df: form_df[high_code]
+                                     == high_index]
+                freq = sub_df.shape[0]
+                out_dict['from_' + form + '_freq'].append(freq)
+                out_dict['from_' + form +
+                         '_proportion'].append(freq / form_rows_count)
+
+            obs = np.array(out_dict['from_' + form + '_freq'])
+            expect = np.array(out_dict['Expected_freq'])
+            test_out = stats.chisquare(obs, expect)
+            out_dict['p_value_from_%s' % form].extend(
+                [test_out[1] for i in range(5)])  # Add p values
+
+    out_df = pd.DataFrame.from_dict(out_dict)
+    out_name = out_dir + '\\landform_transitions_chi_square.csv'
+    out_df.to_csv(out_name)
+
+    logging.info('results @ %s' % out_name)
+
+    return out_df
+
+
+def violin_ttest(df, z_labels, threshold, out_dir):
+    """Takes the dataframe used to make violin plots and extracts descriptive statistics of each displayed value distribution.
+    Welches t-test is applied to see if distribution mean differences are statistically significant. Results are stored
+    in a csv file saved to the /nested_analysis/ folder"""
+
+    out_dict = {'from stage': [], 'from elevation': [], 'to variable': [], 'mean': [], 'std': [],
+                'median': [], 'max': [], 'min': [], 'range': [], 'welch_ttest_p': []}
+    topos = ['High Zs, > %s' % threshold, 'Low Zs, < -%s' % threshold]
+
+    for i, lower in enumerate(z_labels[:-1]):
+        subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold],
+                df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
+        if i == 1:
+            # This is left b/c of the last cell changing the W_s_vf column header
+            higher_col = 'Flood stage Ws'
+        else:
+            higher_col = 'Ws_%s' % z_labels[i + 1]
+
+        higher_variable = '%s Ws' % z_labels[i + 1]
+
+        t_ins = []
+        for j, topo in enumerate(topos):
+            sub = subs[j]
+            out_dict['from elevation'].append(lower)
+            out_dict['from elevation'].append(topo)
+            out_dict['to variable'].append(higher_variable)
+            out_dict['mean'].append(sub.loc[:, higher_col].mean())
+            out_dict['std'].append(sub.loc[:, higher_col].std())
+            out_dict['median'].append(sub.loc[:, higher_col].median())
+            out_dict['max'].append(sub.loc[:, higher_col].max())
+            out_dict['min'].append(sub.loc[:, higher_col].min())
+            out_dict['range'].append(
+                sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min())
+            t_ins.append(sub.loc[:, higher_col].to_numpy())
+
+        t, p = stats.ttest_ind(
+            t_ins[0], t_ins[1], equal_var=False, nan_policy='omit')
+        out_dict['welch_ttest_p'].append(p)
+        out_dict['welch_ttest_p'].append(p)
+
+    out_df = pd.DataFrame.from_dict(out_dict)
+
+    out_df.set_index('Class', inplace=True)
+    logging.info(out_df)
+
+    thresh_label = file_functions.float_keyz_format(threshold)
+    out_csv = out_dir + '\\%s_thresh_violin_stats.csv' % thresh_label
+    out_df.to_csv(out_csv)
+
+    return out_csv

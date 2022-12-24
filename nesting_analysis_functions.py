@@ -2,6 +2,7 @@ import arcpy
 from stats_functions import *
 from plotting_functions import *
 
+gcs_dir = dem_dir + '\\gcs_tables'
 
 def prep_locations(
     detrend_folder: str,

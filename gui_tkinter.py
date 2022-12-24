@@ -2041,16 +2041,18 @@ class GCSGraphicUserInterface(tk.Frame):
         root = self.tabs['GCS analysis']
 
         def gcs_analysis(
-                detrended_dem,
-                zs,
-                xs_lengths,
-                xs_spacing,
-                clip_poly: str = '',
-                stage_plots: bool = False,
-                nest_plots: bool = False,
-                analysis_dir: str = None,
+            detrended_dem,
+            zs,
+            xs_lengths,
+            xs_spacing,
+            clip_poly: str = '',
+            stage_plots: bool = False,
+            nest_plots: bool = False,
+            analysis_dir: str = None,
         ) -> None:
             """Controls GCS calculation and analysis behavior"""
+            # get path to base outputs on
+
             if not stage_plots and not nest_plots:
                 logging.info('Extract GCS series...')
                 extract_gcs(
@@ -2062,10 +2064,26 @@ class GCSGraphicUserInterface(tk.Frame):
                 )
                 logging.info('Done')
 
-            # controls which post GCS calculation analyses are conducted
-            elif stage_plots and not nest_plots:
-                logging.info('Running flow stage level GCS analyses...')
+            # control GCS analysis output locations
+            else:
+                default_dir = os.path.dirname(
+                    detrended_dem + '\\GCS_analysis_outputs'
+                )
+                if analysis_dir == '':
+                    analysis_dir = default_dir
+                    logging.info(f'Analysis outputs will be @ {default_dir}')
+                elif not os.path.exists(analysis_dir):
+                    analysis_dir = default_dir
+                    logging.warning(
+                        f'Desired output location cannot be found! '
+                        f'Defaulting to {default_dir}'
+                    )
+                else:
+                    logging.info(f'Analysis outputs will be @ {analysis_dir}')
 
+            # run desired GCS analyses!
+            if stage_plots and not nest_plots:
+                logging.info('Running flow stage level GCS analyses...')
                 logging.info('Done')
 
             elif nest_plots and not stage_plots:
@@ -2254,17 +2272,6 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.n_clip = ttk.Label(
-            root,
-            text='Allows AOI to be updated, if unchanged leave empty!',
-        )
-        self.n_clip.grid(
-            sticky=W,
-            row=5,
-            column=3,
-            pady=pad,
-        )
-
         self.l_gcs = ttk.Label(
             root,
             text='Extract GCS series:',
@@ -2297,8 +2304,10 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.note2 = ttk.Label(
             root,
-            text='Verify that cross-section lengths are sufficient before continuing! \
-                Re-run above if necessary. Must have extracted GCS series first.',
+            text=(
+                'Verify that cross-section lengths are sufficient before continuing! '
+                'Re-run above if necessary. Must have extracted GCS series first.'
+            ),
         )
         self.note2.grid(
             sticky=W,
@@ -2388,7 +2397,7 @@ class GCSGraphicUserInterface(tk.Frame):
         # choose where to put output analyses files
         self.l_analysis_dir = ttk.Label(
             root,
-            text='GCS Analysis Output Directory:',
+            text='Override Analysis Output Directory (optional):',
         )
         self.l_analysis_dir.grid(
             stick=E,
@@ -2399,7 +2408,9 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.e_analysis_dir = ttk.Entry(root)
         self.e_analysis_dir.insert(
-            END, str(os.getcwd() + '\\analyses_outputs'))
+            END,
+            '',
+        )
         self.e_analysis_dir.grid(
             row=10,
             column=1,

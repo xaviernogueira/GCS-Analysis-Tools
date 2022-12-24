@@ -15,20 +15,27 @@ import plotly.graph_objects as go
 import plotly.express as pex
 from itertools import combinations
 import seaborn as sns
-
+from typing import Union, List
 import file_functions
 import openpyxl as xl
 
+# PLOTTING FUNCTIONS FOR BOTH STAGE AND NESTING ANALYSES
 
-def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False):
-    """This function makes longitudinal profile plots for given fields across each key z saving them to a folder.
-     If aligned_table is defined as the aligned csv, plots showing each key z profile as sub-plots for a given field are saved as well."""
 
+def gcs_plotter(
+    detrended_dem: str,
+    analysis_dir: str,
+    zs: Union[str, List[float, int]],
+    fields: List[str] = ['Ws', 'Zs', 'Ws_Zs'],
+    together: bool = False,
+) -> str:
+    """This function makes longitudinal profile GCS plots.
+
+    If param:together=True is defined as the aligned csv, plots showing each key z profile as sub-plots for a given field are saved as well."""
     if detrended_dem == '':
         raise ValueError(
-            'Must input detrended DEM parameter in the GUI to set up output folder location')
-        return
-
+            'param:detrended_dem must be valid to find data directory locations + units!'
+        )
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
@@ -47,10 +54,10 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
     u = file_functions.get_label_units(detrended_dem)[0]
 
     # define output directory
-    if together:
-        out_dir = dem_dir + '\\nesting_analysis'
+    if not together:
+        out_dir = analysis_dir + '\\stage_analysis'
     else:
-        out_dir = dem_dir + '\\stage_analysis'
+        out_dir = analysis_dir + '\\nesting_analysis'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -59,6 +66,7 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
     landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide Bar', 'Nozzle']
 
     # create subplots for each flow stage for a given gcs series (i.e. Ws, Zs, Ws*Zs)
+    # TODO: make this work with the aligned table!
     if together:
         for field in fields:
             xs = []
@@ -150,10 +158,15 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
             for count, field in enumerate(fields):
                 ymax = 0
                 ax[count].plot(x, full_ys[count], color=colors[2])
+
                 for i, y in enumerate(ys[count]):
                     ax[count].plot(x, y, color=colors[i], label=landforms[i])
                     temp_max = np.amax(
-                        np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
+                        np.array([
+                            np.abs(np.nanmin(y)),
+                            np.abs(np.nanmax(y)),
+                        ])
+                    )
                     if temp_max >= ymax and ymax <= 5:
                         ymax = math.ceil(temp_max)
                     elif ymax > 5:
@@ -162,9 +175,15 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
                 ax[count].set_ylim(-1 * ymax, ymax)
                 ax[count].set_ylabel(field)
                 ax[count].set_yticks(
-                    np.arange(-1 * ymax, ymax, 1), minor=False)
-                ax[count].grid(True, which='both',
-                               color='gainsboro', linestyle='--')
+                    np.arange(-1 * ymax, ymax, 1),
+                    minor=False,
+                )
+                ax[count].grid(
+                    True,
+                    which='both',
+                    color='gainsboro',
+                    linestyle='--',
+                )
                 ax[count].set_xlim(0.0, np.max(x))
                 ax[count].set_xticks(np.arange(0, np.max(x), 250))
 
@@ -175,16 +194,25 @@ def gcs_plotter(detrended_dem, zs, fields=['Ws', 'Zs', 'Ws_Zs'], together=False)
             plt.savefig(fig_name, dpi=300, bbox_inches='tight')
             plt.cla()
         plt.close('all')
-    logging.info('GCS plots saved @ %s' % out_dir)
+    return out_dir
 
 
-def heat_plotter(detrended_dem, zs, together=False):
-    """IN: Detrended DEM path (str), a string or list with flow stage height floats, whether to plot stages together or separate (boolean).
-    Returns: png heat-plot(s) for each input flow stage either all on one plot (together=True), or separately (together=False)"""
+def heat_plotter(
+    detrended_dem: str,
+    analysis_dir: str,
+    zs: Union[str, List[float, int]],
+    together: bool = False,
+) -> str:
+    """Creates Ws-Zs heatplots for each key Z flow stage.
+
+    :param together: controls whether to plot each stages together or separate (boolean).
+    :returns: the output directory path
+    """
 
     if detrended_dem == '':
         raise ValueError(
-            'Error: Must input detrended DEM parameter in the GUI to set up output folder location')
+            'param:detrended_dem must be valid to find data directory locations + units!'
+        )
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
@@ -205,7 +233,7 @@ def heat_plotter(detrended_dem, zs, together=False):
     # use [[zs]] or [[z1], [z2]] structure to control plotting
     if together:
         top_zs = [zs]
-        out_dir = dem_dir + '\\nesting_analysis'
+        out_dir = analysis_dir + '\\nesting_analysis'
         title = out_dir + '\\stages_heatplots.png'
     else:
         top_zs = []
@@ -265,14 +293,38 @@ def heat_plotter(detrended_dem, zs, together=False):
             ax.axvline(x=0.5, ymin=0.583, ymax=1,
                        color='#9e9e9e', linestyle='--')
 
-            ax.text(0.20, 0.05, 'Const. Pool', horizontalalignment='center', verticalalignment='center',
-                    transform=ax.transAxes)
-            ax.text(0.18, 0.95, 'Nozzle', horizontalalignment='center', verticalalignment='center',
-                    transform=ax.transAxes)
-            ax.text(0.82, 0.95, 'Wide Bar', horizontalalignment='center', verticalalignment='center',
-                    transform=ax.transAxes)
-            ax.text(0.82, 0.05, 'Oversized', horizontalalignment='center', verticalalignment='center',
-                    transform=ax.transAxes)
+            ax.text(
+                0.20,
+                0.05,
+                'Const. Pool',
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes,
+            )
+            ax.text(
+                0.18,
+                0.95,
+                'Nozzle',
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes,
+            )
+            ax.text(
+                0.82,
+                0.95,
+                'Wide Bar',
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes,
+            )
+            ax.text(
+                0.82,
+                0.05,
+                'Oversized',
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes,
+            )
 
             ax_title = '%s Ws, Zs heat-plot' % label
             ax.set_title(ax_title)
@@ -289,8 +341,13 @@ def heat_plotter(detrended_dem, zs, together=False):
     return out_dir
 
 
-def landform_pie_charts(detrended_dem, zs, together=False):
-    """"""
+def landform_pie_charts(
+    detrended_dem: str,
+    analysis_dir: str,
+    zs: Union[str, List[float, int]],
+    together: bool = False,
+) -> str:
+    """Makes pie charts visualizing relative GCS landform abundances for each stage"""
     labels = ['Oversized', 'Const.Pool', 'Normal', 'Wide Bar', 'Nozzle']
     colors = ['black', 'blue', 'grey', 'orange', 'red']
 
@@ -317,13 +374,13 @@ def landform_pie_charts(detrended_dem, zs, together=False):
     # use [[z1,z2,z3]] or [[z1], [z2]] structure to control plotting
     if together:
         top_zs = [zs]
-        out_dir = dem_dir + '\\nesting_analysis'
+        out_dir = analysis_dir + '\\nesting_analysis'
         title = out_dir + '\\stages_landform_pies.png'
     else:
         top_zs = []
         for i in zs:
             top_zs.append([i])
-        out_dir = dem_dir + '\\stage_analysis'
+        out_dir = analysis_dir + '\\stage_analysis'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -361,14 +418,24 @@ def landform_pie_charts(detrended_dem, zs, together=False):
                 temp_percents.append((count / total) * 100)
                 percents.append(np.array(temp_percents))
 
-            ax.pie(percents[count], labels=labels, labeldistance=None,
-                   autopct='%1.1f%%', textprops={'color': "w"}, colors=colors)
+            ax.pie(
+                percents[count],
+                labels=labels,
+                labeldistance=None,
+                autopct='%1.1f%%',
+                textprops={'color': "w"},
+                colors=colors,
+            )
             ax.set_title(label)
             ax.title.set_position([0.5, 0.92])
 
         # Adds legend to the bottom middle of the plot
-        axs[middle_index].legend(bbox_to_anchor=(
-            0.32, 0.07), bbox_transform=ax.transAxes, ncol=len(labels), fontsize=8)
+        axs[middle_index].legend(
+            bbox_to_anchor=(0.32, 0.07),
+            bbox_transform=ax.transAxes,
+            ncol=len(labels),
+            fontsize=8,
+        )
 
         if not together:
             title = out_dir + '\\%s_landform_pies.png' % label
@@ -383,13 +450,16 @@ def landform_pie_charts(detrended_dem, zs, together=False):
     return out_dir
 
 
+# NESTING BASED PLOTTING FUNCTIONS
+
+
 def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
-    """Creates Sankey diagrams showing nested landform relationships. Can be done across a class, transition occurences are normalized as a % for each reach."""
+    """Creates Sankey diagrams showing nested landform relationships. Can be done across a class , transition occurences are normalized as a % for each reach."""
 
     if detrended_dem == '':
         raise ValueError(
-            'Must input detrended DEM parameter in the GUI to set up output folder location')
-
+            'param:detrended_dem must be valid to find data directory locations + units!'
+        )
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
     elif type(zs) != list:
