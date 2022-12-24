@@ -227,8 +227,12 @@ def descriptive_stats_xlxs(
         wb.save(stats_xl)
 
         # run wald's runs test and add results to the flow stage sheet
-        ws = runs_test_to_xlsx(ws, stage_df, start_cors=[
-                               16, 1], fields=['Ws', 'Zs', 'Ws_Zs'])
+        ws = runs_test_to_xlsx(
+            ws, 
+            stage_df, 
+            ws_start_coords=(16, 1), 
+            fields=['Ws', 'Zs', 'Ws_Zs'],
+        )
 
         # calculate descriptive statistics for cross-sections classified as each landform
         landform_dict = {
