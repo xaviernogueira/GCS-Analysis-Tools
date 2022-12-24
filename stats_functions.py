@@ -168,7 +168,7 @@ def violin_ttest(df, z_labels, threshold, out_dir):
 
 
 def runs_test(series, spacing=0):
-    '''
+    """
     Does WW runs test for values above/below median of series
 
     Args:
@@ -180,7 +180,7 @@ def runs_test(series, spacing=0):
             number of expected runs (if random)
             expected standard deviation of number of runs (if random)
             Z: number of standard deviations difference between actual and expected number of run (standard deviation of num. of runs if random)
-    '''
+    """
 
     m = np.median(series)
     # omit values from series equal to the median

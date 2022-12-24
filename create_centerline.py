@@ -10,7 +10,7 @@ def least_cost_centerline(
     DEM: str,
     source: str,
 ) -> str:
-    '''returns a rough centerline using least cost path from source'''
+    """returns a rough centerline using least cost path from source"""
     check_use([DEM, source])
 
     try:

@@ -11,7 +11,7 @@ from lidar_processing_functions import process_lidar
 from dem_detrending_functions import fit_params_txt, make_residual_plot, linear_fit_plot, \
     diagnostic_quick_plot, detrend_that_raster, linear_fit, prep_xl_file
 from wetted_area_functions import prep_small_inc, pdf_cdf_plotting, stage_centerlines
-from gcs_analysis_functions import extract_gcs
+from calculate_gcs_functions import extract_gcs
 from file_functions import string_to_list, init_logger
 from arcpy import HillShade_3d
 
@@ -110,10 +110,10 @@ class GCSGraphicUserInterface(tk.Frame):
         ###################################################################
 
         def browse(
-                root,
-                entry,
-                select='file',
-                ftypes=[('All files', '*')],
+            root,
+            entry,
+            select='file',
+            ftypes=[('All files', '*')],
         ) -> None:
             """GUI button command: opens browser window and adds selected file/folder to entry"""
             if select == 'file':
@@ -2045,13 +2045,13 @@ class GCSGraphicUserInterface(tk.Frame):
                 zs,
                 xs_lengths,
                 xs_spacing,
-                analysis,
-                clip_poly='',
-                stage_plots=False,
-                nest_plots=False,
+                clip_poly: str = '',
+                stage_plots: bool = False,
+                nest_plots: bool = False,
+                analysis_dir: str = None,
         ) -> None:
-            """DUMMY FUNCTION FOR FORMATTING"""
-            if not analysis:
+            """Controls GCS calculation and analysis behavior"""
+            if not stage_plots and not nest_plots:
                 logging.info('Extract GCS series...')
                 extract_gcs(
                     detrended_dem,
@@ -2062,17 +2062,21 @@ class GCSGraphicUserInterface(tk.Frame):
                 )
                 logging.info('Done')
 
-            # TODO: finish this
+            # controls which post GCS calculation analyses are conducted
             elif stage_plots and not nest_plots:
-                logging.info('Stage plots')
-            elif stage_plots and nest_plots:
-                logging.info('Both plots')
-            elif not stage_plots and nest_plots:
-                logging.info('Nest plots')
+                logging.info('Running flow stage level GCS analyses...')
 
-            logging.info(stage_plots)
-            logging.info(nest_plots)
-            logging.info('In the gcs function')
+                logging.info('Done')
+
+            elif nest_plots and not stage_plots:
+                logging.info('Running nested GCS analyses...')
+
+                logging.info('Done')
+            else:
+                logging.info(
+                    'Running both flow stage and nesting GCS analyses...')
+
+                logging.info('Done')
 
         self.l_detrended2 = ttk.Label(
             root,
@@ -2281,7 +2285,6 @@ class GCSGraphicUserInterface(tk.Frame):
                 xs_lengths=self.e_length.get(),
                 xs_spacing=self.e_space.get(),
                 clip_poly=self.e_clip.get(),
-                analysis=False,
             ),
         )
         self.e_gcs.grid(
@@ -2382,13 +2385,53 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(9, minsize=30)
 
+        # choose where to put output analyses files
+        self.l_analysis_dir = ttk.Label(
+            root,
+            text='GCS Analysis Output Directory:',
+        )
+        self.l_analysis_dir.grid(
+            stick=E,
+            row=10,
+            column=0,
+            pady=15,
+        )
+
+        self.e_analysis_dir = ttk.Entry(root)
+        self.e_analysis_dir.insert(
+            END, str(os.getcwd() + '\\analyses_outputs'))
+        self.e_analysis_dir.grid(
+            row=10,
+            column=1,
+            pady=pad,
+            padx=5,
+        )
+
+        self.b_analysis_dir = ttk.Button(
+            root,
+            text='Browse',
+            command=lambda: browse(
+                root,
+                self.e_analysis_dir,
+                select='folder',
+            ),
+        )
+
+        self.b_analysis_dir.grid(
+            sticky=W,
+            row=10,
+            column=2,
+            pady=pad,
+        )
+
+        # radio buttons to control which analyses to run
         self.l_gcs = ttk.Label(
             root,
             text='GCS analysis:',
         )
         self.l_gcs.grid(
             stick=E,
-            row=10,
+            row=11,
             column=0,
             pady=15,
         )
@@ -2401,19 +2444,19 @@ class GCSGraphicUserInterface(tk.Frame):
                 zs=self.e_zs2.get(),
                 xs_lengths=self.e_length.get(),
                 xs_spacing=self.e_space.get(),
-                analysis=False,
                 clip_poly=self.e_clip.get(),
                 stage_plots=self.plots.get(),
                 nest_plots=self.plots2.get(),
+                analysis_dir=self.e_analysis_dir.get(),
             ),
         )
         self.e_gcs.grid(
             sticky=E,
-            row=10,
+            row=11,
             column=1,
             pady=15,
         )
-        root.grid_rowconfigure(10, minsize=50)
+        root.grid_rowconfigure(11, minsize=50)
 
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
