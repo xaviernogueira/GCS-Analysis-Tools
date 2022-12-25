@@ -16,7 +16,8 @@ from typing import Union, List, Dict, Tuple, Iterable
 
 def runs_test(
     series: Iterable,
-    spacing=0,
+    units: str,
+    spacing: int = 0,
 ) -> Dict[str, Union[float, int]]:
     """
     Does WW runs test for values above/below median of series.
@@ -82,17 +83,20 @@ def runs_test(
     elif p_value >= 0.95:
         p_value = str(round(p_value, 5)) + '*'
 
+    # get % of XSs in run > mean_run_length
+
     if spacing != 0:
         mean_run_length = median_run_length * spacing
+        percent_xs_greater = (num_in_sequence / n) * 100
         data = {
             'Runs': num_runs,
             'Expected Runs': round(exp_runs, 2),
             'Expected Run StDev': round(exp_run_std, 2),
             'abs(Z)': abs(round(z_diff_expected, 2)),
             'p value': p_value,
-            'Percent of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
-            'Mean run length (ft)': round(mean_run_length, 2),
-            'Median run length (ft)': round(median_run_length * spacing, 2),
+            f'Percent of XS in run > {spacing}{units}': percent_xs_greater,
+            f'Mean run length ({units})': round(mean_run_length, 2),
+            f'Median run length ({units})': round(median_run_length * spacing, 2),
         }
     else:
         data = {
@@ -101,8 +105,8 @@ def runs_test(
             'Expected Run StDev': round(exp_run_std, 2),
             'abs(Z)': abs(round(z_diff_expected, 2)),
             'p value': p_value,
-            '% of XS in run > %sft' % spacing: (num_in_sequence / n) * 100,
-            'Median run length': round(median_run_length, 2),
+            f'Percent of XS in run > {spacing}{units}': percent_xs_greater,
+            f'Median run length ({units})': round(median_run_length, 2),
         }
     num_runs = 0
 
@@ -112,6 +116,7 @@ def runs_test(
 def runs_test_to_xlsx(
     ws: Worksheet,
     gcs_df: pd.DataFrame,
+    units: str,
     ws_start_coords: Tuple[int, int] = (16, 1),
     fields: List[str] = ['Ws', 'Zs', 'Ws_Zs'],
 ) -> openpyxl.Workbook:
@@ -131,7 +136,11 @@ def runs_test_to_xlsx(
         col = base_col + 1 + count
         ws.cell(row=base_row + 1, column=base_col + 1 + count).value = field
         series = gcs_df.loc[:, [field]].squeeze()
-        out_dict = runs_test(series, spacing=int(spacing))
+        out_dict = runs_test(
+            series,
+            units=units,
+            spacing=int(spacing),
+        )
 
         # add runs test outputs
         if count == 0:
@@ -156,11 +165,15 @@ def descriptive_stats_xlxs(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    if type(zs) == str:
+    if isinstance(zs, str) == str:
         zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
-        raise ValueError('Key flow stage parameter input incorrectly.'
-                         'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -228,9 +241,10 @@ def descriptive_stats_xlxs(
 
         # run wald's runs test and add results to the flow stage sheet
         ws = runs_test_to_xlsx(
-            ws, 
-            stage_df, 
-            ws_start_coords=(16, 1), 
+            ws,
+            stage_df,
+            units=u,
+            ws_start_coords=(16, 1),
             fields=['Ws', 'Zs', 'Ws_Zs'],
         )
 
@@ -309,7 +323,8 @@ def descriptive_stats_xlxs(
         ws.cell(row=12, column=1).value = r"% abs(value) >= 1 STD"
         ws.cell(row=14, column=1).value = "% C(Ws,Zs) > 0"
         ws.cell(row=14, column=2).value = float(
-            (cwz_above_zero / total_rows) * 100)
+            (cwz_above_zero / total_rows) * 100
+        )
 
         # calculates % of W, Z, and W_s_Z_s that are greater than 0.5 and 1 of their standard deviations
         for index in range(len(above_1_list)):

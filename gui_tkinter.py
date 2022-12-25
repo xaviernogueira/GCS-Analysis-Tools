@@ -12,6 +12,7 @@ from dem_detrending_functions import fit_params_txt, make_residual_plot, linear_
     diagnostic_quick_plot, detrend_that_raster, linear_fit, prep_xl_file
 from wetted_area_functions import prep_small_inc, pdf_cdf_plotting, stage_centerlines
 from calculate_gcs_functions import extract_gcs
+from stage_analysis_functions import run_stage_analysis
 from file_functions import string_to_list, init_logger
 from arcpy import HillShade_3d
 
@@ -2084,6 +2085,11 @@ class GCSGraphicUserInterface(tk.Frame):
             # run desired GCS analyses!
             if stage_plots and not nest_plots:
                 logging.info('Running flow stage level GCS analyses...')
+                run_stage_analysis(
+                    detrended_dem,
+                    analysis_dir,
+                    zs,
+                )
                 logging.info('Done')
 
             elif nest_plots and not stage_plots:

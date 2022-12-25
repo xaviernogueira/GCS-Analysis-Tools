@@ -38,9 +38,13 @@ def gcs_plotter(
         )
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
         raise ValueError(
-            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
     if len(zs) == 0:
         raise ValueError(
             'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
@@ -216,9 +220,13 @@ def heat_plotter(
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
         raise ValueError(
-            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
     if len(zs) == 0:
         raise ValueError(
             'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
@@ -357,9 +365,13 @@ def landform_pie_charts(
 
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
         raise ValueError(
-            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
     if len(zs) == 0:
         raise ValueError(
             'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
@@ -453,8 +465,22 @@ def landform_pie_charts(
 # NESTING BASED PLOTTING FUNCTIONS
 
 
-def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
-    """Creates Sankey diagrams showing nested landform relationships. Can be done across a class , transition occurences are normalized as a % for each reach."""
+def nested_landform_sankey(
+    detrended_dem: str,
+    analysis_dir: str,
+    zs: Union[str, List[float, int]],
+    ignore_normal: bool = False,
+    return_html: bool = False,
+) -> str:
+    """Creates Sankey diagrams showing nested landform relationships. 
+
+    Can be done across a class , transition occurences are normalized 
+        as a % for each reach.
+    :param ignore_normal: if true, Normal landforms are ignored, and only GCS landform
+        transitions are shown.
+    :param return_html: if True, instead of the path to the saved .png being returned,
+        the plotly HTML plot is returned as a pop-up window.    
+    """
 
     if detrended_dem == '':
         raise ValueError(
@@ -462,14 +488,18 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
         )
     if type(zs) == str:
         zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
         raise ValueError(
-            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
     gcs_dir = dem_dir + '\\gcs_tables'
-    out_dir = dem_dir + '\\nesting_analysis'
+    out_dir = analysis_dir + '\\nesting_analysis'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -477,20 +507,34 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
     # get units for labeling
     u = file_functions.get_label_units(detrended_dem)[0]
 
-    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB',
-                 2: 'NZ'}  # code number and corresponding MU
+    # code number and corresponding MU
+    code_dict = {
+        -2: 'O',
+        -1: 'CP',
+        0: 'NC',
+        1: 'WB',
+        2: 'NZ',
+    }
+
     logging.info('Sankey landform diagram plotting comencing...')
 
     source = []
     target = []
     value = []
 
-    zs.sort()
     aligned_df = pd.read_csv(gcs_dir + '\\aligned_gcs_table.csv')
+
+    if not os.path.exists(aligned_df):
+        raise ValueError(
+            f'{aligned_df} was removed, damaged, or never made in the first place.'
+        )
+
     data = aligned_df.dropna()
 
-    # create a list that stores the landform code values for each aligned flow stage series
+    # create a list that stores the landform code for each aligned flow stage series
     code_df_list = []
+    zs.sort()
+
     for z in zs:
         label = file_functions.float_keyz_format(z) + u
 
@@ -545,7 +589,8 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
         "x": x_list,
         "y": y_list,
         "color": colors_list,
-        'pad': 15}
+        'pad': 15,
+    }
 
     for j, nests in enumerate(nest_abundances):
         for i in nests:
@@ -572,7 +617,20 @@ def nested_landform_sankey(detrended_dem, zs=[], ignore_normal=False):
         link={
             "source": source,
             "target": target,
-            "value": value}))
+            "value": value,
+        },
+    ))
 
-    fig.write_image(out_dir + '\\landform_transitions.png', scale=5)
+    if not ignore_normal:
+        out_path = out_dir + '\\landform_transitions.png'
+    else:
+        out_path = out_dir + '\\landform_transitions_no_normal.png'
+
+    # save figure as a png, and return as html if desired
+    fig.write_image(out_path, scale=5)
     logging.info('Sankey landform transition plots saved @ %s' % out_dir)
+
+    if not return_html:
+        return out_dir
+    else:
+        return fig

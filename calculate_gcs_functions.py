@@ -412,3 +412,4 @@ def extract_gcs(
 
     logging.info('GCS tables completed @ %s' % out_dir)
     return out_csvs
+
