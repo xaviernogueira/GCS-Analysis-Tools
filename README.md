@@ -12,7 +12,8 @@ For more information on GCS analysis please reference my PI Gregory Pasternack's
 
 ### Pre-requisite packages
 - `arcpy` (+ Spatial Analyst licence) -- Comes with the ArcPro Python 3 default environment. 
-  Clone environment to enable external package installation. 
+  Clone environment to enable external package installation.
+ - [`scipy`](https://scipy.org/) for statistical analyses.
 - [`pillow`](https://python-pillow.org/) to power pop up image outputs.
 - [`seaborn`](https://seaborn.pydata.org/) for publication-ready static plotting.
 - [`plotly`](https://plotly.com/) for [Sankey diagram](https://plotly.com/python/sankey-diagram/) plotting.
