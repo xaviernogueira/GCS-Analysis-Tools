@@ -7,6 +7,8 @@ from scipy.stats import variation
 from os import listdir
 from os.path import isfile, join
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 import matplotlib.colors as colors_module
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import matplotlib.cm
@@ -15,7 +17,7 @@ import plotly.graph_objects as go
 import plotly.express as pex
 from itertools import combinations
 import seaborn as sns
-from typing import Union, List
+from typing import Union, List, Tuple, Iterable
 import file_functions
 import openpyxl as xl
 
@@ -25,7 +27,7 @@ import openpyxl as xl
 def gcs_plotter(
     detrended_dem: str,
     analysis_dir: str,
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
     fields: List[str] = ['Ws', 'Zs', 'Ws_Zs'],
     together: bool = False,
 ) -> str:
@@ -201,10 +203,62 @@ def gcs_plotter(
     return out_dir
 
 
+def _format_sqaure_subplots(sub_zs) -> Tuple[Figure, Iterable[Axes]]:
+    # set up subplot arrangement
+    row_col_map_dict = {
+        1: (1, 1),
+        2: (1, 2),
+        3: (1, 3),
+        4: (2, 2),
+        5: (1, 5),
+        6: (2, 3),
+    }
+
+    sub_zs_len = len(sub_zs)
+    if len(sub_zs) > 6:
+        logging.warning(
+            '> 6 flow stages input for nesting analysis, '
+            'may seriously impair plot/analysis quality!'
+        )
+
+        # find a decent way to make a subplot grid
+        no_match = True
+        attemps = range(len(list(row_col_map_dict)), -1, -1)
+        count = 0
+
+        while no_match and attemps[count] != attemps[-1]:
+            if sub_zs_len % attemps[count] == 0:
+                row_col_tup = (
+                    row_col_map_dict[attemps[count]][0] *
+                    (sub_zs_len // attemps[count]),
+                    row_col_map_dict[attemps[count]][1],
+                )
+                no_match = False
+            count += 1
+
+        fig, axs = plt.subplots(
+            int(row_col_tup[0]),
+            int(row_col_tup[1]),
+            figsize=(10, 3),
+        )
+
+    else:
+        fig, axs = plt.subplots(
+            int(row_col_map_dict[sub_zs_len][0]),
+            int(row_col_map_dict[sub_zs_len][1]),
+            figsize=(10, 3),
+        )
+
+    # if just one heatplot, make sure it's iterable
+    if not isinstance(axs, Iterable):
+        axs = np.array([axs])
+    return (fig, axs)
+
+
 def heat_plotter(
     detrended_dem: str,
     analysis_dir: str,
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
     together: bool = False,
 ) -> str:
     """Creates Ws-Zs heatplots for each key Z flow stage.
@@ -247,24 +301,20 @@ def heat_plotter(
         top_zs = []
         for i in zs:
             top_zs.append([i])
-        out_dir = dem_dir + '\\stage_analysis'
+        out_dir = analysis_dir + '\\stage_analysis'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    # set up subplot arrangement
     for sub_zs in top_zs:
-        if len(sub_zs) > 6:
-            logging.warning(
-                '> 6 flow stages input for nesting analysis, may seriously impair plot/analysis quality!')
-            fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
-        elif len(sub_zs) == 4 or len(sub_zs) == 6:
-            fig, axs = plt.subplots(nrows=2, ncols=int(
-                len(sub_zs) / 2), figsize=(10, 3))
-        else:
-            fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
+        fig, axs = _format_sqaure_subplots(sub_zs)
 
-        fig.subplots_adjust(hspace=0.5, wspace=0.3, left=0.07, right=0.93)
+        fig.subplots_adjust(
+            hspace=0.5,
+            wspace=0.3,
+            left=0.07,
+            right=0.93,
+        )
 
         for count, ax in enumerate(axs):
             z = sub_zs[count]
@@ -342,6 +392,7 @@ def heat_plotter(
         # save .png
         plt.savefig(title, dpi=300, bbox_inches='tight')
         plt.clf()
+
         plt.close('all')
         logging.info('A plot with heat-plots for all stage heights %s is @ %s' %
                      (zs, title))
@@ -352,7 +403,7 @@ def heat_plotter(
 def landform_pie_charts(
     detrended_dem: str,
     analysis_dir: str,
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
     together: bool = False,
 ) -> str:
     """Makes pie charts visualizing relative GCS landform abundances for each stage"""
@@ -399,23 +450,15 @@ def landform_pie_charts(
 
     # set up subplot arrangement
     for sub_zs in top_zs:
-        if len(sub_zs) > 6:
-            logging.warning(
-                '> 6 flow stages input for nesting analysis, may seriously impair plot/analysis quality!')
-            fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
-        elif len(sub_zs) == 4 or len(sub_zs) == 6:
-            fig, axs = plt.subplots(nrows=2, ncols=int(
-                len(sub_zs) / 2), figsize=(10, 3))
-        else:
-            fig, axs = plt.subplots(ncols=int(len(sub_zs)), figsize=(10, 3))
+        fig, axs = _format_sqaure_subplots(sub_zs)
 
         fig.subplots_adjust(hspace=0.5, wspace=0.3, left=0.07, right=0.93)
 
         percents = []
         middle_index = math.trunc(len(sub_zs)/2)
 
-        for count, ax in enumerate(axs):
-            z = sub_zs[count]
+        for i, ax in enumerate(axs):
+            z = sub_zs[i]
             label = file_functions.float_keyz_format(z) + u
 
             # record total occurrences for each land form code [-2, -1, 0, 1, 2] and calculate percents
@@ -428,10 +471,10 @@ def landform_pie_charts(
                 count = (codes == num).sum()
                 counts.append(count)
                 temp_percents.append((count / total) * 100)
-                percents.append(np.array(temp_percents))
+            percents.append(np.array(temp_percents))
 
             ax.pie(
-                percents[count],
+                percents[i],
                 labels=labels,
                 labeldistance=None,
                 autopct='%1.1f%%',
@@ -468,7 +511,7 @@ def landform_pie_charts(
 def nested_landform_sankey(
     detrended_dem: str,
     analysis_dir: str,
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
     ignore_normal: bool = False,
     return_html: bool = False,
 ) -> str:

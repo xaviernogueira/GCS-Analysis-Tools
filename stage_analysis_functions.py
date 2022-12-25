@@ -7,7 +7,7 @@ from typing import List, Union
 def run_stage_analysis(
     detrended_dem: str,
     analysis_dir: str,
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
 ):
     """Runs if Stage Analysis is selected on the GCS Analysis window"""
 

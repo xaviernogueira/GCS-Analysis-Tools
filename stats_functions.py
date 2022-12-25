@@ -154,18 +154,18 @@ def runs_test_to_xlsx(
 
 
 def descriptive_stats_xlxs(
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
     analysis_dir: str,
     detrended_dem: str,
 ) -> str:
-    """Runs stage based descriptive stats analysis and writes to an .xslx file"""
+    """Runs stage based descriptive stats analysis and writes to an .xlsx file"""
 
     if detrended_dem == '':
         raise ValueError(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    if isinstance(zs, str) == str:
+    if isinstance(zs, str):
         zs = file_functions.string_to_list(zs, format='float')
     elif isinstance(zs, list):
         zs = [float(z) for z in zs]
@@ -179,7 +179,7 @@ def descriptive_stats_xlxs(
     dem_dir = os.path.dirname(detrended_dem)
     gcs_dir = dem_dir + '\\gcs_tables'
     out_dir = analysis_dir + '\\stage_analysis'
-    stats_xl = out_dir + '\\stage_descriptive_statistics.xslx'
+    stats_xl = out_dir + '\\stage_descriptive_statistics.xlsx'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -394,13 +394,19 @@ def descriptive_stats_xlxs(
 
         wb.save(stats_xl)
         logging.info('Descriptive statistics table saved @ %s' % stats_xl)
-        return stats_xl
+
+    # remove the extra sheet
+    extra_sheet = wb.get_sheet_by_name('Sheet')
+    wb.remove_sheet(extra_sheet)
+    wb.save(stats_xl)
+
+    return stats_xl
 
 
 # NESTING BASED ANALYSIS FUNCTIONS
 
 def sankey_chi_squared(
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
     aligned_gcs_csv: str,
     analysis_dir: str,
     detrended_dem: str,

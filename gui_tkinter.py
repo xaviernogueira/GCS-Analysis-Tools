@@ -2068,8 +2068,7 @@ class GCSGraphicUserInterface(tk.Frame):
             # control GCS analysis output locations
             else:
                 default_dir = os.path.dirname(
-                    detrended_dem + '\\GCS_analysis_outputs'
-                )
+                    detrended_dem) + '\\GCS_analysis_outputs'
                 if analysis_dir == '':
                     analysis_dir = default_dir
                     logging.info(f'Analysis outputs will be @ {default_dir}')

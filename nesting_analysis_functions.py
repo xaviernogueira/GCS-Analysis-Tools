@@ -10,7 +10,7 @@ from typing import List, Union
 def nesting_analysis(
     detrended_dem: str,
     analysis_dir: str,
-    zs: Union[str, List[float, int]],
+    zs: Union[str, List[Union[float, int]]],
 ):
     """Runs if Nesting Analysis is selected on the GCS Analysis window"""
     logging.info(f'Running GCS nested analysis on flow stages: {zs}')
