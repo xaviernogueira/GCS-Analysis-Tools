@@ -2480,13 +2480,13 @@ class GCSGraphicUserInterface(tk.Frame):
 
         # TODO: make this work
         def river_builder_harmonics(
-                in_csv,
-                index_field,
-                units,
-                field_names,
-                r_2,
-                n,
-                methods,
+            in_csv,
+            index_field,
+            units,
+            field_names,
+            r_2,
+            n,
+            methods,
         ) -> None:
             """DUMMY FUNCTION FOR FORMATTING"""
             logging.info('In the RB function')
