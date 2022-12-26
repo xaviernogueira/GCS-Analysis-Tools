@@ -1,29 +1,33 @@
+import os
 import math
+import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from typing import Tuple
+from typing import Union, List, Optional
 
 
 def slope(
-    point1: Tuple[float, float],
-    point2: Tuple[float, float],
+    x1: Union[float, int],
+    y1: Union[float, int],
+    x2: Union[float, int],
+    y2: Union[float, int],
 ) -> float:
     """Return slope of two points."""
-
-    if point1[0] != point2[0]:
-        return float(
-            (point2[1] - point1[1]) / (point2[0] - point1[0])
-        )
-    elif point2[1] > point1[1]:
+    if x1 != x2:
+        return float((y2 - y1) / (x2 - x1))
+    elif y2 > y1:
         return math.inf
-    elif point2[1] < point1[1]:
+    elif y2 < y1:
         return -math.inf
     else:
-        return 0
+        return float(0)
 
 
-def slope_v(x_v, y_v):
+def slope_v(
+    x_v: np.array,
+    y_v: np.array,
+) -> np.array:
     """Return an array of slope.
         si = (y(i+1) - y(i))/(x(i+1) - x(i))
         s(-1) will be the same as s(-2) to make it the same length.
@@ -45,16 +49,26 @@ def slope_v(x_v, y_v):
     return s_v
 
 
-def ifft_out(signal, fft, ifft_df, n, spacing):
+def ifft_out(
+    signal: pd.Series,
+    fft: np.ndarray,
+    ifft_df: pd.DataFrame,
+    n_harmonics: int,
+    spacing: int,
+) -> dict:
+
+    # init lists to store output data
     cos_coefs = []
     sin_coefs = []
     freq_list = []  # Frequency in cycles per reach!
     amp_list = []  # Amplitude in lnegth units
     phase_list = []
 
-    fft_freqs = np.fft.fftfreq(fft.size, spacing)
+    #fft_freqs = np.fft.fftfreq(fft.size, spacing)
+    #reach_length = signal.size * spacing
+
     ifft = np.fft.ifft(fft).real
-    reach_length = signal.size * spacing
+
     for index, i in enumerate(fft):
         if i != 0.0:
             cos_coefs.append(i.real)
@@ -63,7 +77,7 @@ def ifft_out(signal, fft, ifft_df, n, spacing):
             np.put(temp_fft, range(index + 2, len(temp_fft)), 0.0)
             np.put(temp_fft, range(0, index + 1), 0.0)
             temp_ifft = np.fft.ifft(temp_fft).real
-            if n == 1:
+            if n_harmonics == 1:
                 ifft = temp_ifft
             amp = (np.amax(temp_ifft) - np.amin(temp_ifft)) / 2
             amp_list.append(amp)
@@ -76,10 +90,12 @@ def ifft_out(signal, fft, ifft_df, n, spacing):
             frequency = len(np.where(slope_change <= 0)[0])/2
             freq_list.append(frequency)
 
+            ifft_df = ifft_df.copy()
             ifft_df['harmonic_%s' % (index + 1)] = temp_ifft
 
             sub_index = 0
-            # Finds when the single FFT component IFFT crossed 0, and therefore it's phase in length units
+
+            # Finds when the single FFT component IFFT crossed 0 / it's phase in length units
             if temp_ifft[0] < 0:
                 while temp_ifft[sub_index] < 0:
                     sub_index += 1
@@ -91,65 +107,107 @@ def ifft_out(signal, fft, ifft_df, n, spacing):
 
             phase_list.append(phase)
 
-    return [sin_coefs, cos_coefs, freq_list, amp_list, phase_list, ifft_df, ifft]
+    return {
+        'sine_coefs': sin_coefs,
+        'cosine_coefs': cos_coefs,
+        'frequencies': freq_list,
+        'amplitudes': amp_list,
+        'phases': phase_list,
+        'inverse_FFT_df': ifft_df,
+        'inverse_FFT': ifft,
+    }
 
 
-def by_fft(signal, n, spacing):
+def by_fft(
+    signal: pd.Series,
+    n_harmonics: int,
+    spacing: int,
+) -> dict:
+
     ifft_df = pd.DataFrame()
     ifft_df['raw_series'] = signal
     fft = np.fft.fft(signal)
-    if n == 0:
+
+    if n_harmonics == 0:
         ifft = np.fft.ifft(fft).real
 
-    np.put(fft, range(n, len(fft)), 0.0)
-    fft_freqs = np.fft.fftfreq(signal.size, spacing)
+    np.put(fft, range(n_harmonics, len(fft)), 0.0)
+    #fft_freqs = np.fft.fftfreq(signal.size, spacing)
 
-    out_list = ifft_out(signal, fft, ifft_df, n, spacing)
-    freqs = out_list[2]
-    amps = out_list[3]
-    phases = out_list[4]
-    ifft = out_list[-1]
-    ifft_df = out_list[-2]
-    ifft_df['all_%s_harmonics' % n] = ifft
+    out_dict = ifft_out(signal, fft, ifft_df, n_harmonics, spacing)
 
-    return [ifft, n, out_list[1], out_list[2], ifft_df, freqs, amps, phases]
+    # update the inverse_FFT_df
+    ifft = out_dict['inverse_FFT']
+    ifft_df = out_dict['inverse_FFT_df']
+    ifft_df['all_%s_harmonics' % n_harmonics] = ifft
+
+    # old version for ref: [ifft, n_harmonics, out_list[1], out_list[2], ifft_df, freqs, amps, phases]
+
+    return {
+        'inverse_FFT': out_dict['inverse_FFT'],
+        'n_harmonics': n_harmonics,
+        'sine_coefs': out_dict['sine_coefs'],
+        'cosine_coefs': out_dict['cosine_coefs'],
+        'inverse_FFT_df': ifft_df,
+        'frequencies': out_dict['frequencies'],
+        'amplitudes': out_dict['amplitudes'],
+        'phases': out_dict['phases'],
+    }
 
 
-def by_power(signal, n, spacing):
+def by_power(
+    signal: pd.Series,
+    n_harmonics: int,
+    spacing: int,
+) -> dict:
     ifft_df = pd.DataFrame()
     ifft_df['raw_series'] = signal
     fft = np.fft.fft(signal)
-    if n == 0:
+    if n_harmonics == 0:
         ifft = np.fft.ifft(fft).real
 
     psd = np.abs(fft) ** 2
     indices = np.argsort(psd).tolist()
-    n_indices = indices[:-n]
+    n_indices = indices[:-n_harmonics]
     np.put(fft, n_indices, 0.0)
-    fft_freqs = np.fft.fftfreq(signal.size, spacing)
 
-    out_list = ifft_out(signal, fft, ifft_df, n, spacing)
-    freqs = out_list[2]
-    amps = out_list[3]
-    phases = out_list[4]
-    ifft = out_list[-1]
-    ifft_df = out_list[-2]
-    ifft_df['all_%s_harmonics' % n] = ifft
+    #fft_freqs = np.fft.fftfreq(signal.size, spacing)
 
-    return [ifft, n, out_list[1], out_list[2], ifft_df, freqs, amps, phases]
+    out_dict = ifft_out(signal, fft, ifft_df, n_harmonics, spacing)
+
+    # update the inverse_FFT_df
+    ifft = out_dict['inverse_FFT']
+    ifft_df = out_dict['inverse_FFT_df']
+    ifft_df['all_%s_harmonics' % n_harmonics] = ifft
+
+    return {
+        'inverse_FFT': out_dict['inverse_FFT'],
+        'n_harmonics': n_harmonics,
+        'sine_coefs': out_dict['sine_coefs'],
+        'cosine_coefs': out_dict['cosine_coefs'],
+        'inverse_FFT_df': ifft_df,
+        'frequencies': out_dict['frequencies'],
+        'amplitudes': out_dict['amplitudes'],
+        'phases': out_dict['phases'],
+    }
 
 
-def by_power_binned(signal, n, spacing):
+def by_power_binned(
+    signal: pd.Series,
+    n_harmonics: int,
+    spacing: int,
+) -> dict:
+
     ifft_df = pd.DataFrame()
     ifft_df['raw_series'] = signal
     fft = np.fft.fft(signal)
-    if n == 0:
+    if n_harmonics == 0:
         ifft = np.fft.ifft(fft).real
 
     psd = (np.abs(fft) ** 2).tolist()
     indices = []
 
-    avg = (len(psd) / 2) / float(n)
+    avg = (len(psd) / 2) / float(n_harmonics)
     bins_list = []  # Stores n sub-lists of FFT components from which PSD is calculated
     last = 0.0
 
@@ -158,8 +216,8 @@ def by_power_binned(signal, n, spacing):
         last += avg
 
     add = 0
-    # Test this to make sure the add thing works out
-    for i, sub_list in enumerate(bins_list):
+
+    for sub_list in bins_list:
         max_sub_index = sub_list.index(np.max(sub_list))
         indices.append(max_sub_index + add)
         add += len(sub_list)
@@ -168,146 +226,233 @@ def by_power_binned(signal, n, spacing):
     replace_indices = [i for i in full_indices if i not in indices]
 
     np.put(fft, replace_indices, 0.0)
-    fft_freqs = np.fft.fftfreq(signal.size, spacing)
 
-    out_list = ifft_out(signal, fft, ifft_df, n, spacing)
-    freqs = out_list[2]
-    amps = out_list[3]
-    phases = out_list[4]
-    ifft = out_list[-1]
-    ifft_df = out_list[-2]
-    ifft_df['all_%s_harmonics' % n] = ifft
+    #fft_freqs = np.fft.fftfreq(signal.size, spacing)
 
-    return [ifft, n, out_list[1], out_list[2], ifft_df, freqs, amps, phases]
+    out_dict = ifft_out(signal, fft, ifft_df, n_harmonics, spacing)
+
+    # update the inverse_FFT_df
+    ifft = out_dict['inverse_FFT']
+    ifft_df = out_dict['inverse_FFT_df'].copy()
+    ifft_df['all_%s_harmonics' % n_harmonics] = ifft
+
+    return {
+        'inverse_FFT': out_dict['inverse_FFT'],
+        'n_harmonics': n_harmonics,
+        'sine_coefs': out_dict['sine_coefs'],
+        'cosine_coefs': out_dict['cosine_coefs'],
+        'inverse_FFT_df': ifft_df,
+        'frequencies': out_dict['frequencies'],
+        'amplitudes': out_dict['amplitudes'],
+        'phases': out_dict['phases'],
+    }
 
 
-def river_builder_harmonics(in_csv, index_field, units='', fields=[], field_names=[], r_2=0.95, n=0, methods='ALL'):
-    """This function plots a N number of Fourier coefficients reconstrution of input signals. Exports coefficients to csv or text file.
-    in_csv= A csv file location with evenly spaced values (string).
-    sort_by (optional) allows an unsorted csv to be sorted by a input index field header (string)
-    out_folder= Folder to which plots and exported coefficients are saved (string).
-    index_field is the csv header corresponding to the centerline position, the units parameter can be any length unit and is used strictly for plotting (empty is default).
-    fields= A list of csv headers from which signals are plotted and reconstructed (list of strings)
-    field_names (optional) if specified must be a list of strings with names for plotting titles
-    R_2= R^2 threshold for signal reconstruction (float). 0.95 is default.
-    n (0 is default) if not 0 and an int allows a number of Fourier components to specified (int), as opposed to the standard R^2 threshold (default)
-    by_power (False is default) if True takes the N highest power components first
-    by_bins (False is default) if True splits the FFT components into N bins, and selects the highest power frequency from each
-    to_riverbuilder (False"""
+def river_builder_harmonics(
+    in_csv: str,
+    index_field: str,
+    units: str = '',
+    r2_threshold: float = 0.95,
+    n_harmonics: Optional[int] = None,
+    methods: str = 'ALL',
+    field_headers: Optional[List[str]] = None,
+) -> str:
+    """Generates plots and input csv/txt files to be imported into RiverBuilder.
+
+    # of Fourier coefs reconstrution from input signals and to a csv or text file.
+    This function plots a N
+
+    Args:
+        :param in_csv: A csv file location path with evenly spaced values.
+        :param index_field: The csv header corresponding to the centerline position.
+        :param units: Units name for labeling (i.e. m).
+        :param r2_threshold: R-squared threshold to cut off signal reconstruction.
+        :param n: (overrides r2_threshold) Number of harmonics to cut off signal reconstruction.
+        :param methods: Which methods to use (ALL by default), one can also select
+            by_fft, by_power, or by_binned.
+            by_fft = adds harmonics in order of the FFT algo.
+            by_power = adds the N highest power harmonic components first.
+            by_bins = splits the FFT components into N bins, and selects the highest power frequency from each.
+
+    Returns: path to the output folder.
+    """
 
     in_df = pd.read_csv(in_csv, engine='python')
-    out_folder = os.path.dirname(in_csv)
-    print('CSV imported...')
 
-    fields = [i for i in in_df.columns.values.tolist() if i != index_field]
+    if field_headers is None:
+        fields = ['W', 'Z']
+    else:
+        fields = field_headers
+
+    if len([i for i in list(in_df.columns) if i in fields]) != len(fields):
+        raise KeyError(
+            f'Could not find fields={fields} in {in_csv}!'
+        )
+
+    # make output directory
+    out_folder = os.path.dirname(in_csv) + '//River_Builder_inputs'
+    if not os.path.exists(out_folder):
+        os.mkdir(out_folder)
+
+    logging.info('CSV imported...')
 
     try:
         in_df.sort_values(index_field, inplace=True)
         index_array = in_df.loc[:, [index_field]].squeeze()
         spacing = float(index_array[1] - index_array[0])
-    except:
-        print('Could not sort values by  the input index field header: %s. Please either remove sort_by parameter, or correct the input field header.' % index_field)
-        sys.exit()
+    except KeyError:
+        raise KeyError(
+            f'Could not sort values by  the input index field header: {index_field}. '
+            'Please either remove sort_by parameter, or correct the input field header.'
+        )
 
+    # init a dict to store dicts w/ field as the key, and data in a dict as values
     if methods == 'ALL':
-        # Each list associated with each method stores [ifft, n, sin_coefs, cos_coefs, ifft_df]
-        methods_dict = {'by_fft': [], 'by_power': [], 'by_power_binned': []}
+        methods_dict = {
+            'by_fft': {},
+            'by_power': {},
+            'by_power_binned': {},
+        }
     else:
-        methods_dict = {methods: []}
+        methods_dict = {methods: {}}
 
-    for count, field in enumerate(fields):
-        try:
-            field_signal = in_df.loc[:, [str(field)]].squeeze()
-        except:
-            print(
-                'Error! Could not use csv field headers input. Please check csv headers.' % field)
+    for field in fields:
+        field_signal = in_df.loc[:, [str(field)]].squeeze()
 
-        if len(field_names) == len(fields):
-            field_name = field_names[count]
-        elif count == 0:
-            field_names = []
-            field_names.append(field)
-            field_name = field_names[count]
-        else:
-            field_names.append(field)
-            field_name = field_names[count]
+        # conduct analysis using a R-squared cut off
+        if n_harmonics is None and r2_threshold > 0:
 
-        if n == 0 and r_2 > 0:
             for method in methods_dict.keys():
-                in_list = []
+
                 if method == 'by_fft':
+                    logging.info(
+                        f'Applying by_fft method w/ R-Squared threshold={r2_threshold}...')
                     for i in range(1, len(field_signal)):
-                        out_list = by_fft(field_signal, i, spacing)
-                        temp_r2 = np.corrcoef(field_signal, out_list[0])[
-                            0][1] ** 2
-                        if temp_r2 >= r_2:
-                            for out in out_list:
-                                in_list.append(out)
+                        out_dict = by_fft(field_signal, i, spacing)
+
+                        temp_r2 = np.corrcoef(
+                            field_signal,
+                            out_dict['inverse_FFT'],
+                        )[0][1] ** 2
+
+                        if temp_r2 >= r2_threshold:
+                            methods_dict[method][field] = out_dict.copy()
                             break
 
                 if method == 'by_power':
+                    logging.info(
+                        f'Applying by_power method w/ R-Squared threshold={r2_threshold}...')
                     for i in range(1, len(field_signal)):
-                        out_list = by_power(field_signal, i, spacing)
-                        temp_r2 = np.corrcoef(field_signal, out_list[0])[
-                            0][1] ** 2
-                        if temp_r2 >= r_2:
-                            for out in out_list:
-                                in_list.append(out)
+                        out_dict = by_power(field_signal, i, spacing)
+
+                        temp_r2 = np.corrcoef(
+                            field_signal,
+                            out_dict['inverse_FFT'],
+                        )[0][1] ** 2
+
+                        if temp_r2 >= r2_threshold:
+                            methods_dict[method][field] = out_dict.copy()
                             break
 
                 if method == 'by_power_binned':
+                    logging.info(
+                        f'Applying by_power_binned method w/ R-Squared threshold={r2_threshold}...')
+                    logging.info(
+                        'NOTE: This method can take a while using a R2 threshold! '
+                        'We recomend only using this w/ a N-Harmonics threshold.'
+                    )
                     for i in range(1, len(field_signal)):
-                        out_list = by_power_binned(field_signal, i, spacing)
-                        temp_r2 = np.corrcoef(field_signal, out_list[0])[
-                            0][1] ** 2
-                        if temp_r2 >= r_2:
-                            for out in out_list:
-                                in_list.append(out)
+                        out_dict = by_power_binned(field_signal, i, spacing)
+
+                        temp_r2 = np.corrcoef(
+                            field_signal,
+                            out_dict['inverse_FFT'],
+                        )[0][1] ** 2
+
+                        if temp_r2 >= r2_threshold:
+                            methods_dict[method][field] = out_dict.copy()
                             break
 
-                methods_dict[method].append(in_list)
+        # conduct analysis using hard N-harmonics cut off
+        elif n_harmonics is not None:
 
-        else:
-            in_list = []
             for method in methods_dict.keys():
                 if method == 'by_fft':
-                    out_list = by_fft(field_signal, n, spacing)
-                    temp_r2 = np.corrcoef(field_signal, out_list[0])[0][1] ** 2
-                    for out in out_list:
-                        in_list.append(out)
+                    logging.info(
+                        f'Applying by_fft method w/ a N-Harmonics threshold={n_harmonics}...')
+                    out_dict = by_fft(field_signal, n_harmonics, spacing)
+
+                    temp_r2 = np.corrcoef(
+                        field_signal,
+                        out_dict['inverse_FFT'],
+                    )[0][1] ** 2
 
                 if method == 'by_power':
-                    out_list = by_power(field_signal, n, spacing)
-                    temp_r2 = np.corrcoef(field_signal, out_list[0])[0][1] ** 2
-                    for out in out_list:
-                        in_list.append(out)
+                    logging.info(
+                        f'Applying by_power method w/ a N-Harmonics threshold={n_harmonics}...')
+                    out_dict = by_power(field_signal, n_harmonics, spacing)
 
-                if method == 'by_power':
-                    out_list = by_power(field_signal, n, spacing)
-                    temp_r2 = np.corrcoef(field_signal, out_list[0])[0][1] ** 2
-                    for out in out_list:
-                        in_list.append(out)
+                    temp_r2 = np.corrcoef(
+                        field_signal,
+                        out_dict['inverse_FFT'],
+                    )[0][1] ** 2
 
-                methods_dict[method].append(in_list)
+                if method == 'by_power_binned':
+                    logging.info(
+                        f'Applying by_power_binned method w/ a N-Harmonics threshold={n_harmonics}...')
+                    logging.info('NOTE: This method can take a while!')
+                    out_dict = by_power_binned(
+                        field_signal, n_harmonics, spacing)
 
+                    temp_r2 = np.corrcoef(
+                        field_signal,
+                        out_dict['inverse_FFT'],
+                    )[0][1] ** 2
+
+                methods_dict[method][field] = out_dict.copy()
+
+        else:
+            raise ValueError('You must either use a R-squared threshold greater than 0 '
+                             'but less than 1, or a integer N-harmonics threshold!'
+                             )
+
+    # prepare output
     for method in methods_dict.keys():
-        print('Completing %s analysis...' % method)
-        # Stores data for each field within one calculation method
-        method_list = methods_dict[method]
-        for count, field in enumerate(fields):
+        logging.info('Completing %s analysis...' % method)
+
+        for field in fields:
+            # get the data for the given method-field combination
+            data_dict = methods_dict[method][field]
+            n_harmonics_used = data_dict['n_harmonics']
+            ifft_df = data_dict['inverse_FFT_df']
+
+            # init the output text file
             text_file = open(
-                out_folder + '\\%s_%s_to_riverbuilder.txt' % (field, method), 'w+')
-            field_name = field_names[count]
+                out_folder +
+                '\\%s_%s_to_riverbuilder.txt' % (field, method), 'w+',
+            )
 
-            list = method_list[count]
-            ifft_df = list[4]
-            ifft_df.to_csv(out_folder + '\\%s_harmonics_%s.csv' %
-                           (field, method))
+            # save the IFFT DataFrame to csv
+            ifft_df.to_csv(
+                out_folder + '\\%s_harmonics_%s.csv' % (field, method)
+            )
 
-            plt.plot(index_array, in_df.loc[:, str(
-                field)].squeeze(), color='blue', label='Signal')
-            plt.plot(index_array, list[0], color='red',
-                     linestyle='--', label='Reconstructed signal')
+            # make a plot of the reconstructed river topo
+            plt.plot(
+                index_array,
+                in_df.loc[:, str(field)].squeeze(),
+                color='blue',
+                label='Signal',
+            )
+            plt.plot(
+                index_array,
+                data_dict['inverse_FFT'],
+                color='red',
+                linestyle='--',
+                label='Reconstructed signal',
+            )
+
+            plt.xlim(xmin=index_array.min(), xmax=index_array.max())
 
             if units != '':
                 add_units = 'in %s' % units
@@ -316,8 +461,10 @@ def river_builder_harmonics(in_csv, index_field, units='', fields=[], field_name
 
             plt.xlabel('Distance along centerline %s' % add_units)
             plt.ylabel('Value')
-            plt.title('%s, %s method, N=%s component harmonic reconstruction' % (
-                field_name, method, list[1]))
+            plt.title(
+                f'{field}, {method} method, N={n_harmonics_used} '
+                f'component harmonic reconstruction'
+            )
             plt.grid(b=True, which='major', color='#666666', linestyle='-')
             plt.minorticks_on()
             plt.legend(loc='lower center')
@@ -328,11 +475,17 @@ def river_builder_harmonics(in_csv, index_field, units='', fields=[], field_name
             plt.savefig(fig_title, dpi=300, bbox_inches='tight')
             plt.cla()
 
-            for num, amp in enumerate(list[-2]):
+            # output a text file enabling import into RiverBuilder
+            for num, amp in enumerate(data_dict['amplitudes']):
                 if amp != 0.0:
-                    # Writes in the form of COS#=(a, f, ps, MASK0) for river builder inputs
-                    text_file.write('COS%s=(%s, %s, %s, MASK0)\n' % (
-                        num, amp, list[-3][num], list[-1][num]))
+                    freq = data_dict['frequencies'][num]
+                    phase = data_dict['phases'][num]
+
+                    # in the form of COS#=(a, f, ps, MASK0) for river builder inputs
+                    text_file.write(
+                        f'COS{num}=({amp}, {freq}, {phase}, MASK0)\n'
+                    )
             text_file.close()
 
-    print('Analysis complete. Results @ %s' % out_folder)
+    logging.info(f'Analysis complete. Results @ {out_folder}')
+    return out_folder

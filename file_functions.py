@@ -222,6 +222,8 @@ def string_to_list(
             out_list = [int(i) for i in str_split]
         elif format == 'float':
             out_list = [float(i) for i in str_split]
+        elif format == 'string':
+            out_list = [str(i) for i in str_split]
     return out_list
 
 

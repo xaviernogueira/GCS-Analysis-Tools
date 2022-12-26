@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import logging
 import tkinter as tk
 from tkinter import *
@@ -13,6 +14,7 @@ from dem_detrending_functions import fit_params_txt, make_residual_plot, linear_
 from wetted_area_functions import prep_small_inc, pdf_cdf_plotting, stage_centerlines
 from calculate_gcs_functions import extract_gcs
 from stage_analysis_functions import run_stage_analysis
+from river_builder_export_function import river_builder_harmonics
 from file_functions import string_to_list, init_logger
 from arcpy import HillShade_3d
 
@@ -2478,18 +2480,58 @@ class GCSGraphicUserInterface(tk.Frame):
         ######################################################################
         root = self.tabs['River Builder prep']
 
-        # TODO: make this work
-        def river_builder_harmonics(
+        def export_to_river_builder(
             in_csv,
             index_field,
             units,
-            field_names,
-            r_2,
-            n,
+            r2_threshold,
+            n_harmonics,
             methods,
+            field_headers,
         ) -> None:
-            """DUMMY FUNCTION FOR FORMATTING"""
-            logging.info('In the RB function')
+            """Cleans inputs and runs river builder export"""
+
+            logging.info('Initiating export to River Builder...')
+
+            # clean inputs
+            in_csv = Path(in_csv)
+            if not in_csv.exists():
+                raise ValueError(
+                    f'Cant find input {str(in_csv)}'
+                )
+            else:
+                in_csv = str(in_csv)
+
+            if r2_threshold == '':
+                r2_threshold = None
+            else:
+                r2_threshold = float(r2_threshold)
+
+            if not r2_threshold > 0 and not r2_threshold <= 1:
+                raise ValueError(
+                    f'Input R-Sqaured threshold is invalid! Must be > 0 but <= 1.'
+                )
+
+            if n_harmonics == '' or n_harmonics == '0':
+                n_harmonics = None
+            else:
+                n_harmonics = int(n_harmonics)
+
+            if field_headers == '':
+                field_headers = None
+            else:
+                field_headers = string_to_list(field_headers, format='string')
+
+            out_dir = river_builder_harmonics(
+                in_csv,
+                index_field,
+                units,
+                r2_threshold=r2_threshold,
+                n_harmonics=n_harmonics,
+                methods=methods,
+                field_headers=field_headers,
+            )
+            logging.info(f'Done. Output @ {out_dir}')
 
         self.l_csv = ttk.Label(
             root,
@@ -2542,7 +2584,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
 
         self.e_field = ttk.Entry(root)
-        self.e_field.insert(END, '')
+        self.e_field.insert(END, 'dist_down')
         self.e_field.grid(
             row=1,
             column=2,
@@ -2587,7 +2629,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.l_labels = ttk.Label(
             root,
-            text='Add signal labels (optional, comma separated!)',
+            text='Add list of columns to export (comma separated, overrides W + Z))',
         )
         self.l_labels.grid(
             sticky=E,
@@ -2677,14 +2719,14 @@ class GCSGraphicUserInterface(tk.Frame):
         b = Button(
             root,
             text='   Run    ',
-            command=lambda: river_builder_harmonics(
-                in_csv=str.replace(self.e_csv.get(), "\\", "\\\\"),
+            command=lambda: export_to_river_builder(
+                in_csv=str(self.e_csv.get()),
                 index_field=self.e_field.get(),
                 units=self.e_units.get(),
-                field_names=string_to_list(self.e_labels.get()),
-                r_2=float(self.e_r2.get()),
-                n=int(self.e_harms.get()),
+                r2_threshold=self.e_r2.get(),
+                n_harmonics=self.e_harms.get(),
                 methods=self.meth.get(),
+                field_headers=self.e_labels.get(),
             ),
         )
         b.grid(
@@ -2692,7 +2734,7 @@ class GCSGraphicUserInterface(tk.Frame):
             row=7,
             column=2,
         )
-        root.grid_rowconfigure(4, minsize=80)
+        root.grid_rowconfigure(3, minsize=80)
 
 
 if __name__ == '__main__':
