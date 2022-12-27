@@ -165,15 +165,7 @@ def descriptive_stats_xlxs(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    if isinstance(zs, str):
-        zs = file_functions.string_to_list(zs, format='float')
-    elif isinstance(zs, list):
-        zs = [float(z) for z in zs]
-    else:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. '
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
-        )
+    zs = file_functions.prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -420,21 +412,22 @@ def sankey_chi_squared(
     Returns: A DataFrame with the results of the Chi-Squares test.
     """
 
-    col_labels = ['base', 'bf', 'vf']
-    code_dict = {-2: 'O', -1: 'CP', 0: 'NC', 1: 'WB',
-                 2: 'NZ'}  # code number and corresponding MU
+    # code number and corresponding MU
+    code_dict = {
+        -2: 'O',
+        -1: 'CP',
+        0: 'NC',
+        1: 'WB',
+        2: 'NZ',
+    }
     landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide bar', 'Nozzle']
-    outs = []
 
     if detrended_dem == '':
         raise ValueError(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
-    if type(zs) == str:
-        zs = file_functions.string_to_list(zs, format='float')
-    elif type(zs) != list:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+
+    zs = file_functions.prep_key_zs(zs)
 
     # set up directories
     out_dir = analysis_dir + '\\nesting_analysis'
@@ -445,9 +438,14 @@ def sankey_chi_squared(
     # get units for labeling
     u = file_functions.get_label_units(detrended_dem)[0]
 
-    # prep input data
+    # prep flow stage labels
     zs.sort()
     z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
+
+    if len(z_labels) == 3:
+        col_labels = ['base', 'bf', 'vf']
+    else:
+        col_labels = z_labels
 
     aligned_df = pd.read_csv(aligned_gcs_csv)
     data = aligned_df.dropna()
@@ -516,23 +514,57 @@ def sankey_chi_squared(
     out_name = out_dir + '\\landform_transitions_chi_square.csv'
     out_df.to_csv(out_name)
 
-    logging.info('results @ %s' % out_name)
-
-    return out_df
+    return out_name
 
 
-def violin_ttest(df, z_labels, threshold, out_dir):
-    """Takes the dataframe used to make violin plots and extracts descriptive statistics of each displayed value distribution.
-    Welches t-test is applied to see if distribution mean differences are statistically significant. Results are stored
-    in a csv file saved to the /nested_analysis/ folder"""
+def violin_ttest(
+    in_df: pd.DataFrame,
+    analysis_dir: str,
+    z_labels: List[str],
+    thresh: Union[float, int] = 0.50
+) -> str:
+    """Creates an output csv with results from the violin t-test.
 
-    out_dict = {'from stage': [], 'from elevation': [], 'to variable': [], 'mean': [], 'std': [],
-                'median': [], 'max': [], 'min': [], 'range': [], 'welch_ttest_p': []}
-    topos = ['High Zs, > %s' % threshold, 'Low Zs, < -%s' % threshold]
+    For more information on this test, and the meaning behind it please ref:
+        https://gcs-gui-documentation.readthedocs.io/en/latest/Pages/tab8.html
+
+    Args:
+        :param in_df:
+        :param analysis_dir: the directory path to save /nested_analysis/OUTPUTS. 
+        :param z_labels: key Z column headers in aligned_gcs.csv. 
+        :param thresh: Absolute value Ws/Zs threshold to analyze (default = 0.5).
+
+    :Returns: The path to the output .csv file. 
+    """
+
+    # prepare output dictionary
+    out_dict = {
+        'from stage': [],
+        'from elevation': [],
+        'to variable': [],
+        'mean': [],
+        'std': [],
+        'median': [],
+        'max': [],
+        'min': [],
+        'range': [],
+        'welch_ttest_t': [],
+        'welch_ttest_p': [],
+    }
+
+    # prepare output directory
+    out_dir = analysis_dir + '\\nested_analysis'
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+
+    topos = ['High Zs, > %s' % thresh, 'Low Zs, < -%s' % thresh]
 
     for i, lower in enumerate(z_labels[:-1]):
-        subs = [df.loc[lambda df: df['Zs_%s' % lower] > threshold],
-                df.loc[lambda df: df['Zs_%s' % lower] < -threshold]]
+        subs = [
+            in_df.loc[lambda in_df: in_df[f'Zs_{lower}'] > thresh],
+            in_df.loc[lambda in_df: in_df[f'Zs_{lower}'] < -thresh],
+        ]
+
         if i == 1:
             # This is left b/c of the last cell changing the W_s_vf column header
             higher_col = 'Flood stage Ws'
@@ -553,12 +585,19 @@ def violin_ttest(df, z_labels, threshold, out_dir):
             out_dict['max'].append(sub.loc[:, higher_col].max())
             out_dict['min'].append(sub.loc[:, higher_col].min())
             out_dict['range'].append(
-                sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min())
+                sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min()
+            )
             t_ins.append(sub.loc[:, higher_col].to_numpy())
 
+        # run the t-test
         t, p = stats.ttest_ind(
-            t_ins[0], t_ins[1], equal_var=False, nan_policy='omit')
-        out_dict['welch_ttest_p'].append(p)
+            t_ins[0],
+            t_ins[1],
+            equal_var=False,
+            nan_policy='omit',
+        )
+
+        out_dict['welch_ttest_t'].append(t)
         out_dict['welch_ttest_p'].append(p)
 
     out_df = pd.DataFrame.from_dict(out_dict)
@@ -566,7 +605,7 @@ def violin_ttest(df, z_labels, threshold, out_dir):
     out_df.set_index('Class', inplace=True)
     logging.info(out_df)
 
-    thresh_label = file_functions.float_keyz_format(threshold)
+    thresh_label = file_functions.float_keyz_format(thresh)
     out_csv = out_dir + '\\%s_thresh_violin_stats.csv' % thresh_label
     out_df.to_csv(out_csv)
 

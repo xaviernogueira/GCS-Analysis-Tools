@@ -1,74 +1,57 @@
 import logging
 import os
-import pathlib
-from typing import List
 import arcpy
 import file_functions
+import pandas as pd
+import numpy as np
+from scipy import stats
+from typing import List, Dict, Union
 from create_station_lines import create_station_lines_function
 
 
-def find_xs_length(
-        dem_dir: str,
-        zs: List[float]):
-    """This function takes a detrend folder location for a given reacg, as well as a list containing centerline_nums, and by using
-    string splicing and Arc geomoetry objects returns a list containing the XS widths for each centerline_num XS file"""
-
-    centerline_folder = dem_dir + '\\analysis_centerline_and_XS'
-    full_list = [f for f in os.path.listdir(centerline_folder) if (
-        f[21:26] == 'DS_XS' or f[22:27] == 'DS_XS') and f[-4:] == '.shp']
-    full_list = [i for i in full_list if i[-8:]
-                 != 'x5ft.shp' and i[-10:] != 'delete.shp']
-    xs_lengths = []
-
-    for z in zs:
-        if os.path.exists(centerline_folder + '\\stage_centerline_%sft_DS_XS_%sft.shp' % (num, find_xs_spacing(detrend_folder))):
-            xs_file = centerline_folder + \
-                '\\stage_centerline_%sft_DS_XS_%sft.shp' % (
-                    num, find_xs_spacing(detrend_folder))
-        else:
-            print(
-                'Cant find XS file, make sure formatting is: stage_centerline_[CENTERLINE_NUM]ft_DS_XS_[XS SPACING]ft.shp')
-
-        temp_list = []
-        for row in arcpy.da.SearchCursor(xs_file, ["SHAPE@LENGTH"]):
-            temp_list.append(int(row[0]))
-        xs_lengths.append(temp_list[0])
-
-    return xs_lengths
-
-
-def find_xs_spacing(detrend_folder):
+def find_xs_spacing(
+    lines_dir: str,
+    z_labels: List[str],
+    unit_label: str,
+) -> Dict[str, int]:
     """This function takes the detrended folder and centerline_nums (optional)"""
-    centerline_folder = detrend_folder + "\\analysis_centerline_and_XS"
 
-    xs_files = [i for i in os.path.listdir(centerline_folder) if
-                os.path.isfile(os.path.join(centerline_folder, i)) and i[-5:] == 't.shp' and len(i) > 32]
-    xs_files = [i for i in xs_files if i[-8:] != 'x5ft.shp']
+    # find width polygons for each flow stage
+    width_polygons_dict = {}
+    for z_str in z_labels:
+        width_path = lines_dir + f'\\width_rectangles_{z_str}{unit_label}.shp'
+        if os.path.exists(width_path):
+            width_polygons_dict[z_str] = {
+                'polygon_path': width_path,
+            }
+        else:
+            raise KeyError(
+                f'Cant find the following width polygon: {width_path}'
+            )
 
-    temp_location = []
-    cursor = arcpy.SearchCursor(centerline_folder + '\\%s' % xs_files[0])
-    for row in cursor:
-        temp_location.append(int(row.getValue('LOCATION')))
-    temp_location.sort()
-    spacing1 = int(temp_location[1] - temp_location[0])
+    # use SearchCursor to see gaps between centerlines, take the most frequent
+    for z_str, sub_dict in width_polygons_dict.items():
+        poly_path = sub_dict['polygon_path']
 
-    if xs_files[0][-8] == '_':
-        spacing2 = int(xs_files[0][-7])
-    elif xs_files[0][-9] == '_':
-        spacing2 = int(xs_files[0][-8:-6])
+        locs = []
+        cursor = arcpy.SearchCursor(poly_path)
+        for row in cursor:
+            locs.append(float(row.getValue('LOCATION')))
+        locs.sort()
 
-    if spacing1 == spacing2:
-        print('XS spacing is %sft...' % spacing1)
-        return spacing1
-
-    else:
-        print('XS shapefile name spacing (from string splicing) is not equal to spacing found via arcpy Search Cursor.')
-        return spacing2
+        spacings = []
+        i = 0
+        while int(i + 1) < len(locs):
+            spacings.append(int(locs[i + 1] - locs[i]))
+            i += 1
+        spacing = stats.mode(np.array(spacings)).mode[0]
+        width_polygons_dict[z_str]['spacing'] = spacing
+    return width_polygons_dict
 
 
 def prep_for_nesting_analysis(
     detrended_dem: str,
-    flip: bool = False
+    zs: Union[str, List[Union[float, int]]],
 ) -> str:
     """This function takes a reach and creates a new csv with aligned location identifiers using a Thiessen Polygon methodology.
     Returns aligned_locations.csv in the \\landform_analysis sub-folder. This csv can be used to align any data field for any key z or stage range.
@@ -77,7 +60,21 @@ def prep_for_nesting_analysis(
     # import arcpy only if necessary (should only need to be ran once)
 
     logging.info(
-        'Creating aligned_locations.csv with aligned centerline locations / dist_down...')
+        'Creating aligned_gcs.csv with aligned centerline locations / dist_down...')
+
+    # pull in flow stages
+    if isinstance(zs, str):
+        zs = file_functions.string_to_list(zs, format='float')
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
+
+    zs = zs.sort()
+    z_labels = [file_functions.float_keyz_format(z) for z in zs]
 
     # set up env variables
     arcpy.env.overwriteOutput = True
@@ -87,37 +84,50 @@ def prep_for_nesting_analysis(
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
     lines_dir = dem_dir + '\\centerlines'
-    wetted_dir = dem_dir + '\\wetted_polygons'
-    temp_files = dem_dir + '\\temp_files'
-    out_dir = dem_dir + '\\gcs_tables'  # Stores output GCS tables
+    gcs_dir = dem_dir + '\\gcs_tables'
+    temp_files = lines_dir + '\\temp_files'
 
-    # TODO: get these functions working
-    # TODO: zs is basically Zs, but we do need their spacing
-    spacing = find_xs_spacing(dem_dir)
+    if not os.path.exists(temp_files):
+        os.mkdir(temp_files)
 
-    for z in zs:
-        line_loc = ('%s\\stage_centerline_%sft_DS.shp' %
-                    (lines_dir, z))
+    # find units
+    u = file_functions.get_label_units(detrended_dem)[0]
+
+    # find cross-section spacings
+    spacings_dict = find_xs_spacing(
+        lines_dir,
+        z_labels,
+    )
+
+    # make theissen polygons for each flow stage station points
+    for i, z in enumerate(zs):
+        z_str = z_labels[i]
+        z_xs_spacing = int(spacings_dict[z_str]['spacing'])
+        line_shp = lines_dir + f'//{z_str}{u}_centerline.shp'
+
         station_lines = create_station_lines_function(
-            line_loc,
-            spacing=spacing,
+            line_shp,
+            spacing=z_xs_spacing,
             xs_length=5,
             stage=[],
         )
-        station_lines = lines_dir + \
-            ('\\stage_centerline_%sft_DS_XS_%sx5ft.shp' % (z, spacing))
+
+        # keep track of temp output for deletion
+        # TODO: figure out what files come out of this
+        station_lines = temp_files + f'//{z_str}{u}_centerline_XS.shp'
         del_files.append(station_lines)
 
         station_points = arcpy.Intersect_analysis(
-            [station_lines, line_loc],
-            out_feature_class=(lines_dir +
-                               "\\station_points_%sft.shp" % z),
+            [station_lines, line_shp],
+            out_feature_class=(
+                temp_files + f"\\station_points_{z_str}{u}.shp"
+            ),
             join_attributes="ALL",
             output_type="POINT",
         )
 
         if z != min(zs):
-            theis_loc = lines_dir + "\\thiessen_%sft.shp" % z
+            theis_loc = temp_files + f"\\thiessen_{z_str}{u}.shp"
             arcpy.CreateThiessenPolygons_analysis(
                 station_points,
                 theis_loc,
@@ -125,31 +135,33 @@ def prep_for_nesting_analysis(
             )
             arcpy.AddField_management(
                 theis_loc,
-                ('loc_%sft' % z),
+                (f'loc_{z_str}{u}'),
                 'SHORT',
             )
             arcpy.CalculateField_management(
                 theis_loc,
-                ('loc_%sft' % z),
+                (f'loc_{z_str}{u}'),
                 expression='!LOCATION!',
                 expression_type='PYTHON3',
             )
 
             del_fields = [f.name for f in arcpy.ListFields(theis_loc)]
-            for field in [('loc_%sft' % z), 'FID', 'Shape']:
+            for field in [(f'loc_{z_str}{u}'), 'FID', 'Shape']:
                 try:
                     del_fields.remove(field)
-                except KeyError:
+                except KeyError or PermissionError:
                     logging.warning('Cant delete field: %s' % field)
             arcpy.DeleteField_management(
                 theis_loc,
                 del_fields,
             )
 
+    # use identity analysis to find nearest baseline cross-section index for each stage
     max_count = 0
-    for counter, num in enumerate(zs):
-        theis_loc = (lines_dir + "\\thiessen_%sft.shp" % num)
-        out_points = lines_dir + ("\\align_points%s.shp" % counter)
+    min_z_str = file_functions.float_keyz_format(min(zs))
+    for counter, z_str in enumerate(z_labels):
+        theis_loc = temp_files + f"\\thiessen_{z_str}{u}.shp"
+        out_points = temp_files + ("\\align_points%s.shp" % counter)
         del_files.append(theis_loc)
         del_files.append(out_points)
 
@@ -157,24 +169,24 @@ def prep_for_nesting_analysis(
             max_count = counter
         if counter == 1:
             arcpy.Identity_analysis(
-                lines_dir +
-                "\\station_points_%sft.shp" % min(zs),
+                temp_files +
+                f"\\station_points_{min_z_str}{u}.shp",
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
             )
         elif counter > 1:
+            c = int(counter - 1)
             arcpy.Identity_analysis(
-                lines_dir + ("\\align_points%s.shp" %
-                             (int(counter - 1))),
+                temp_files + f"\\align_points{c}.shp"
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
             )
 
-      # Creates a csv with the aligned locations for each centerline. Allows joins to add any data to this for analysis
-    index_field = 'loc_%sft' % min(zs)
-    aligned_csv = landform_folder + '\\aligned_locations.csv'
+    # create aligned_gcs.csv storing all the data along the baseflow centerline index
+    index_field = f'loc_{min_z_str}{u}'
+    aligned_csv = gcs_dir + '\\aligned_gcs.csv'
 
     aligned_df = pd.read_csv(
         file_functions.table_to_csv(
@@ -203,33 +215,6 @@ def prep_for_nesting_analysis(
         index_field,
         inplace=True,
     )
-
-    if flip:
-        loc_fields = [j for j in list(
-            out_aligned_df.columns.values) if j[:3] == 'loc']
-        loc_nums = []
-
-        for loc_field in loc_fields:
-            if loc_field[5] == 'f':
-                loc_nums.append(loc_field[4])
-            else:
-                loc_nums.append(loc_field[4:6])
-
-            temp_max = np.nanmax(out_aligned_df.loc[:, loc_field].to_numpy())
-            dist_list = out_aligned_df.loc[:, [loc_field]].squeeze().to_list()
-
-            loc_np = np.array([int(temp_max - i) for i in dist_list])
-            out_aligned_df[loc_field] = loc_np
-
-        min_loc = loc_fields[loc_nums.index(min(loc_nums, key=int))]
-        out_aligned_df.sort_values(
-            str(min_loc),
-            inplace=True,
-        )
-        out_aligned_df.to_csv(aligned_csv)
-
-    else:
-        out_aligned_df.to_csv(aligned_csv)
 
     logging.info('Deleting files: %s' % del_files)
     for file in del_files:

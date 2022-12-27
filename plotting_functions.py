@@ -17,7 +17,7 @@ import plotly.graph_objects as go
 import plotly.express as pex
 from itertools import combinations
 import seaborn as sns
-from typing import Union, List, Tuple, Iterable
+from typing import Union, List, Tuple, Iterable, Optional
 import file_functions
 import openpyxl as xl
 
@@ -29,28 +29,20 @@ def gcs_plotter(
     analysis_dir: str,
     zs: Union[str, List[Union[float, int]]],
     fields: List[str] = ['Ws', 'Zs', 'Ws_Zs'],
+    aligned_csv: Optional[str] = None,
     together: bool = False,
 ) -> str:
     """This function makes longitudinal profile GCS plots.
 
-    If param:together=True is defined as the aligned csv, plots showing each key z profile as sub-plots for a given field are saved as well."""
+    If param:together=True is defined as the aligned csv, plots showing each 
+        key z profile as sub-plots for a given field are saved as well.
+    """
     if detrended_dem == '':
         raise ValueError(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
-    if type(zs) == str:
-        zs = file_functions.string_to_list(zs, format='float')
-    elif isinstance(zs, list):
-        zs = [float(z) for z in zs]
-    else:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. '
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
-        )
-    if len(zs) == 0:
-        raise ValueError(
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
-    zs.sort()
+
+    zs = file_functions.prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -72,7 +64,6 @@ def gcs_plotter(
     landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide Bar', 'Nozzle']
 
     # create subplots for each flow stage for a given gcs series (i.e. Ws, Zs, Ws*Zs)
-    # TODO: make this work with the aligned table!
     if together:
         for field in fields:
             xs = []
@@ -81,21 +72,28 @@ def gcs_plotter(
             for count, z in enumerate(zs):
                 ys.append([])
                 label = file_functions.float_keyz_format(z) + u
-                table_loc = gcs_dir + '\\%s_gcs_table.csv' % label
-                table_df = pd.read_csv(table_loc)
+
+                if not aligned_csv:
+                    table_loc = gcs_dir + '\\%s_gcs_table.csv' % label
+                    table_df = pd.read_csv(table_loc)
+                    code_col = 'code'
+                    field_col = field
+                else:
+                    table_df = pd.read_csv(aligned_csv)
+                    # TODO: make sure this is correct
+                    code_col = f'code_{label}'
+                    field_col = f'{field}_{label}'
 
                 table_df.sort_values('dist_down', inplace=True)
                 xs.append(table_df.loc[:, 'dist_down'].to_numpy())
-                codes = table_df.loc[:, 'code'].to_numpy()
+                codes = table_df.loc[:, code_col].to_numpy()
 
                 for num in range(-2, 3):  # Make arrays representing each landform type
-                    y_temp = table_df.loc[:, field].to_numpy()
+                    y_temp = table_df.loc[:, field_col].to_numpy()
                     y_temp[codes != num] = np.nan
                     ys[count].append(y_temp)
-                    table_df = pd.read_csv(table_loc)
-                    table_df.sort_values('dist_down', inplace=True)
 
-                full_ys.append(table_df.loc[:, field].to_numpy())
+                full_ys.append(table_df.loc[:, field_col].to_numpy())
 
             fig, ax = plt.subplots(len(zs), sharey=True)
             fig.subplots_adjust(hspace=0.4)
@@ -107,7 +105,12 @@ def gcs_plotter(
                 ymax = 0
                 ax[count].plot(x, full_ys[count], color=colors[2])
                 for i, y in enumerate(ys[count]):
-                    ax[count].plot(x, y, color=colors[i], label=landforms[i])
+                    ax[count].plot(
+                        x,
+                        y,
+                        color=colors[i],
+                        label=landforms[i],
+                    )
                     temp_max = np.amax(
                         np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
                     if temp_max >= ymax and ymax <= 5:
@@ -117,15 +120,27 @@ def gcs_plotter(
                 ax[count].set_ylim(-1 * ymax, ymax)
                 ax[count].set_ylabel(field)
                 ax[count].set_yticks(
-                    np.arange(-1 * ymax, ymax, 1), minor=False)
-                ax[count].grid(True, which='both',
-                               color='gainsboro', linestyle='--')
+                    np.arange(-1 * ymax, ymax, 1),
+                    minor=False,
+                )
+                ax[count].grid(
+                    True,
+                    which='both',
+                    color='gainsboro',
+                    linestyle='--',
+                )
                 ax[count].set_xlim(0.0, np.max(x))
                 ax[count].set_xticks(np.arange(0, np.max(x), 250))
 
             ax[count].set_xlabel('Thalweg distance downstream (ft)')
-            ax[count].legend(loc='lower center', ncol=len(
-                landforms), fontsize=8)  # Adds legend to the bottom plot
+
+            # adds legend to the bottom plot
+            ax[count].legend(
+                loc='lower center',
+                ncol=len(landforms),
+                fontsize=8,
+            )
+
             fig.set_size_inches(12, 6)
             plt.savefig(fig_name, dpi=300, bbox_inches='tight')
             plt.cla()
@@ -136,6 +151,7 @@ def gcs_plotter(
         for z in zs:
             # get data for the flow stage
             label = file_functions.float_keyz_format(z) + u
+
             table_loc = gcs_dir + '\\%s_gcs_table.csv' % label
             table_df = pd.read_csv(table_loc)
 
@@ -272,18 +288,7 @@ def heat_plotter(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    if type(zs) == str:
-        zs = file_functions.string_to_list(zs, format='float')
-    elif isinstance(zs, list):
-        zs = [float(z) for z in zs]
-    else:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. '
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
-        )
-    if len(zs) == 0:
-        raise ValueError(
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+    zs = file_functions.prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -414,18 +419,7 @@ def landform_pie_charts(
         raise ValueError(
             'Must input detrended DEM parameter in the GUI to set up output folder location')
 
-    if type(zs) == str:
-        zs = file_functions.string_to_list(zs, format='float')
-    elif isinstance(zs, list):
-        zs = [float(z) for z in zs]
-    else:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. '
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
-        )
-    if len(zs) == 0:
-        raise ValueError(
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+    zs = file_functions.prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -513,7 +507,6 @@ def nested_landform_sankey(
     analysis_dir: str,
     zs: Union[str, List[Union[float, int]]],
     ignore_normal: bool = False,
-    return_html: bool = False,
 ) -> str:
     """Creates Sankey diagrams showing nested landform relationships. 
 
@@ -521,23 +514,16 @@ def nested_landform_sankey(
         as a % for each reach.
     :param ignore_normal: if true, Normal landforms are ignored, and only GCS landform
         transitions are shown.
-    :param return_html: if True, instead of the path to the saved .png being returned,
-        the plotly HTML plot is returned as a pop-up window.    
+
+    :returns: the path of the saved html plot.
     """
 
     if detrended_dem == '':
         raise ValueError(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
-    if type(zs) == str:
-        zs = file_functions.string_to_list(zs, format='float')
-    elif isinstance(zs, list):
-        zs = [float(z) for z in zs]
-    else:
-        raise ValueError(
-            'Key flow stage parameter input incorrectly. '
-            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
-        )
+
+    zs = file_functions.prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -610,22 +596,33 @@ def nested_landform_sankey(
     colors_list = []
     x_num = 0.1
 
+    # set up color mapping dict
+    color_map = {
+        'Oversized': 'black',
+        'Const.Pool': 'blue',
+        'Normal': 'grey',
+        'Wide Bar': 'orange',
+        'Nozzle': 'red',
+    }
+
     for z in zs:
         if not ignore_normal:
-            label_list.extend(['Oversized', 'Const.Pool',
-                              'Normal', 'Wide Bar', 'Nozzle'])
-            x_list.extend([x_num for j in range(5)])
+            extend_list = list(color_map.keys())
+            label_list.extend(extend_list)
+
+            x_list.extend([j for j in range(len(extend_list))])
             x_num += 0.4
             y_list.extend([0.1, 0.3, 0.5, 0.7, 0.9])
-            colors_list.extend(['black', 'blue', 'grey', 'orange', 'red'])
+            colors_list.extend(list(color_map.values()))
 
         else:
-            label_list.extend(
-                ['Oversized', 'Const.Pool', 'Wide Bar', 'Nozzle'])
-            x_list.extend([x_num for j in range(4)])
+            extend_list = [i for i in list(color_map.keys()) if i != 'Normal']
+            label_list.extend(extend_list)
+
+            x_list.extend([j for j in range(len(extend_list))])
             x_num += 0.4
             y_list.extend([0.2, 0.4, 0.6, 0.8])
-            colors_list.extend(['black', 'blue', 'orange', 'red'])
+            colors_list.extend([color_map[form] for form in extend_list])
 
     nodes = {
         "label": label_list,
@@ -642,6 +639,7 @@ def nested_landform_sankey(
                 source.append(int(i[0][0] + index_adjust))
                 target.append(int(i[0][1] + index_adjust + 5))
                 value.append(float(i[1] + index_adjust))
+
             elif 0 not in i[0]:
                 index_adjust = 2 + j * 4
                 if int(i[0][0]) < 0:
@@ -665,15 +663,13 @@ def nested_landform_sankey(
     ))
 
     if not ignore_normal:
-        out_path = out_dir + '\\landform_transitions.png'
+        out_path = out_dir + '\\landform_transitions.html'
     else:
-        out_path = out_dir + '\\landform_transitions_no_normal.png'
+        out_path = out_dir + '\\landform_transitions_no_normal.html'
 
     # save figure as a png, and return as html if desired
-    fig.write_image(out_path, scale=5)
+    #fig.write_image(out_path, scale=5)
+    fig.write_html(out_path)
     logging.info('Sankey landform transition plots saved @ %s' % out_dir)
 
-    if not return_html:
-        return out_dir
-    else:
-        return fig
+    return out_dir

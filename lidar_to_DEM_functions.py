@@ -335,8 +335,8 @@ def detrend_prep(
         os.makedirs(temp_files)
 
     # Define input parameters
-    params = [m_spacing,
-              smooth_dist]  # First item defines XS length and spacing, second item described smoothing distance
+    # First item defines XS length and spacing, second item described smoothing distance
+    params = [m_spacing, smooth_dist]
 
     if not spatial_ref.linearUnitName == 'Meter':
         params = [int(i * 3) for i in params]

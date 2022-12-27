@@ -227,6 +227,22 @@ def string_to_list(
     return out_list
 
 
+def prep_key_zs(zs: Union[str, List[Union[float, int]]]) -> List[float]:
+    if type(zs) == str:
+        zs = string_to_list(zs, format='float')
+    elif isinstance(zs, list):
+        zs = [float(z) for z in zs]
+    else:
+        raise ValueError(
+            'Key flow stage parameter input incorrectly. '
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
+        )
+    if len(zs) == 0:
+        raise ValueError(
+            'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
+    return zs.sort()
+
+
 def get_label_units(projected_file) -> Tuple[str, str, arcpy.SpatialReference]:
     """Input: Any file with a projected spatial reference
     Returns: list storing unit label for filenames, linear unit itself, and the spatial reference file

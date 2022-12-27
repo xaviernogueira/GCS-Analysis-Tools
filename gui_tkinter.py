@@ -17,6 +17,7 @@ from stage_analysis_functions import run_stage_analysis
 from river_builder_export_function import river_builder_harmonics
 from file_functions import string_to_list, init_logger
 from arcpy import HillShade_3d
+from typing import Union, List
 
 
 class GCSGraphicUserInterface(tk.Frame):
@@ -2044,10 +2045,10 @@ class GCSGraphicUserInterface(tk.Frame):
         root = self.tabs['GCS analysis']
 
         def gcs_analysis(
-            detrended_dem,
-            zs,
-            xs_lengths,
-            xs_spacing,
+            detrended_dem: str,
+            zs: Union[str, List[Union[int, float]]],
+            xs_lengths: Union[str, List[Union[int, float]]],
+            xs_spacing: Union[str, List[int]],
             clip_poly: str = '',
             stage_plots: bool = False,
             nest_plots: bool = False,
@@ -2208,7 +2209,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.l_space = ttk.Label(
             root,
-            text='Cross-section spacing:',
+            text='Cross-section spacing (integer):',
         )
         self.l_space.grid(
             sticky=E,

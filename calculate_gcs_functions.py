@@ -146,7 +146,7 @@ def extract_gcs(
     detrended_dem: str,
     zs: Union[str, List[Union[int, float]]],
     xs_lengths: Union[str, List[Union[int, float]]],
-    spacing: Union[str, List[Union[int, float]]],
+    spacing: Union[str, List[int]],
     clip_poly: str = ''
 ) -> List[str]:
     """This function does a full GCS analysis using key stage heights / Zs (floats). 
@@ -176,7 +176,7 @@ def extract_gcs(
             spacing = int(spacing)
         except TypeError:
             raise TypeError(
-                'Cross-section spacing parameter must be a integer!')
+                'Cross-section spacing parameter must be an integer!')
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -412,4 +412,3 @@ def extract_gcs(
 
     logging.info('GCS tables completed @ %s' % out_dir)
     return out_csvs
-

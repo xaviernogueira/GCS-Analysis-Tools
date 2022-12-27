@@ -11,7 +11,7 @@ arcpy.env.overwriteOutput = True
 @err_info
 def create_station_lines_function(
     line_shp: str,
-    spacing: Union[float, int],
+    spacing: int,
     xs_length: Union[float, int],
 ) -> str:
     """Creates station lines perpendicular to line_shp with given longitudinal spacing and lateral XS length
