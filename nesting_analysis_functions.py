@@ -71,14 +71,14 @@ def nesting_analysis(
         logging.info(f'Done. HTML plot saved @ {out_html}')
 
     logging.info('Running T-test to verify significance of violin analysis...')
-    violin_df = pd.DataFrame
+    #violin_df = pd.DataFrame
     # TODO: combine into t-test
-    # violin_csv = stats_functions.violin_ttest(
-    #    violin_df,
-    #    analysis_dir,
-    #    z_labels,
-    #    thresh=0.50,
-    # )
-    #logging.info(f'Done. Results .csv saved @ {violin_csv}')
+    violin_csv = stats_functions.violin_ttest(
+        detrended_dem,
+        analysis_dir,
+        zs,
+        thresh=0.50,
+    )
+    logging.info(f'Done. Results .csv saved @ {violin_csv}')
 
     logging.info(f'Done with nesting analysis. See results @ {nested_dir}')

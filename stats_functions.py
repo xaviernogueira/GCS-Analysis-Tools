@@ -411,15 +411,7 @@ def sankey_chi_squared(
     Returns: A DataFrame with the results of the Chi-Squares test.
     """
 
-    # code number and corresponding MU
-    # code_dict = {
-    #    -2: 'O',
-    #    -1: 'CP',
-    #    0: 'NC',
-    #    1: 'WB',
-    #    2: 'NZ',
-    # }
-
+    # code number and corresponding landforms
     landforms_dict = {
         'Oversized': -2,
         'Const. Pool': -1,
@@ -579,9 +571,9 @@ def sankey_chi_squared(
 
 
 def violin_ttest(
-    in_df: pd.DataFrame,
+    detrended_dem: str,
     analysis_dir: str,
-    z_labels: List[str],
+    zs: Union[str, List[Union[float, int]]],
     thresh: Union[float, int] = 0.50
 ) -> str:
     """Creates an output csv with results from the violin t-test.
@@ -590,7 +582,7 @@ def violin_ttest(
         https://gcs-gui-documentation.readthedocs.io/en/latest/Pages/tab8.html
 
     Args:
-        :param in_df:
+        :param aligned_csv: Aligned GCS csv
         :param analysis_dir: the directory path to save /nested_analysis/OUTPUTS. 
         :param z_labels: key Z column headers in aligned_gcs.csv. 
         :param thresh: Absolute value Ws/Zs threshold to analyze (default = 0.5).
@@ -613,42 +605,54 @@ def violin_ttest(
         'welch_ttest_p': [],
     }
 
+    # pull in aligned GCS data
+    dem_dir = os.path.dirname(detrended_dem)
+    gcs_dir = dem_dir + '\\gcs_tables'
+    aligned_csv = gcs_dir + '\\aligned_gcs.csv'
+    aligned_df = pd.read_csv(aligned_csv)
+
     # prepare output directory
-    out_dir = analysis_dir + '\\nested_analysis'
+    out_dir = analysis_dir + '\\nesting_analysis'
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
-    topos = ['High Zs, > %s' % thresh, 'Low Zs, < -%s' % thresh]
+    # get units for labeling
+    u = file_functions.get_label_units(detrended_dem)[0]
+
+    # prep flow stage labels
+    z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
+
+    topos = [
+        'High Zs, > %s' % thresh,
+        'Low Zs, < -%s' % thresh,
+    ]
 
     for i, lower in enumerate(z_labels[:-1]):
+        higher = z_labels[i + 1]
         subs = [
-            in_df.loc[lambda in_df: in_df[f'Zs_{lower}'] > thresh],
-            in_df.loc[lambda in_df: in_df[f'Zs_{lower}'] < -thresh],
+            aligned_df.loc[lambda aligned_df:
+                           aligned_df[f'{lower}_Zs'] > thresh],
+            aligned_df.loc[lambda aligned_df:
+                           aligned_df[f'{lower}_Zs'] < -thresh],
         ]
-
-        if i == 1:
-            # This is left b/c of the last cell changing the W_s_vf column header
-            higher_col = 'Flood stage Ws'
-        else:
-            higher_col = 'Ws_%s' % z_labels[i + 1]
-
-        higher_variable = '%s Ws' % z_labels[i + 1]
+        higher_col = f'{higher}_Ws'
+        higher_variable = f'{higher} Ws'
 
         t_ins = []
         for j, topo in enumerate(topos):
             sub = subs[j]
-            out_dict['from elevation'].append(lower)
+            out_dict['from stage'].append(lower)
             out_dict['from elevation'].append(topo)
             out_dict['to variable'].append(higher_variable)
-            out_dict['mean'].append(sub.loc[:, higher_col].mean())
-            out_dict['std'].append(sub.loc[:, higher_col].std())
-            out_dict['median'].append(sub.loc[:, higher_col].median())
-            out_dict['max'].append(sub.loc[:, higher_col].max())
-            out_dict['min'].append(sub.loc[:, higher_col].min())
+            out_dict['mean'].append(sub[higher_col].mean())
+            out_dict['std'].append(sub[higher_col].std())
+            out_dict['median'].append(sub[higher_col].median())
+            out_dict['max'].append(sub[higher_col].max())
+            out_dict['min'].append(sub[higher_col].min())
             out_dict['range'].append(
-                sub.loc[:, higher_col].max() - sub.loc[:, higher_col].min()
+                sub[higher_col].max() - sub[higher_col].min()
             )
-            t_ins.append(sub.loc[:, higher_col].to_numpy())
+            t_ins.append(sub[higher_col].to_numpy())
 
         # run the t-test
         t, p = stats.ttest_ind(
@@ -658,15 +662,14 @@ def violin_ttest(
             nan_policy='omit',
         )
 
-        out_dict['welch_ttest_t'].append(t)
-        out_dict['welch_ttest_p'].append(p)
+        out_dict['welch_ttest_t'].extend([t, t])
+        out_dict['welch_ttest_p'].extend([p, p])
 
     out_df = pd.DataFrame.from_dict(out_dict)
 
-    out_df.set_index('Class', inplace=True)
     logging.info(out_df)
 
-    thresh_label = file_functions.float_keyz_format(thresh)
+    thresh_label = file_functions.float_keyz_format(thresh) + u
     out_csv = out_dir + '\\%s_thresh_violin_stats.csv' % thresh_label
     out_df.to_csv(out_csv)
 
