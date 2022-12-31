@@ -562,7 +562,6 @@ def nested_landform_sankey(
 
     # create a list that stores the landform code for each aligned flow stage series
     code_df_list = []
-    zs.sort()
 
     for z in zs:
         label = file_functions.float_keyz_format(z) + u

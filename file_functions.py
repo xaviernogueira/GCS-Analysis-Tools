@@ -5,6 +5,7 @@ import subprocess
 import logging
 import arcpy
 import csv
+import numpy as np
 
 arcpy.env.overwriteOutput = True
 
@@ -240,7 +241,7 @@ def prep_key_zs(zs: Union[str, List[Union[float, int]]]) -> List[float]:
     if len(zs) == 0:
         raise ValueError(
             'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)')
-    return zs.sort()
+    return list(np.sort(np.array(zs)))
 
 
 def get_label_units(projected_file) -> Tuple[str, str, arcpy.SpatialReference]:

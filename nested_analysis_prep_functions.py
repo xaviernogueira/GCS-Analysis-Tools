@@ -57,7 +57,6 @@ def prep_for_nesting_analysis(
     Returns aligned_locations.csv in the \\landform_analysis sub-folder. This csv can be used to align any data field for any key z or stage range.
     When flip==True (false is default) locations are flipped to correctlyly link to an ALREADY FLIPPED GCS stage table. If neither table is flipped, use
     the flipped table function in plotting functions file!"""
-    # import arcpy only if necessary (should only need to be ran once)
 
     logging.info(
         'Creating aligned_gcs.csv with aligned centerline locations / dist_down...')
@@ -73,7 +72,6 @@ def prep_for_nesting_analysis(
             'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
         )
 
-    zs = zs.sort()
     z_labels = [file_functions.float_keyz_format(z) for z in zs]
 
     # set up env variables
@@ -85,7 +83,7 @@ def prep_for_nesting_analysis(
     dem_dir = os.path.dirname(detrended_dem)
     lines_dir = dem_dir + '\\centerlines'
     gcs_dir = dem_dir + '\\gcs_tables'
-    temp_files = lines_dir + '\\temp_files'
+    temp_files = dem_dir + '\\temp_files'
 
     if not os.path.exists(temp_files):
         os.mkdir(temp_files)
@@ -97,6 +95,7 @@ def prep_for_nesting_analysis(
     spacings_dict = find_xs_spacing(
         lines_dir,
         z_labels,
+        unit_label=u,
     )
 
     # make theissen polygons for each flow stage station points
@@ -109,11 +108,9 @@ def prep_for_nesting_analysis(
             line_shp,
             spacing=z_xs_spacing,
             xs_length=5,
-            stage=[],
         )
 
         # keep track of temp output for deletion
-        # TODO: figure out what files come out of this
         station_lines = temp_files + f'//{z_str}{u}_centerline_XS.shp'
         del_files.append(station_lines)
 
@@ -178,7 +175,7 @@ def prep_for_nesting_analysis(
         elif counter > 1:
             c = int(counter - 1)
             arcpy.Identity_analysis(
-                temp_files + f"\\align_points{c}.shp"
+                temp_files + f"\\align_points{c}.shp",
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
@@ -205,20 +202,48 @@ def prep_for_nesting_analysis(
     headers = list(aligned_df.columns.values)
     keep_headers = [i for i in headers if i[:3] == 'loc']
 
-    out_aligned_df = aligned_df.loc[:, keep_headers]
+    out_aligned_df = aligned_df[keep_headers]
 
     out_aligned_df.sort_values(
         by=[index_field],
         inplace=True,
     )
-    out_aligned_df.set_index(
-        index_field,
-        inplace=True,
-    )
+
+    # join the data for each Z to the dataframe
+    for i, z in enumerate(zs):
+        z_str = z_labels[i]
+        join_col = f'loc_{z_str}{u}'
+        stage_df = pd.read_csv(
+            gcs_dir + f'\\{z_str}{u}_gcs_table.csv',
+        ).set_index('dist_down')
+
+        # delete excess columns
+        del_cols = [str(i) for i in stage_df.columns if (
+            str(i) == 'location') or ('Unnamed' in str(i))]
+
+        stage_df = stage_df[[str(i)
+                             for i in stage_df.columns if i not in del_cols]]
+
+        # rename columns
+        rename_dict = {}
+        for col in stage_df.columns:
+            col = str(col)
+            rename_dict[col] = f'{z_str}{u}_{col}'
+        stage_df.rename(columns=rename_dict, inplace=True)
+
+        stage_df.index.name = join_col
+
+        # join to out_aligned_df
+        out_aligned_df.set_index(join_col, inplace=True)
+        out_aligned_df = out_aligned_df.join(stage_df)
+        out_aligned_df.reset_index(inplace=True)
 
     logging.info('Deleting files: %s' % del_files)
     for file in del_files:
         file_functions.delete_gis_files(file)
 
-    logging.info('Empty aligned csv created @ %s!' % aligned_csv)
+    # overwrite the previous csv
+    out_aligned_df.to_csv(aligned_csv)
+    logging.info('Aligned GCS .csv created @ %s!' % aligned_csv)
+
     return aligned_csv

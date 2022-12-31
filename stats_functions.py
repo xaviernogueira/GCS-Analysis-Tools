@@ -180,7 +180,6 @@ def descriptive_stats_xlxs(
     u = file_functions.get_label_units(detrended_dem)[0]
 
     # prep input data
-    zs.sort()
     z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
 
     # initiate excel workbook
@@ -439,7 +438,6 @@ def sankey_chi_squared(
     u = file_functions.get_label_units(detrended_dem)[0]
 
     # prep flow stage labels
-    zs.sort()
     z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
 
     if len(z_labels) == 3:

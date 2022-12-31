@@ -14,6 +14,7 @@ from dem_detrending_functions import fit_params_txt, make_residual_plot, linear_
 from wetted_area_functions import prep_small_inc, pdf_cdf_plotting, stage_centerlines
 from calculate_gcs_functions import extract_gcs
 from stage_analysis_functions import run_stage_analysis
+from nesting_analysis_functions import nesting_analysis
 from river_builder_export_function import river_builder_harmonics
 from file_functions import string_to_list, init_logger
 from arcpy import HillShade_3d
@@ -2096,12 +2097,25 @@ class GCSGraphicUserInterface(tk.Frame):
 
             elif nest_plots and not stage_plots:
                 logging.info('Running nested GCS analyses...')
-
+                nesting_analysis(
+                    detrended_dem,
+                    analysis_dir,
+                    zs,
+                )
                 logging.info('Done')
             else:
                 logging.info(
                     'Running both flow stage and nesting GCS analyses...')
-
+                run_stage_analysis(
+                    detrended_dem,
+                    analysis_dir,
+                    zs,
+                )
+                nesting_analysis(
+                    detrended_dem,
+                    analysis_dir,
+                    zs,
+                )
                 logging.info('Done')
 
         self.l_detrended2 = ttk.Label(
