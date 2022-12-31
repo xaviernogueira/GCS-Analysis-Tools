@@ -412,14 +412,22 @@ def sankey_chi_squared(
     """
 
     # code number and corresponding MU
-    code_dict = {
-        -2: 'O',
-        -1: 'CP',
-        0: 'NC',
-        1: 'WB',
-        2: 'NZ',
+    # code_dict = {
+    #    -2: 'O',
+    #    -1: 'CP',
+    #    0: 'NC',
+    #    1: 'WB',
+    #    2: 'NZ',
+    # }
+
+    landforms_dict = {
+        'Oversized': -2,
+        'Const. Pool': -1,
+        'Normal': 0,
+        'Wide bar': 1,
+        'Nozzle': 2,
     }
-    landforms = ['Oversized', 'Const. Pool', 'Normal', 'Wide bar', 'Nozzle']
+    landforms = list(landforms_dict.keys())
 
     if detrended_dem == '':
         raise ValueError(
@@ -446,67 +454,122 @@ def sankey_chi_squared(
         col_labels = z_labels
 
     aligned_df = pd.read_csv(aligned_gcs_csv)
-    data = aligned_df.dropna()
 
     out_dict = {
         'from': [],
         'to': [],
         'to_landform': [],
-        'expected_freq': [],
+        'total_expected_freq': [],
         'expected_proportion': [],
     }
 
+    # set up index to control list splicing
+    start_i = 0
+
     # for each step-wise stage transition, calculate chi-squared test result
     for i in range(len(zs) - 1):
-        logging.info('Chi Squares test for landform transitions: %s -> %s' %
-                     (z_labels[i], z_labels[i + 1]))
+        lower = z_labels[i]
+        low_code = f'{lower}_code'
 
-        type_df = data.dropna(
-            axis=0, subset=['code_%s' % z_labels[i], 'code_%s' % z_labels[i + 1]])
+        higher = z_labels[i + 1]
+        high_code = f'{higher}_code'
+
+        logging.info(
+            f'Chi-sSquares test for landform transitions: {lower} -> {higher}'
+        )
+
+        type_df = aligned_df.dropna(
+            axis=0,
+            subset=[
+                low_code,
+                high_code,
+            ],
+            how='any',
+        )
 
         total_rows = int(type_df.shape[0])
-        lower = z_labels[i]
-        higher = z_labels[i + 1]
 
         for num in range(-2, 3):
             out_dict['from'].append(lower)
             out_dict['to'].append(higher)
             out_dict['to_landform'].append(landforms[num + 2])
-            num_df = type_df.loc[lambda type_df: type_df['code_%s' %
-                                                         col_labels[i + 1]] == num]
 
-            out_dict['expected_freq'].append(num_df.shape[0])
+            num_df = type_df.loc[
+                lambda type_df: type_df[high_code] == num
+            ]
+
+            out_dict['total_expected_freq'].append(num_df.shape[0])
+
             out_dict['expected_proportion'].append(
-                num_df.shape[0] / total_rows)
+                num_df.shape[0] / total_rows
+            )
 
-        for j, form in enumerate(landforms):
+        for l_form in landforms:
             if i == 0:
-                out_dict['from_' + form + '_freq'] = []
-                out_dict['from_' + form + '_proportion'] = []
-                out_dict['p_value_from_%s' % form] = []
+                out_dict['from_' + l_form + '_freq'] = []
+                out_dict['from_' + l_form + '_proportion'] = []
+                out_dict['p_value_from_%s' % l_form] = []
 
-            low_index = j - 2
-            low_code = 'code_%s' % z_labels[i]
+            form_df = type_df.loc[
+                lambda type_df: type_df[low_code] == landforms_dict[l_form]
+            ]
 
-            form_df = type_df.loc[lambda type_df: type_df[low_code] == low_index]
             form_rows_count = form_df.shape[0]
 
-            for z, high in enumerate(landforms):
-                high_index = z - 2
-                high_code = 'code_%s' % z_labels[i + 1]
+            for h_form in landforms:
 
-                sub_df = form_df.loc[lambda form_df: form_df[high_code]
-                                     == high_index]
+                sub_df = form_df.loc[
+                    lambda form_df: form_df[high_code] == landforms_dict[h_form]
+                ]
+
                 freq = sub_df.shape[0]
-                out_dict['from_' + form + '_freq'].append(freq)
-                out_dict['from_' + form +
+                out_dict['from_' + l_form + '_freq'].append(freq)
+                out_dict['from_' + l_form +
                          '_proportion'].append(freq / form_rows_count)
 
-            obs = np.array(out_dict['from_' + form + '_freq'])
-            expect = np.array(out_dict['Expected_freq'])
+            # get the # of observed tranitions to the higher landform from the lower
+            obs_freqs = np.array(
+                out_dict['from_' + l_form + '_freq'][start_i: start_i + 5]
+            )
+            obs_props = np.array(
+                out_dict['from_' + l_form +
+                         '_proportion'][start_i: start_i + 5]
+            )
+            obs = (obs_props * sum(obs_freqs)).astype('int')
+
+            # compare to the number of transitions one would expect based on
+            expect_props = np.array(
+                out_dict['expected_proportion'][start_i: start_i + 5]
+            )
+            expect = (expect_props * sum(obs_freqs)).astype('int')
+
+            # make sure obs and expect are the same length
+            remainder = sum(obs) - sum(expect)
+            piece = int(remainder / abs(remainder))
+
+            # allocate remainder based on largest rounding error
+            # NOTE: a tiny bit of error can be introduced here!
+            expect_props_remade = expect / sum(expect)
+            gaps = expect_props - expect_props_remade
+
+            if piece == 1:
+                order_to_adjust = np.argsort(gaps, kind='mergesort')[::-1]
+            elif piece == -1:
+                order_to_adjust = np.argsort(gaps, kind='mergesort')
+
+            count = 0
+            while count < remainder:
+                expect[order_to_adjust[count]] += piece
+                count += 1
+
+            # run chi squared test and add p values
             test_out = stats.chisquare(obs, expect)
-            out_dict['p_value_from_%s' % form].extend(
-                [test_out[1] for i in range(5)])  # Add p values
+            out_dict['p_value_from_%s' % l_form].extend(
+                [test_out.pvalue for i in range(5)]
+            )
+
+        # update list index for splicing
+        start_i += 5
 
     out_df = pd.DataFrame.from_dict(out_dict)
     out_name = out_dir + '\\landform_transitions_chi_square.csv'

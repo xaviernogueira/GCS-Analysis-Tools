@@ -536,37 +536,32 @@ def nested_landform_sankey(
     # get units for labeling
     u = file_functions.get_label_units(detrended_dem)[0]
 
-    # code number and corresponding MU
-    code_dict = {
-        -2: 'O',
-        -1: 'CP',
-        0: 'NC',
-        1: 'WB',
-        2: 'NZ',
-    }
-
     logging.info('Sankey landform diagram plotting comencing...')
 
     source = []
     target = []
     value = []
 
-    aligned_df = pd.read_csv(gcs_dir + '\\aligned_gcs_table.csv')
+    aligned_csv = gcs_dir + '\\aligned_gcs.csv'
 
-    if not os.path.exists(aligned_df):
+    if not os.path.exists(aligned_csv):
         raise ValueError(
-            f'{aligned_df} was removed, damaged, or never made in the first place.'
+            f'{aligned_csv} was removed, damaged, or never made in the first place.'
         )
-
-    data = aligned_df.dropna()
+    aligned_df = pd.read_csv(aligned_csv)
 
     # create a list that stores the landform code for each aligned flow stage series
     code_df_list = []
 
     for z in zs:
         label = file_functions.float_keyz_format(z) + u
-
-        code_df_temp = data.loc[:, [('code_%s' % label)]].squeeze()
+        code_label = f'{label}_code'
+        data = aligned_df.dropna(
+            axis=0,
+            subset=[code_label],
+            how='any',
+        )
+        code_df_temp = data.loc[:, [code_label]].squeeze()
         code_df_list.append(code_df_temp.values.tolist())
 
     # make lists of tuples storing each side of each cross-sections step wise transition
@@ -604,13 +599,18 @@ def nested_landform_sankey(
         'Nozzle': 'red',
     }
 
+    # control x axis node spacing
+    x_interval = 0.8 / (len(zs) - 1)
+
+    # build the nodes dictionary
     for z in zs:
         if not ignore_normal:
             extend_list = list(color_map.keys())
             label_list.extend(extend_list)
 
-            x_list.extend([j for j in range(len(extend_list))])
-            x_num += 0.4
+            x_list.extend([x_num for j in range(len(extend_list))])
+            x_num += x_interval
+
             y_list.extend([0.1, 0.3, 0.5, 0.7, 0.9])
             colors_list.extend(list(color_map.values()))
 
@@ -618,8 +618,9 @@ def nested_landform_sankey(
             extend_list = [i for i in list(color_map.keys()) if i != 'Normal']
             label_list.extend(extend_list)
 
-            x_list.extend([j for j in range(len(extend_list))])
-            x_num += 0.4
+            x_list.extend([x_num for j in range(len(extend_list))])
+            x_num += x_interval
+
             y_list.extend([0.2, 0.4, 0.6, 0.8])
             colors_list.extend([color_map[form] for form in extend_list])
 
