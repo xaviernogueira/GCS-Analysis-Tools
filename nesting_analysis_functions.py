@@ -39,15 +39,15 @@ def nesting_analysis(
     logging.info('Making nested GCS line plots...')
 
     # TODO: make this work!
-    # nested_dir = plotting_functions.gcs_plotter(
-    #    detrended_dem,
-    #    analysis_dir,
-    #    zs,
-    #    fields=['Ws', 'Zs', 'Ws_Zs'],
-    #    aligned_csv=aligned_gcs_csv,
-    #    together=True,
-    # )
-    #logging.info(f'Done. Plots saved @ {nested_dir}.')
+    nested_dir = plotting_functions.gcs_plotter(
+        detrended_dem,
+        analysis_dir,
+        zs,
+        fields=['Ws', 'Zs', 'Ws_Zs'],
+        aligned_csv=aligned_gcs_csv,
+        together=True,
+    )
+    logging.info(f'Done. Plots saved @ {nested_dir}.')
 
     logging.info('Running landform transition Chi-Squared test...')
     sankey_csv = stats_functions.sankey_chi_squared(

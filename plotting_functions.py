@@ -69,6 +69,7 @@ def gcs_plotter(
             xs = []
             ys = []  # previosuly was [] for i in zs
             full_ys = []
+
             for count, z in enumerate(zs):
                 ys.append([])
                 label = file_functions.float_keyz_format(z) + u
@@ -78,19 +79,28 @@ def gcs_plotter(
                     table_df = pd.read_csv(table_loc)
                     code_col = 'code'
                     field_col = field
+                    dist_col = 'dist_down'
                 else:
                     table_df = pd.read_csv(aligned_csv)
-                    # TODO: make sure this is correct
-                    code_col = f'code_{label}'
-                    field_col = f'{field}_{label}'
+                    code_col = f'{label}_code'
 
-                table_df.sort_values('dist_down', inplace=True)
-                xs.append(table_df.loc[:, 'dist_down'].to_numpy())
-                codes = table_df.loc[:, code_col].to_numpy()
+                    # reformat the float codes
+                    table_df[code_col] = table_df[code_col].fillna(
+                        -9999).astype('int')
+                    field_col = f'{label}_{field}'
 
-                for num in range(-2, 3):  # Make arrays representing each landform type
-                    y_temp = table_df.loc[:, field_col].to_numpy()
-                    y_temp[codes != num] = np.nan
+                    if count == 0:
+                        dist_col = f'loc_{label}'
+
+                    table_df.sort_values(dist_col, inplace=True)
+
+                xs.append(table_df[dist_col].to_numpy())
+                codes = table_df[code_col].to_numpy()
+
+                # make arrays representing each landform type
+                for num in range(-2, 3):
+                    y_temp = table_df[field_col].to_numpy()
+                    y_temp = np.where(codes == num, y_temp, np.nan)
                     ys[count].append(y_temp)
 
                 full_ys.append(table_df.loc[:, field_col].to_numpy())
@@ -103,7 +113,11 @@ def gcs_plotter(
             for count, z in enumerate(zs):
                 x = xs[count]
                 ymax = 0
-                ax[count].plot(x, full_ys[count], color=colors[2])
+                ax[count].plot(
+                    x,
+                    full_ys[count],
+                    color=colors[2],
+                )
                 for i, y in enumerate(ys[count]):
                     ax[count].plot(
                         x,
@@ -112,13 +126,18 @@ def gcs_plotter(
                         label=landforms[i],
                     )
                     temp_max = np.amax(
-                        np.array([np.abs(np.nanmin(y)), np.abs(np.nanmax(y))]))
+                        np.array([
+                            np.abs(np.nanmin(y)),
+                            np.abs(np.nanmax(y))
+                        ])
+                    )
                     if temp_max >= ymax and ymax <= 5:
                         ymax = math.ceil(temp_max)
                     elif ymax > 5:
                         ymax = 5
+
                 ax[count].set_ylim(-1 * ymax, ymax)
-                ax[count].set_ylabel(field)
+                ax[count].set_ylabel(f'{round(z, 2)}{u}')
                 ax[count].set_yticks(
                     np.arange(-1 * ymax, ymax, 1),
                     minor=False,
@@ -157,20 +176,19 @@ def gcs_plotter(
 
             # extract distance downstream for the x axis of each subplot, as well as landform codes
             table_df.sort_values('dist_down', inplace=True)
-            x = table_df.loc[:, 'dist_down'].to_numpy()
-            codes = table_df.loc[:, 'code'].to_numpy()
+            x = table_df['dist_down'].to_numpy()
+            codes = table_df['code'].to_numpy()
 
             ys = [[] for i in fields]  # previosuly was [] for i in zs
             full_ys = []
             for count, field in enumerate(fields):
                 for num in range(-2, 3):  # Make arrays representing each landform type
-                    y_temp = table_df.loc[:, field].to_numpy()
-                    y_temp[codes != num] = np.nan
-                    ys[count].append(y_temp)
-                    table_df = pd.read_csv(table_loc)
-                    table_df.sort_values('dist_down', inplace=True)
+                    y_temp = table_df[field].to_numpy()
+                    y_temp = np.where(codes == num, y_temp, np.nan)
 
-                full_ys.append(table_df.loc[:, field].to_numpy())
+                    ys[count].append(y_temp)
+
+                full_ys.append(table_df[field].to_numpy())
 
             fig, ax = plt.subplots(len(fields), sharey=True)
             fig.subplots_adjust(hspace=0.4)
