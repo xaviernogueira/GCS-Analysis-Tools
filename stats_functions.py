@@ -670,7 +670,7 @@ def violin_ttest(
     logging.info(out_df)
 
     thresh_label = file_functions.float_keyz_format(thresh) + u
-    out_csv = out_dir + '\\%s_thresh_violin_stats.csv' % thresh_label
+    out_csv = out_dir + '\\preferential_nesting_ttest.csv'
     out_df.to_csv(out_csv)
 
     return out_csv
