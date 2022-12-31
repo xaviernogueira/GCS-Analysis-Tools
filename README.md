@@ -5,7 +5,7 @@ process of multi-flow stage GCS analysis.
 For more information on GCS analysis please reference my PI Gregory Pasternack's [video](https://www.youtube.com/watch?v=VSMK72FbTfI) which is part of a series introducing the topic. To see real-world outputs of this software within an appropriate scientific context please reference [this recording](https://www.youtube.com/watch?v=fp1Nag4kN7s) of my graduate/MS exit seminar.
 
 ### Package contents
-- **Graphic User Interface (GUI) executable script (`gcs_gui.py`)**
+- **Graphic User Interface (GUI) executable script (`gui_tkinter.py`)**
 - Python files storing the underlying methods
 - Copy of RapidLasso's [LAStools software](http://lastools.org/) `.exe` command line executables (`LAStools/`).
 - Copy of ['Breeze' GUI theme](https://github.com/MaxPerl/ttk-Breeze) (`ttk-Breeze-master/`).
@@ -19,3 +19,6 @@ For more information on GCS analysis please reference my PI Gregory Pasternack's
 - [`plotly`](https://plotly.com/) for [Sankey diagram](https://plotly.com/python/sankey-diagram/) plotting.
 
 ### **Please read our [documentation](https://gcs-gui-documentation.readthedocs.io) before attempting to use this GUI!**
+
+![Preview of the Graphic User Interface (GUI)](https://github.com/xaviernogueira/GCS-Analysis-Tools/blob/main/preview.PNG)
+
