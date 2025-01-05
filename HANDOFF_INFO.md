@@ -40,10 +40,9 @@ conda install -c conda-forge pillow
 conda install -c conda-forge plotly
 conda install -c conda-forge seaborn
 conda install -c conda-forge openpyxl
-conda install -c conda-forge pytest # optional, to run tests
 
 # or in one command
-conda install -c conda-forge scipy pillow plotly seaborn openpyxl pytest
+conda install -c conda-forge scipy pillow plotly seaborn openpyxl
 ```
 5. **Run the GUI!:** With the environment still active, navigate to wherever you cloned `GCS-Analysis-Tools` repo. Once there 
 you can fire up the GUI with simply:
@@ -69,3 +68,5 @@ for the process functions would be cool to assure behavior in edge cases (i.e., 
 that would have been overly time consuming, and considering code will change, it made sense to verify 
 the behavior from a user input -> user output way (i.e., GUI functions only).
 
+
+For testing we use `pytest`, which should be included in the ArcPro conda environment. If it is not, try `conda install -c esri pytest`.
