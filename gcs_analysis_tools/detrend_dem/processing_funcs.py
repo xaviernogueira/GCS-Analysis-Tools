@@ -1,11 +1,17 @@
-import arcpy
+import sys
 import os
 import logging
-import pandas as pd
 from typing import List, Tuple, Union
+from pathlib import Path
+
+import arcpy
+import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
-from file_functions import err_info, spatial_license
+
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import err_info, spatial_license
 
 # Define detrending functions
 ######################################################################

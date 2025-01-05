@@ -1,15 +1,24 @@
+import sys
 import logging
-import pandas as pd
-import numpy as np
-from typing import Union
-import arcpy
-from arcpy.sa import Raster, Filter, Con, CreateConstantRaster, MajorityFilter
-from file_functions import table_to_csv, delete_gis_files, cmd, \
-    err_info, spatial_license
-from create_centerline import make_centerline
-from create_station_lines import create_station_lines_function
 import os
 import shutil
+from typing import Union
+from pathlib import Path
+
+import pandas as pd
+import numpy as np
+import arcpy
+from arcpy.sa import Raster, Filter, Con, CreateConstantRaster, MajorityFilter
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import (
+    table_to_csv, 
+    delete_gis_files, 
+    cmd,
+    err_info, 
+    spatial_license,
+)
+from centerline_funcs import make_centerline, create_station_lines_function
 
 
 @err_info

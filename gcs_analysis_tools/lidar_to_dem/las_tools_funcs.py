@@ -1,10 +1,16 @@
-from tkinter import *
-from file_functions import *
+import sys
 import os
-import shutil
-import numpy as np
 import logging
 import gc
+import shutil
+from typing import List
+from pathlib import Path
+
+import numpy as np
+
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils import err_info, cmd
 
 gc.collect()
 
@@ -105,7 +111,7 @@ def pts(
 
 
 @err_info
-def process_lidar(
+def get_bare_ground_las(
     lastoolsdir,
     lidardir,
     ground_poly,
@@ -696,5 +702,3 @@ def process_lidar(
     logging.info(ground_results)
     logging.info('')
     logging.info(veg_results)
-
-    return

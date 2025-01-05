@@ -1,3 +1,5 @@
+"""Utility functions that are shared by multiple modules."""
+
 import os
 from typing import List, Tuple, Union
 from tkinter import *
@@ -23,11 +25,10 @@ def init_logger(filename) -> None:
     stderr_logger = logging.StreamHandler()
     stderr_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
     logging.getLogger().addHandler(stderr_logger)
-    return
 
 
 def cmd(command) -> None:
-    """Executes command prompt command"""
+    """Executes command prompt command and logs caught exceptions."""
     try:
         res = subprocess.Popen(
             command,
@@ -51,7 +52,7 @@ def cmd(command) -> None:
 
 
 def err_info(func) -> callable:
-    """Wrapper to show error message when a command fails"""
+    """Decorator function to show error message when a command fails"""
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
@@ -61,6 +62,7 @@ def err_info(func) -> callable:
 
 
 def spatial_license(func) -> callable:
+    """Decorator to check out arcpy extensions."""
     def wrapper(*args, **kwargs):
         arcpy.CheckOutExtension('Spatial')
         func(*args, **kwargs)

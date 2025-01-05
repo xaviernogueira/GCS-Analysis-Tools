@@ -1,14 +1,19 @@
+import sys
 import os
 import logging
-import numpy as np
 from typing import Union, List
-from matplotlib import pyplot as plt
+from pathlib import Path
+
+import numpy as np
 import arcpy
 from arcpy.sa import Raster, Con, BoundaryClean, MajorityFilter
+from matplotlib import pyplot as plt
 from arcpy.da import SearchCursor
-from file_functions import get_label_units, string_to_list, \
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import get_label_units, string_to_list, \
     err_info, spatial_license
-from create_centerline import remove_spurs
+from centerline_funcs import remove_spurs
 
 
 def float_keyz_format(
