@@ -86,7 +86,6 @@ def lidar_footprint(
     return lidar_footprint
 
 
-@err_info
 @spatial_license
 def define_ground_polygon(
     lidar_footprint: str,
