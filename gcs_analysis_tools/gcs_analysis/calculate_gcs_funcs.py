@@ -1,13 +1,26 @@
 import os
+import sys
 import logging
-import arcpy
-import file_functions
-from file_functions import *
-from create_station_lines import create_station_lines_function
+from typing import List, Union
+from pathlib import Path
+
 import statistics
 import pandas as pd
 import numpy as np
-from typing import List, Union
+import arcpy
+
+from create_station_lines import create_station_lines_function
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import (
+    delete_gis_files,
+    string_to_list,
+    float_keyz_format,
+    err_info,
+    check_use,
+    get_label_units,
+)
+
 
 arcpy.env.overwriteOutput = True
 
@@ -195,7 +208,7 @@ def extract_gcs(
     og_dem = dem_dir + '\\las_dem.tif'
 
     # Get units for string labeling
-    u, unit, spatial_ref = file_functions.get_label_units(detrended_dem)
+    u, unit, spatial_ref = get_label_units(detrended_dem)
 
     for i, z in enumerate(zs):
         z_str = float_keyz_format(z)
@@ -408,7 +421,7 @@ def extract_gcs(
         out_csvs.append(csv_loc)
 
     for file in del_files:
-        file_functions.delete_gis_files(file)
+        delete_gis_files(file)
 
     logging.info('GCS tables completed @ %s' % out_dir)
     return out_csvs

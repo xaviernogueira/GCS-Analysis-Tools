@@ -1,25 +1,34 @@
 import os
+import sys
+from os import listdir
+from os.path import isfile, join
 import logging
+from itertools import combinations
+from typing import Union, List, Tuple, Iterable, Optional
+from pathlib import Path
 import math
+
 import numpy as np
 import pandas as pd
 from scipy.stats import variation
-from os import listdir
-from os.path import isfile, join
+import matplotlib.cm
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import matplotlib.colors as colors_module
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
-import matplotlib.cm
 import plotly
 import plotly.graph_objects as go
 import plotly.express as pex
-from itertools import combinations
 import seaborn as sns
-from typing import Union, List, Tuple, Iterable, Optional
-import file_functions
 import openpyxl as xl
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import (
+    prep_key_zs,
+    get_label_units,
+    float_keyz_format,
+)
 
 # PLOTTING FUNCTIONS FOR BOTH STAGE AND NESTING ANALYSES
 
@@ -42,14 +51,14 @@ def gcs_plotter(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
     gcs_dir = dem_dir + '\\gcs_tables'
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # define output directory
     if not together:
@@ -72,7 +81,7 @@ def gcs_plotter(
 
             for count, z in enumerate(zs):
                 ys.append([])
-                label = file_functions.float_keyz_format(z) + u
+                label = float_keyz_format(z) + u
 
                 if not aligned_csv:
                     table_loc = gcs_dir + '\\%s_gcs_table.csv' % label
@@ -169,7 +178,7 @@ def gcs_plotter(
     elif not together:
         for z in zs:
             # get data for the flow stage
-            label = file_functions.float_keyz_format(z) + u
+            label = float_keyz_format(z) + u
 
             table_loc = gcs_dir + '\\%s_gcs_table.csv' % label
             table_df = pd.read_csv(table_loc)
@@ -306,14 +315,14 @@ def heat_plotter(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
     gcs_dir = dem_dir + '\\gcs_tables'
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # use [[zs]] or [[z1], [z2]] structure to control plotting
     if together:
@@ -341,7 +350,7 @@ def heat_plotter(
 
         for count, ax in enumerate(axs):
             z = sub_zs[count]
-            label = file_functions.float_keyz_format(z) + u
+            label = float_keyz_format(z) + u
 
             if not together:
                 title = out_dir + '\\%s_heatplot.png' % label
@@ -437,14 +446,14 @@ def landform_pie_charts(
         raise ValueError(
             'Must input detrended DEM parameter in the GUI to set up output folder location')
 
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
     gcs_dir = dem_dir + '\\gcs_tables'
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # use [[z1,z2,z3]] or [[z1], [z2]] structure to control plotting
     if together:
@@ -471,7 +480,7 @@ def landform_pie_charts(
 
         for i, ax in enumerate(axs):
             z = sub_zs[i]
-            label = file_functions.float_keyz_format(z) + u
+            label = float_keyz_format(z) + u
 
             # record total occurrences for each land form code [-2, -1, 0, 1, 2] and calculate percents
             z_df = pd.read_csv(gcs_dir + '\\%s_gcs_table.csv' % label)
@@ -541,7 +550,7 @@ def nested_landform_sankey(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -552,7 +561,7 @@ def nested_landform_sankey(
         os.makedirs(out_dir)
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     logging.info('Sankey landform diagram plotting comencing...')
 
@@ -572,7 +581,7 @@ def nested_landform_sankey(
     code_df_list = []
 
     for z in zs:
-        label = file_functions.float_keyz_format(z) + u
+        label = float_keyz_format(z) + u
         code_label = f'{label}_code'
         data = aligned_df.dropna(
             axis=0,

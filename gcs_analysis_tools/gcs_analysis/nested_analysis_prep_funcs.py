@@ -1,12 +1,23 @@
+import sys
 import logging
 import os
+from typing import List, Dict, Union
+from pathlib import Path
+
 import arcpy
-import file_functions
 import pandas as pd
 import numpy as np
 from scipy import stats
-from typing import List, Dict, Union
-from create_station_lines import create_station_lines_function
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import (
+    delete_gis_files,
+    float_keyz_format,
+    string_to_list,
+    get_label_units,
+    table_to_csv,
+)
+from centerline_funcs import create_station_lines_function
 
 
 def find_xs_spacing(
@@ -63,7 +74,7 @@ def prep_for_nesting_analysis(
 
     # pull in flow stages
     if isinstance(zs, str):
-        zs = file_functions.string_to_list(zs, format='float')
+        zs = string_to_list(zs, format='float')
     elif isinstance(zs, list):
         zs = [float(z) for z in zs]
     else:
@@ -72,7 +83,7 @@ def prep_for_nesting_analysis(
             'Please enter stage heights separated only by commas (i.e. 0.2,0.7,3.6)'
         )
 
-    z_labels = [file_functions.float_keyz_format(z) for z in zs]
+    z_labels = [float_keyz_format(z) for z in zs]
 
     # set up env variables
     arcpy.env.overwriteOutput = True
@@ -89,7 +100,7 @@ def prep_for_nesting_analysis(
         os.mkdir(temp_files)
 
     # find units
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # find cross-section spacings
     spacings_dict = find_xs_spacing(
@@ -155,7 +166,7 @@ def prep_for_nesting_analysis(
 
     # use identity analysis to find nearest baseline cross-section index for each stage
     max_count = 0
-    min_z_str = file_functions.float_keyz_format(min(zs))
+    min_z_str = float_keyz_format(min(zs))
     for counter, z_str in enumerate(z_labels):
         theis_loc = temp_files + f"\\thiessen_{z_str}{u}.shp"
         out_points = temp_files + ("\\align_points%s.shp" % counter)
@@ -186,7 +197,7 @@ def prep_for_nesting_analysis(
     aligned_csv = gcs_dir + '\\aligned_gcs.csv'
 
     aligned_df = pd.read_csv(
-        file_functions.table_to_csv(
+        table_to_csv(
             out_points,
             csv_filepath=aligned_csv,
             fld_to_remove_override=['FID_statio', 'FID_thiess'],
@@ -240,7 +251,7 @@ def prep_for_nesting_analysis(
 
     logging.info('Deleting files: %s' % del_files)
     for file in del_files:
-        file_functions.delete_gis_files(file)
+        delete_gis_files(file)
 
     # overwrite the previous csv
     out_aligned_df.to_csv(aligned_csv)

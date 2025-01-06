@@ -1,6 +1,12 @@
 import logging
-import stats_functions
-import plotting_functions
+from .stats_funcs import (
+    descriptive_stats_xlxs,
+)
+from .plotting_funcs import (
+    gcs_plotter,
+    heat_plotter,
+    landform_pie_charts,
+)
 from typing import List, Union
 
 
@@ -14,7 +20,7 @@ def run_stage_analysis(
     # make descriptive stats Excel file
     logging.info(
         'Writing descriptive stats and WW-Runs test output to .xlsx...')
-    out_xlsx = stats_functions.descriptive_stats_xlxs(
+    out_xlsx = descriptive_stats_xlxs(
         zs=zs,
         analysis_dir=analysis_dir,
         detrended_dem=detrended_dem,
@@ -23,7 +29,7 @@ def run_stage_analysis(
 
     # make stage based plots
     logging.info('Making GCS plots for each stage...')
-    stage_plots_dir = plotting_functions.gcs_plotter(
+    stage_plots_dir = gcs_plotter(
         detrended_dem=detrended_dem,
         analysis_dir=analysis_dir,
         zs=zs,
@@ -33,7 +39,7 @@ def run_stage_analysis(
 
     # make Ws-Zs heatplots
     logging.info('Making GCS plots for each stage...')
-    stage_plots_dir = plotting_functions.heat_plotter(
+    stage_plots_dir = heat_plotter(
         detrended_dem=detrended_dem,
         analysis_dir=analysis_dir,
         zs=zs,
@@ -43,7 +49,7 @@ def run_stage_analysis(
 
     # make landform pie charts
     logging.info('Making GCS landforms pie charts for each stage...')
-    stage_plots_dir = plotting_functions.landform_pie_charts(
+    stage_plots_dir = landform_pie_charts(
         detrended_dem=detrended_dem,
         analysis_dir=analysis_dir,
         zs=zs,
