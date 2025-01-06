@@ -1,12 +1,22 @@
+import sys
 import logging
 import os
-import pandas as pd
-import stats_functions
-import file_functions
-import plotting_functions
-from nested_analysis_prep_functions import prep_for_nesting_analysis
 from typing import List, Union
+from pathlib import Path
 
+from .stats_funcs import (
+    sankey_chi_squared,
+    violin_ttest,
+)
+
+from .plotting_funcs import (
+    gcs_plotter,
+    nested_landform_sankey,
+)
+from .nested_analysis_prep_funcs import prep_for_nesting_analysis
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import prep_key_zs  
 
 def nesting_analysis(
     detrended_dem: str,
@@ -18,7 +28,7 @@ def nesting_analysis(
     logging.info(f'Running GCS nested analysis on flow stages: {zs}')
 
     # get z labels for the key zs
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     gcs_dir = os.path.dirname(detrended_dem) + '\\gcs_tables'
     logging.info(
@@ -39,7 +49,7 @@ def nesting_analysis(
     logging.info('Making nested GCS line plots...')
 
     # TODO: make this work!
-    nested_dir = plotting_functions.gcs_plotter(
+    nested_dir = gcs_plotter(
         detrended_dem,
         analysis_dir,
         zs,
@@ -50,7 +60,7 @@ def nesting_analysis(
     logging.info(f'Done. Plots saved @ {nested_dir}.')
 
     logging.info('Running landform transition Chi-Squared test...')
-    sankey_csv = stats_functions.sankey_chi_squared(
+    sankey_csv = sankey_chi_squared(
         zs,
         aligned_gcs_csv,
         analysis_dir,
@@ -62,7 +72,7 @@ def nesting_analysis(
         logging.info(
             f'Creating Sankey plot visualizing flow stage transitions w/ ignore_normal={state}...'
         )
-        out_html = plotting_functions.nested_landform_sankey(
+        out_html = nested_landform_sankey(
             detrended_dem,
             analysis_dir,
             zs,
@@ -73,7 +83,7 @@ def nesting_analysis(
     logging.info('Running T-test to verify significance of violin analysis...')
     #violin_df = pd.DataFrame
     # TODO: combine into t-test
-    violin_csv = stats_functions.violin_ttest(
+    violin_csv = violin_ttest(
         detrended_dem,
         analysis_dir,
         zs,
