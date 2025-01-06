@@ -4,6 +4,7 @@ import logging
 from .processing_funcs import (
     prep_small_inc,
     pdf_cdf_plotting,
+    stage_centerlines, # keep for import into gui_tkinter.py
 )
 
 logger = logging.getLogger()
