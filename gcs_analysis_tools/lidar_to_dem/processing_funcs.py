@@ -83,7 +83,7 @@ def lidar_footprint(
         lidar_ras,
         lidar_footprint,
     )
-    return lidar_footprint
+    return lidardir + '\\las_footprint.shp'
 
 
 @spatial_license
