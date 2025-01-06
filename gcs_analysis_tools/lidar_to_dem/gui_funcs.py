@@ -16,7 +16,7 @@ def lidar_prep(
      Outputs: A 1m (or other resolution) DEM modeling bare ground LiDAR returns"""
 
     logging.info('Unzipping LAZ files...')
-    lidar_footprint(
+    foot = lidar_footprint(
         lasbin,
         lidardir,
         spatial_shp,
@@ -24,7 +24,6 @@ def lidar_prep(
     logging.info('Done')
 
     logging.info('Generating inputs for LiDAR processing...')
-    foot = lidardir + '\\las_footlogging.info.shp'
     define_ground_polygon(
         foot,
         lidardir,
