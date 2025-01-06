@@ -63,7 +63,7 @@ class GCSGraphicUserInterface(ttk.Frame):
         self.style = ttk.Style()
 
         # Adding the Breeze tk theme https://github.com/MaxPerl/ttk-Breeze
-        breeze_dir = os.getcwd() + '\\tk-Breeze-master'
+        breeze_dir = os.getcwd() + '\\ttk-Breeze-master'
 
         self.tk.call(
             'lappend',
