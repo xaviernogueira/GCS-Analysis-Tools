@@ -105,8 +105,9 @@ def define_ground_polygon(
     in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
 
     # Find NAIP imagery in folder
+    out_names = ["NDVI.tif", "NAIP_prj.tif", "las_dem.tif"]
     naip_imagery = [f for f in os.listdir(
-        naipdir) if os.path.isfile(os.path.join(naipdir, f)) and f[-4:] == '.tif']
+        naipdir) if os.path.isfile(os.path.join(naipdir, f)) and f[-4:] == '.tif' and f not in out_names]
 
     # Initiate temp files folder
     temp_files = lidardir + '\\temp_files'
