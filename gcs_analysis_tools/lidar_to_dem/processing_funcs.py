@@ -45,8 +45,6 @@ def lidar_footprint(
     
     # manually done to avoid wierd issues
     in_spatial_ref = arcpy.SpatialReference(spatialref_shp.replace(".shp", ".prj"))
-    arcpy.DefineProjection_management(spatialref_shp, in_spatial_ref)
-    in_spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
     logging.info("Spatial reference defined as %s" % in_spatial_ref)
 
 
