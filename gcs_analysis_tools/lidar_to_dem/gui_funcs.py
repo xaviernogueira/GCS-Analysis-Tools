@@ -25,7 +25,6 @@ def lidar_prep(
 
     logging.info('Generating inputs for LiDAR processing...')
     define_ground_polygon(
-        foot,
         lidardir,
         naip_folder,
         ndvi_thresh,

@@ -11,9 +11,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils import (
     cmd,
     err_info, 
+    check_use,
     spatial_license,
 )
 
+LAS_FOOTPRINT = 'las_footprint.shp'
 
 @err_info
 @spatial_license
@@ -78,17 +80,15 @@ def lidar_footprint(
         compute_stats=True,
     )
     lidar_ras = CreateConstantRaster(1, extent=raw_las_dataset)
-    lidar_footprint = lidardir + '\\las_footprint.shp'
+    lidar_footprint = lidardir + LAS_FOOTPRINT
     arcpy.RasterToPolygon_conversion(
         lidar_ras,
         lidar_footprint,
     )
-    return lidardir + '\\las_footprint.shp'
 
 
 @spatial_license
 def define_ground_polygon(
-    lidar_footprint: str,
     lidardir: str,
     naipdir: str,
     ndvi_thresh: float,
@@ -99,6 +99,8 @@ def define_ground_polygon(
     to define processing settings"""
 
     # Set processing extent to the LiDAR data extent
+    lidar_footprint = lidardir + LAS_FOOTPRINT
+    assert Path(lidar_footprint).exists(), 'LiDAR footprint needs to created firsneeds to created first.'
     arcpy.env.extent = lidar_footprint
     in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
 
