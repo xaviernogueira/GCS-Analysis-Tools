@@ -84,6 +84,7 @@ def lidar_footprint(
     arcpy.RasterToPolygon_conversion(
         lidar_ras,
         lidar_footprint,
+        spatial_reference=in_spatial_ref,
     )
 
 
@@ -99,7 +100,7 @@ def define_ground_polygon(
     to define processing settings"""
 
     # Set processing extent to the LiDAR data extent
-    lidar_footprint = lidardir + LAS_FOOTPRINT
+    lidar_footprint = lidardir + f"\\LAS_FOOTPRINT"
     assert Path(lidar_footprint).exists(), 'LiDAR footprint needs to created firsneeds to created first.'
     arcpy.env.extent = lidar_footprint
     in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
