@@ -109,7 +109,7 @@ def define_ground_polygon(
     lidar_footprint = lidardir + f"\\{LAS_FOOTPRINT}"
     assert Path(lidar_footprint).exists(), 'LiDAR footprint needs to created firsneeds to created first.'
     arcpy.env.extent = lidar_footprint
-    in_spatial_ref = arcpy.Describe(lidar_footprint).spatialReference
+    in_spatial_ref = arcpy.SpatialReference(lidar_footprint.replace(".shp", ".prj"))
 
     # Find NAIP imagery in folder
     out_names = ["NDVI.tif", "NAIP_prj.tif", "las_dem.tif"]
