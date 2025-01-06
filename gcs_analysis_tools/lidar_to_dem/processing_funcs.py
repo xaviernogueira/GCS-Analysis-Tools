@@ -85,6 +85,10 @@ def lidar_footprint(
         lidar_ras,
         lidar_footprint,
     )
+    arcpy.DefineProjection_management(
+        lidar_footprint,
+        in_spatial_ref,
+    )
 
 
 @spatial_license
