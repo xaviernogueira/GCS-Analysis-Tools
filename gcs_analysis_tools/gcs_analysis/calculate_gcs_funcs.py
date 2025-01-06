@@ -9,9 +9,9 @@ import pandas as pd
 import numpy as np
 import arcpy
 
-from create_station_lines import create_station_lines_function
 
 sys.path.append(str(Path(__file__).parent.parent))
+from centerline_funcs import create_station_lines_function
 from utils import (
     delete_gis_files,
     string_to_list,
