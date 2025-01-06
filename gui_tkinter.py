@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+import tkinter.ttk as ttk
 from tkinter import filedialog
 from typing import List, Tuple
 from PIL import Image, ImageTk
@@ -14,7 +15,7 @@ from gcs_analysis_tools.gcs_analysis.gui_funcs import run_gcs_analyses
 from gcs_analysis_tools.river_builder_prep.gui_funcs import export_to_river_builder 
 
 
-class GCSGraphicUserInterface(tk.Frame):
+class GCSGraphicUserInterface(ttk.Frame):
 
     # Initialize the class, this allows the GUI to run when the code is ran
     def __init__(
@@ -23,7 +24,7 @@ class GCSGraphicUserInterface(tk.Frame):
     ) -> None:
 
         # Initialize the tk frame that will hold all tabs holding each processing step
-        tk.Frame.__init__(
+        ttk.Frame.__init__(
             self,
             master,
         )
@@ -59,7 +60,7 @@ class GCSGraphicUserInterface(tk.Frame):
         self.master.geometry("%dx%d+%d+%d" % (ww, wh, wx, wy))
 
         # set widget styles
-        self.style = tk.Style()
+        self.style = ttk.Style()
 
         # Adding the Breeze tk theme https://github.com/MaxPerl/ttk-Breeze
         breeze_dir = os.getcwd() + '\\tk-Breeze-master'
@@ -76,7 +77,7 @@ class GCSGraphicUserInterface(tk.Frame):
         self.style.theme_use('Breeze')
 
         # initialize tab handler
-        self.tab_container = tk.Notebook(master)
+        self.tab_container = ttk.Notebook(master)
 
         self.tab_names = [
             'LiDAR Data prep',
@@ -90,7 +91,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.tabs = {}
         for tab_name in self.tab_names:
-            tab = tk.Frame(self.tab_container)
+            tab = ttk.Frame(self.tab_container)
             self.tab_container.add(
                 tab,
                 text=tab_name,
@@ -158,11 +159,11 @@ class GCSGraphicUserInterface(tk.Frame):
             top.title(title)
 
             self.ph = ImageTk.PhotoImage(self.im, master=top)
-            self.label = tk.Label(top, image=self.ph)
+            self.label = ttk.Label(top, image=self.ph)
             self.label.image = self.ph
             self.label.grid(row=1, column=1, columnspan=3)
 
-            self.label2 = tk.Label(top, text='Image saved @ %s' % image)
+            self.label2 = ttk.Label(top, text='Image saved @ %s' % image)
             self.label2.grid(row=2, column=1)
 
         # LiDAR prep (filling tabs w/ widgets)
@@ -170,7 +171,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         root = self.tabs['LiDAR Data prep']
 
-        self.l_lasbin1 = tk.Label(
+        self.l_lasbin1 = ttk.Label(
             root,
             text='LAStools /bin/ directory:',
         )
@@ -181,7 +182,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_lasbin1 = tk.Entry(root)
+        self.e_lasbin1 = ttk.Entry(root)
         self.e_lasbin1.insert(END, str(os.getcwd() + '\\LAStools\\bin'))
         self.e_lasbin1.grid(
             row=0,
@@ -189,7 +190,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.b_lasbin1 = tk.Button(
+        self.b_lasbin1 = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -205,7 +206,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_lidardir1 = tk.Label(
+        self.l_lidardir1 = ttk.Label(
             root,
             text='LiDAR data directory:',
         )
@@ -216,14 +217,14 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_lidardir1 = tk.Entry(root)
+        self.e_lidardir1 = ttk.Entry(root)
         self.e_lidardir1.insert(END, '')
         self.e_lidardir1.grid(
             row=1,
             column=2,
             pady=pad,
         )
-        self.b_lidardir1 = tk.Button(
+        self.b_lidardir1 = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -239,7 +240,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_in_spatialref = tk.Label(
+        self.l_in_spatialref = ttk.Label(
             root,
             text='LiDAR spatial reference (.shp):',
         )
@@ -250,7 +251,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_in_spatialref = tk.Entry(root)
+        self.e_in_spatialref = ttk.Entry(root)
         self.e_in_spatialref.insert(END, '')
         self.e_in_spatialref.grid(
             row=2,
@@ -258,7 +259,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.b_in_spatialref = tk.Button(
+        self.b_in_spatialref = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -278,7 +279,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_naip = tk.Label(
+        self.l_naip = ttk.Label(
             root,
             text='NAIP imagery folder:',
         )
@@ -289,7 +290,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_naip = tk.Entry(root)
+        self.e_naip = ttk.Entry(root)
         self.e_naip.insert(END, '')
         self.e_naip.grid(
             row=3,
@@ -297,7 +298,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.b_naip = tk.Button(
+        self.b_naip = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -313,7 +314,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_ndvi = tk.Label(
+        self.l_ndvi = ttk.Label(
             root,
             text='NDVI vegetation threshold:',
         )
@@ -323,7 +324,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
             pady=pad,
         )
-        self.e_ndvi = tk.Entry(root)
+        self.e_ndvi = ttk.Entry(root)
         self.e_ndvi.grid(
             sticky=E,
             row=4,
@@ -338,7 +339,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_aoi = tk.Label(
+        self.l_aoi = ttk.Label(
             root,
             text='AOI shapefile (.shp):',
         )
@@ -349,7 +350,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_aoi = tk.Entry(root)
+        self.e_aoi = ttk.Entry(root)
         self.e_aoi.insert(END, '')
         self.e_aoi.grid(
             row=5,
@@ -357,7 +358,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.b_aoi = tk.Button(
+        self.b_aoi = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -377,14 +378,14 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.spacer1 = tk.Label(root, text='')
+        self.spacer1 = ttk.Label(root, text='')
         self.spacer1.grid(
             sticky=W,
             row=6,
             column=1,
             pady=pad,
         )
-        self.prep_run = tk.Button(
+        self.prep_run = ttk.Button(
             root,
             text='Run',
             command=lambda: lidar_prep(
@@ -403,7 +404,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(17, minsize=80)
 
-        self.instruct = tk.Label(
+        self.instruct = ttk.Label(
             root,
             text='     Verify vegetation mask accuracy after running!',
         )
@@ -420,7 +421,7 @@ class GCSGraphicUserInterface(tk.Frame):
         ######################################################################
         # LiDAR processing to DEM generation widgets
         root = self.tabs['DEM generation']
-        self.l_lasbin = tk.Label(
+        self.l_lasbin = ttk.Label(
             root,
             text='LAStools /bin/ directory:',
         )
@@ -430,13 +431,13 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.e_lasbin = tk.Entry(root)
+        self.e_lasbin = ttk.Entry(root)
         self.e_lasbin.insert(END, os.getcwd() + '\\LAStools\\bin')
         self.e_lasbin.grid(
             row=0,
             column=2,
         )
-        self.b_lasbin = tk.Button(
+        self.b_lasbin = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -451,7 +452,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.l_lidardir = tk.Label(
+        self.l_lidardir = ttk.Label(
             root,
             text='LiDAR data directory:',
         )
@@ -461,14 +462,14 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.e_lidardir = tk.Entry(root)
+        self.e_lidardir = ttk.Entry(root)
         self.e_lidardir.insert(END, '')
         self.e_lidardir.grid(
             row=1,
             column=2,
         )
 
-        self.b_lidardir = tk.Button(
+        self.b_lidardir = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -485,7 +486,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.shp_var = tk.StringVar()
 
-        self.l_ground_shp = tk.Label(
+        self.l_ground_shp = ttk.Label(
             root,
             text='Ground polygon (.shp):',
         )
@@ -495,7 +496,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.e_ground_shp = tk.Entry(
+        self.e_ground_shp = ttk.Entry(
             root,
             textvariable=self.shp_var,
         )
@@ -504,7 +505,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.b_ground_shp = tk.Button(
+        self.b_ground_shp = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -523,7 +524,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.l_out_spatialref = tk.Label(
+        self.l_out_spatialref = ttk.Label(
             root,
             text='AOI shapefile (.shp):',
         )
@@ -533,7 +534,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.e_out_spatialref = tk.Entry(root)
+        self.e_out_spatialref = ttk.Entry(root)
         self.e_out_spatialref.insert(END, '')
         self.e_out_spatialref.grid(
             row=3,
@@ -541,7 +542,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.b_out_spatialref = tk.Button(
+        self.b_out_spatialref = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -582,7 +583,7 @@ class GCSGraphicUserInterface(tk.Frame):
         # specify lasground_new parameters
         root.grid_rowconfigure(5, minsize=80)
 
-        self.l_coarse_class = tk.Label(
+        self.l_coarse_class = ttk.Label(
             root,
             text='standard/coarse classification parameters:',
         )
@@ -592,7 +593,7 @@ class GCSGraphicUserInterface(tk.Frame):
             columnspan=2,
         )
 
-        self.l_c_step = tk.Label(
+        self.l_c_step = ttk.Label(
             root,
             text='step size:',
         )
@@ -601,13 +602,13 @@ class GCSGraphicUserInterface(tk.Frame):
             row=6,
         )
 
-        self.e_c_step = tk.Entry(root)
+        self.e_c_step = ttk.Entry(root)
         self.e_c_step.grid(
             row=6,
             column=1,
         )
 
-        self.l_c_bulge = tk.Label(
+        self.l_c_bulge = ttk.Label(
             root,
             text='bulge:',
         )
@@ -616,13 +617,13 @@ class GCSGraphicUserInterface(tk.Frame):
             row=7,
         )
 
-        self.e_c_bulge = tk.Entry(root)
+        self.e_c_bulge = ttk.Entry(root)
         self.e_c_bulge.grid(
             row=7,
             column=1,
         )
 
-        self.l_c_spike = tk.Label(
+        self.l_c_spike = ttk.Label(
             root,
             text='spike:',
         )
@@ -630,13 +631,13 @@ class GCSGraphicUserInterface(tk.Frame):
             sticky=E,
             row=8,
         )
-        self.e_c_spike = tk.Entry(root)
+        self.e_c_spike = ttk.Entry(root)
         self.e_c_spike.grid(
             row=8,
             column=1,
         )
 
-        self.l_c_dspike = tk.Label(
+        self.l_c_dspike = ttk.Label(
             root,
             text='down spike:',
         )
@@ -645,13 +646,13 @@ class GCSGraphicUserInterface(tk.Frame):
             row=9,
         )
 
-        self.e_c_dspike = tk.Entry(root)
+        self.e_c_dspike = ttk.Entry(root)
         self.e_c_dspike.grid(
             row=9,
             column=1,
         )
 
-        self.l_c_offset = tk.Label(
+        self.l_c_offset = ttk.Label(
             root,
             text='offset:',
         )
@@ -659,13 +660,13 @@ class GCSGraphicUserInterface(tk.Frame):
             sticky=E,
             row=10,
         )
-        self.e_c_offset = tk.Entry(root)
+        self.e_c_offset = ttk.Entry(root)
         self.e_c_offset.grid(
             row=10,
             column=1,
         )
 
-        self.l_fine_class = tk.Label(
+        self.l_fine_class = ttk.Label(
             root,
             text='fine classification parameters (in ground area):',
         )
@@ -675,7 +676,7 @@ class GCSGraphicUserInterface(tk.Frame):
             columnspan=2,
         )
 
-        self.l_f_step = tk.Label(
+        self.l_f_step = ttk.Label(
             root,
             text='step size:',
         )
@@ -685,7 +686,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.e_f_step = tk.Entry(
+        self.e_f_step = ttk.Entry(
             root,
             state=DISABLED,
         )
@@ -694,7 +695,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.l_f_bulge = tk.Label(
+        self.l_f_bulge = ttk.Label(
             root,
             text='bulge:',
         )
@@ -704,7 +705,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.e_f_bulge = tk.Entry(
+        self.e_f_bulge = ttk.Entry(
             root,
             state=DISABLED,
         )
@@ -713,7 +714,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.l_f_spike = tk.Label(
+        self.l_f_spike = ttk.Label(
             root,
             text='spike:',
         )
@@ -723,7 +724,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.e_f_spike = tk.Entry(
+        self.e_f_spike = ttk.Entry(
             root,
             state=DISABLED,
         )
@@ -732,7 +733,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.l_f_dspike = tk.Label(
+        self.l_f_dspike = ttk.Label(
             root,
             text='down spike:',
         )
@@ -742,7 +743,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.e_f_dspike = tk.Entry(
+        self.e_f_dspike = ttk.Entry(
             root,
             state=DISABLED,
         )
@@ -751,7 +752,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.l_f_offset = tk.Label(
+        self.l_f_offset = ttk.Label(
             root,
             text='offset:',
         )
@@ -761,7 +762,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.e_f_offset = tk.Entry(
+        self.e_f_offset = ttk.Entry(
             root,
             state=DISABLED,
         )
@@ -771,7 +772,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
 
         # specify units
-        self.l_lidar_units = tk.Label(
+        self.l_lidar_units = ttk.Label(
             root,
             text='Units:',
         )
@@ -784,7 +785,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.lidar_units = tk.StringVar()
 
-        self.r_lidar_meters = tk.Radiobutton(
+        self.r_lidar_meters = ttk.Radiobutton(
             root,
             text='Meters',
             variable=self.lidar_units,
@@ -795,7 +796,7 @@ class GCSGraphicUserInterface(tk.Frame):
             row=12,
             column=1,
         )
-        self.r_lidar_feet = tk.Radiobutton(
+        self.r_lidar_feet = ttk.Radiobutton(
             root,
             text='US Feet',
             variable=self.lidar_units,
@@ -809,7 +810,7 @@ class GCSGraphicUserInterface(tk.Frame):
         self.lidar_units.set(' ')
 
         # specify number of cores
-        self.l_lidar_cores = tk.Label(
+        self.l_lidar_cores = ttk.Label(
             root,
             text='Number of cores for processing:',
         )
@@ -823,7 +824,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.core_num = IntVar()
 
-        self.r1_lidar = tk.Radiobutton(
+        self.r1_lidar = ttk.Radiobutton(
             root,
             text='1',
             variable=self.core_num, value=1,
@@ -834,7 +835,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.r2_lidar = tk.Radiobutton(
+        self.r2_lidar = ttk.Radiobutton(
             root,
             text='2',
             variable=self.core_num,
@@ -845,7 +846,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.r4_lidar = tk.Radiobutton(
+        self.r4_lidar = ttk.Radiobutton(
             root,
             text='4',
             variable=self.core_num,
@@ -857,7 +858,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=3,
         )
 
-        self.r8_lidar = tk.Radiobutton(
+        self.r8_lidar = ttk.Radiobutton(
             root,
             text='8',
             variable=self.core_num,
@@ -869,7 +870,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.r16_lidar = tk.Radiobutton(
+        self.r16_lidar = ttk.Radiobutton(
             root,
             text='16',
             variable=self.core_num,
@@ -880,7 +881,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.r32_lidar = tk.Radiobutton(
+        self.r32_lidar = ttk.Radiobutton(
             root,
             text='32',
             variable=self.core_num,
@@ -894,7 +895,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.core_num.set(16)
 
-        self.l_keep_orig_lidar = tk.Label(
+        self.l_keep_orig_lidar = ttk.Label(
             root,
             text='Keep original ground/veg points: ',
         )
@@ -906,7 +907,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.keep_orig_lidar = tk.BooleanVar()
 
-        self.c_keep_orig_lidar = tk.Checkbutton(
+        self.c_keep_orig_lidar = ttk.Checkbutton(
             root,
             variable=self.keep_orig_lidar,
         )
@@ -924,7 +925,7 @@ class GCSGraphicUserInterface(tk.Frame):
         else:
             default = 3.28
 
-        self.l_dem_res = tk.Label(
+        self.l_dem_res = ttk.Label(
             root,
             text='DEM resolution (meters):',
         )
@@ -934,7 +935,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
         )
 
-        self.e_dem_res = tk.Entry(root)
+        self.e_dem_res = ttk.Entry(root)
         self.e_dem_res.grid(
             sticky=W,
             row=17,
@@ -952,7 +953,7 @@ class GCSGraphicUserInterface(tk.Frame):
             'TRIANGULATION',
         ]
 
-        self.l_dem_meth = tk.Label(
+        self.l_dem_meth = ttk.Label(
             root,
             text='Select interpolation method:',
         )
@@ -965,7 +966,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.e_dem_meth = tk.StringVar()
 
-        self.option_menu1 = tk.OptionMenu(
+        self.option_menu1 = ttk.OptionMenu(
             root,
             self.e_dem_meth,
             *methods,
@@ -984,7 +985,7 @@ class GCSGraphicUserInterface(tk.Frame):
             'NATURAL_NEIGHBOR',
         ]
 
-        self.l_void_meth = tk.Label(
+        self.l_void_meth = ttk.Label(
             root,
             text='Void fill method (for binning:',
         )
@@ -997,7 +998,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.e_void_meth = tk.StringVar()
 
-        self.option_menu2 = tk.OptionMenu(
+        self.option_menu2 = ttk.OptionMenu(
             root,
             self.e_void_meth,
             *void_meths,
@@ -1015,7 +1016,7 @@ class GCSGraphicUserInterface(tk.Frame):
             'NATURAL_NEIGHBOR',
         ]
 
-        self.l_tri_meth = tk.Label(
+        self.l_tri_meth = ttk.Label(
             root,
             text='Triangulation method:',
         )
@@ -1027,7 +1028,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_tri_meth = tk.StringVar()
 
-        self.option_menu3 = tk.OptionMenu(
+        self.option_menu3 = ttk.OptionMenu(
             root,
             self.e_tri_meth,
             *tri_meths,
@@ -1039,8 +1040,8 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        # make 'Run' tk.Button in GUI to call the process_lidar() function
-        self.b_lidar_run = tk.Button(
+        # make 'Run' ttk.Button in GUI to call the process_lidar() function
+        self.b_lidar_run = ttk.Button(
             root,
             text='    Run    ',
             command=lambda: dem_generation(
@@ -1079,7 +1080,7 @@ class GCSGraphicUserInterface(tk.Frame):
         ######################################################################
         root = self.tabs['Thalweg centerline']
 
-        self.remind = tk.Label(
+        self.remind = ttk.Label(
             root,
             text='Create upstream flow polygon in ArcMap/Pro',
         )
@@ -1089,7 +1090,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=0,
         )
 
-        self.l_flow_poly = tk.Label(
+        self.l_flow_poly = ttk.Label(
             root,
             text='Upstream flow polygon (.shp):',
         )
@@ -1100,7 +1101,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_flow_poly = tk.Entry(root)
+        self.e_flow_poly = ttk.Entry(root)
         self.e_flow_poly.grid(
             sticky=E,
             row=1,
@@ -1115,7 +1116,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.b_flow_poly = tk.Button(
+        self.b_flow_poly = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1135,7 +1136,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_extent = tk.Label(
+        self.l_extent = ttk.Label(
             root,
             text='AOI shapefile (.shp):',
         )
@@ -1146,7 +1147,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_extent = tk.Entry(root)
+        self.e_extent = ttk.Entry(root)
         self.e_extent.grid(
             row=2,
             column=1,
@@ -1160,7 +1161,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.b_extent = tk.Button(
+        self.b_extent = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1180,7 +1181,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_filt = tk.Label(
+        self.l_filt = ttk.Label(
             root,
             text='Filter passes (15x default):',
         )
@@ -1191,7 +1192,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_filt = tk.Entry(root)
+        self.e_filt = ttk.Entry(root)
         self.e_filt.grid(
             sticky=E,
             row=3,
@@ -1206,7 +1207,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.l_smooth = tk.Label(
+        self.l_smooth = ttk.Label(
             root,
             text='Smoothing distance (meters):',
         )
@@ -1217,7 +1218,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_smooth = tk.Entry(root)
+        self.e_smooth = ttk.Entry(root)
         self.e_smooth.grid(
             sticky=E,
             row=4,
@@ -1232,7 +1233,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.l_dem = tk.Label(
+        self.l_dem = ttk.Label(
             root,
             text='DEM (.tif):',
         )
@@ -1243,7 +1244,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_dem = tk.Entry(root)
+        self.e_dem = ttk.Entry(root)
         self.e_dem.grid(
             row=5,
             column=1,
@@ -1257,7 +1258,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.b_dem = tk.Button(
+        self.b_dem = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1278,7 +1279,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
 
         # create run botton to create smoothed centerline
-        self.b_detrend_prep1 = tk.Button(
+        self.b_detrend_prep1 = ttk.Button(
             root,
             text='    Run    ',
             command=lambda: detrend_prep(
@@ -1299,7 +1300,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(6, minsize=50)
 
-        self.l_step = tk.Label(
+        self.l_step = ttk.Label(
             root,
             text='Verify centerline quality (edit if necessary), then run below...',
         )
@@ -1310,7 +1311,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
 
         # Create run button to generate a thalweg elevation table from 1m spaced station points
-        self.b_detrend_prep2 = tk.Button(
+        self.b_detrend_prep2 = ttk.Button(
             root,
             text='    Generate thalweg profile    ',
             command=lambda: detrend_prep(
@@ -1334,7 +1335,7 @@ class GCSGraphicUserInterface(tk.Frame):
         # DEM detrending
         ######################################################################
         root = self.tabs['Detrend DEM']
-        self.l_xyz = tk.Label(
+        self.l_xyz = ttk.Label(
             root,
             text='Thalweg profile csv:',
         )
@@ -1344,7 +1345,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=0,
         )
 
-        self.e_xyz = tk.Entry(root)
+        self.e_xyz = ttk.Entry(root)
         self.e_xyz.grid(
             stick=E,
             row=0,
@@ -1358,7 +1359,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.b_xyz = tk.Button(
+        self.b_xyz = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1378,7 +1379,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_show = tk.Label(
+        self.l_show = ttk.Label(
             root,
             text='Plot elevation profile:',
         )
@@ -1388,7 +1389,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=0,
             pady=pad,
         )
-        self.e_show = tk.Button(
+        self.e_show = ttk.Button(
             root,
             text='Plot!',
             command=lambda: open_popup('Thalweg elevation profile', make_xyz_plot(self.e_xyz.get())),
@@ -1400,7 +1401,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_breaks = tk.Label(
+        self.l_breaks = ttk.Label(
             root,
             text='Breakpoints (comma separated, no spaces)',
         )
@@ -1411,7 +1412,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_breaks = tk.Entry(root)
+        self.e_breaks = ttk.Entry(root)
         self.e_breaks.grid(
             stick=E,
             row=2,
@@ -1420,7 +1421,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_breaks.insert(END, '')
 
-        self.l_show = tk.Label(
+        self.l_show = ttk.Label(
             root,
             text='Plot fit:',
         )
@@ -1440,7 +1441,7 @@ class GCSGraphicUserInterface(tk.Frame):
                 'Residual plot w/ breakpoints: %s' % breakpoint_list,
                 res_plot,
             )
-        self.e_show = tk.Button(
+        self.e_show = ttk.Button(
             root,
             text='Plot!',
             command=lambda: show_fit_plots(make_fit_plots(
@@ -1455,7 +1456,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_dem = tk.Label(
+        self.l_dem = ttk.Label(
             root,
             text='DEM location:',
         )
@@ -1466,7 +1467,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_dem2 = tk.Entry(root)
+        self.e_dem2 = ttk.Entry(root)
         self.e_dem2.grid(
             sticky=E,
             row=4,
@@ -1482,7 +1483,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.b_dem2 = tk.Button(
+        self.b_dem2 = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1502,7 +1503,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_clip = tk.Label(
+        self.l_clip = ttk.Label(
             root,
             text='DEM clip AOI (optional):',
         )
@@ -1513,7 +1514,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_clip = tk.Entry(root)
+        self.e_clip = ttk.Entry(root)
         self.e_clip.grid(
             sticky=E,
             row=5,
@@ -1528,7 +1529,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
             padx=5,
         )
-        self.b_clip = tk.Button(
+        self.b_clip = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1548,7 +1549,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_detrend = tk.Button(
+        self.e_detrend = ttk.Button(
             root,
             text='Detrend DEM!',
             command=lambda: detrend(
@@ -1570,12 +1571,12 @@ class GCSGraphicUserInterface(tk.Frame):
 
         root = self.tabs['Flow-stage modeling']
 
-        self.top_label = tk.Label(
+        self.top_label = ttk.Label(
             root,
             text='Run',
         )
         # build GUI for flow-stage analysis
-        self.l_detrended = tk.Label(
+        self.l_detrended = ttk.Label(
             root,
             text='Detrended DEM:',
         )
@@ -1586,7 +1587,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_detrended = tk.Entry(root)
+        self.e_detrended = ttk.Entry(root)
         self.e_detrended.grid(
             sticky=E,
             row=0,
@@ -1596,7 +1597,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_detrended.insert(END, '')
 
-        self.b_detrended = tk.Button(
+        self.b_detrended = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1616,7 +1617,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_max = tk.Label(
+        self.l_max = ttk.Label(
             root,
             text='Max stage height:',
         )
@@ -1627,7 +1628,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_max = tk.Entry(root)
+        self.e_max = ttk.Entry(root)
         self.e_max.grid(
             sticky=E,
             row=1,
@@ -1637,7 +1638,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_max.insert(END, 0)
 
-        self.n_max = tk.Label(
+        self.n_max = ttk.Label(
             root,
             text='Integer only, in DEM units',
         )
@@ -1653,7 +1654,7 @@ class GCSGraphicUserInterface(tk.Frame):
             for name, img in named_imgs:
                 open_popup(name, img)
 
-        self.e_flows = tk.Button(
+        self.e_flows = ttk.Button(
             root,
             text='Flow-stage analysis!',
             command=lambda: show_flow_stage_plots(model_each_flow_stage(
@@ -1670,7 +1671,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(2, minsize=50)
 
-        self.note1 = tk.Label(
+        self.note1 = ttk.Label(
             root,
             text='Choose key flow stages from plots and wetted area polygons',
         )
@@ -1681,7 +1682,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_zs = tk.Label(
+        self.l_zs = ttk.Label(
             root,
             text='Key stage heights:',
         )
@@ -1692,7 +1693,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_zs = tk.Entry(root)
+        self.e_zs = ttk.Entry(root)
         self.e_zs.grid(
             sticky=E,
             row=4,
@@ -1702,7 +1703,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_zs.insert(END, '')
 
-        self.n_zs = tk.Label(
+        self.n_zs = ttk.Label(
             root,
             text='Float only, comma separated, DEM units (ex: 0.6,1.7,5.8)',
         )
@@ -1713,7 +1714,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_dcenter = tk.Label(
+        self.l_dcenter = ttk.Label(
             root,
             text='Generate draft center-lines:',
         )
@@ -1724,7 +1725,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=15,
         )
 
-        self.e_dcenter = tk.Button(
+        self.e_dcenter = ttk.Button(
             root,
             text='Run',
             command=lambda: stage_centerlines(
@@ -1741,7 +1742,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(2, minsize=50)
 
-        self.note2 = tk.Label(
+        self.note2 = ttk.Label(
             root,
             text='Edit drafts center-lines with ArcGIS, then run below',
         )
@@ -1752,7 +1753,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_center = tk.Label(
+        self.l_center = ttk.Label(
             root,
             text='Generate final center-lines:',
         )
@@ -1763,7 +1764,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=15,
         )
 
-        self.e_center = tk.Button(
+        self.e_center = ttk.Button(
             root,
             text='Run',
             command=lambda: stage_centerlines(
@@ -1784,7 +1785,7 @@ class GCSGraphicUserInterface(tk.Frame):
         ######################################################################
 
         root = self.tabs['GCS analysis']
-        self.l_detrended2 = tk.Label(
+        self.l_detrended2 = ttk.Label(
             root,
             text='Detrended DEM:',
         )
@@ -1795,7 +1796,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_detrended2 = tk.Entry(root)
+        self.e_detrended2 = ttk.Entry(root)
         self.e_detrended2.grid(
             sticky=E,
             row=0,
@@ -1805,7 +1806,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_detrended2.insert(END, '')
 
-        self.b_detrended2 = tk.Button(
+        self.b_detrended2 = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1824,7 +1825,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_zs2 = tk.Label(
+        self.l_zs2 = ttk.Label(
             root,
             text='Key stage heights:',
         )
@@ -1834,7 +1835,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=0,
             pady=pad,
         )
-        self.e_zs2 = tk.Entry(root)
+        self.e_zs2 = ttk.Entry(root)
         self.e_zs2.grid(
             sticky=E,
             row=2,
@@ -1844,7 +1845,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_zs2.insert(END, '')
 
-        self.n_zs2 = tk.Label(
+        self.n_zs2 = ttk.Label(
             root,
             text='Float only, comma separated, DEM units (ex: 0.6,1.7,5.8)',
         )
@@ -1855,7 +1856,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_length = tk.Label(
+        self.l_length = ttk.Label(
             root,
             text='Cross-section lengths:',
         )
@@ -1866,7 +1867,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_length = tk.Entry(root)
+        self.e_length = ttk.Entry(root)
         self.e_length.grid(
             sticky=E,
             row=3,
@@ -1876,7 +1877,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_length.insert(END, '')
 
-        self.n_length = tk.Label(
+        self.n_length = ttk.Label(
             root,
             text='List of integers corresponding to key stage heights (ex: 400,600,1000)',
         )
@@ -1887,7 +1888,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_space = tk.Label(
+        self.l_space = ttk.Label(
             root,
             text='Cross-section spacing (integer):',
         )
@@ -1898,7 +1899,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_space = tk.Entry(root)
+        self.e_space = ttk.Entry(root)
         self.e_space.grid(
             sticky=E,
             row=4,
@@ -1908,7 +1909,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_space.insert(END, '')
 
-        self.n_space = tk.Label(
+        self.n_space = ttk.Label(
             root,
             text='Integer, in same units as the DEM. Should not be less than the DEM resolution!',
         )
@@ -1919,7 +1920,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_clip = tk.Label(
+        self.l_clip = ttk.Label(
             root,
             text='Clip polygon (optional):',
         )
@@ -1930,7 +1931,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_clip = tk.Entry(root)
+        self.e_clip = ttk.Entry(root)
         self.e_clip.grid(
             sticky=E,
             row=5,
@@ -1940,7 +1941,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         self.e_clip.insert(END, '')
 
-        self.b_clip = tk.Button(
+        self.b_clip = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -1960,7 +1961,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_gcs = tk.Label(
+        self.l_gcs = ttk.Label(
             root,
             text='Extract GCS series:',
         )
@@ -1971,7 +1972,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=15,
         )
 
-        self.e_gcs = tk.Button(
+        self.e_gcs = ttk.Button(
             root,
             text='Run',
             command=lambda: run_gcs_analyses(
@@ -1990,7 +1991,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(6, minsize=50)
 
-        self.note2 = tk.Label(
+        self.note2 = ttk.Label(
             root,
             text=(
                 'Verify that cross-section lengths are sufficient before continuing! '
@@ -2004,7 +2005,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_plots = tk.Label(
+        self.l_plots = ttk.Label(
             root,
             text='Run GCS stage analysis?:',
         )
@@ -2017,7 +2018,7 @@ class GCSGraphicUserInterface(tk.Frame):
         self.plots = tk.BooleanVar()
         self.plots.set(False)
 
-        self.r_plots_y = tk.Radiobutton(
+        self.r_plots_y = ttk.Radiobutton(
             root,
             text='Yes',
             variable=self.plots,
@@ -2029,7 +2030,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.r_plots_n = tk.Radiobutton(
+        self.r_plots_n = ttk.Radiobutton(
             root,
             text='No',
             variable=self.plots,
@@ -2043,7 +2044,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
         root.grid_rowconfigure(8, minsize=30)
 
-        self.l_plots2 = tk.Label(
+        self.l_plots2 = ttk.Label(
             root,
             text='Run GCS nesting analysis?:',
         )
@@ -2056,7 +2057,7 @@ class GCSGraphicUserInterface(tk.Frame):
         self.plots2 = tk.BooleanVar()
         self.plots2.set(False)
 
-        self.r_plots_y2 = tk.Radiobutton(
+        self.r_plots_y2 = ttk.Radiobutton(
             root,
             text='Yes',
             variable=self.plots2,
@@ -2068,7 +2069,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=1,
         )
 
-        self.r_plots_n2 = tk.Radiobutton(
+        self.r_plots_n2 = ttk.Radiobutton(
             root,
             text='No',
             variable=self.plots2,
@@ -2083,7 +2084,7 @@ class GCSGraphicUserInterface(tk.Frame):
         root.grid_rowconfigure(9, minsize=30)
 
         # choose where to put output analyses files
-        self.l_analysis_dir = tk.Label(
+        self.l_analysis_dir = ttk.Label(
             root,
             text='Override Analysis Output Directory (optional):',
         )
@@ -2094,7 +2095,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=15,
         )
 
-        self.e_analysis_dir = tk.Entry(root)
+        self.e_analysis_dir = ttk.Entry(root)
         self.e_analysis_dir.insert(
             END,
             '',
@@ -2106,7 +2107,7 @@ class GCSGraphicUserInterface(tk.Frame):
             padx=5,
         )
 
-        self.b_analysis_dir = tk.Button(
+        self.b_analysis_dir = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -2124,7 +2125,7 @@ class GCSGraphicUserInterface(tk.Frame):
         )
 
         # radio buttons to control which analyses to run
-        self.l_gcs = tk.Label(
+        self.l_gcs = ttk.Label(
             root,
             text='GCS analysis:',
         )
@@ -2135,7 +2136,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=15,
         )
 
-        self.e_gcs = tk.Button(
+        self.e_gcs = ttk.Button(
             root,
             text='Run',
             command=lambda: run_gcs_analyses(
@@ -2161,7 +2162,7 @@ class GCSGraphicUserInterface(tk.Frame):
         ######################################################################
         root = self.tabs['River Builder prep']
         
-        self.l_csv = tk.Label(
+        self.l_csv = ttk.Label(
             root,
             text='In csv:',
         )
@@ -2172,7 +2173,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_csv = tk.Entry(root)
+        self.e_csv = ttk.Entry(root)
         self.e_csv.insert(END, '')
         self.e_csv.grid(
             row=0,
@@ -2180,7 +2181,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.b_csv = tk.Button(
+        self.b_csv = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
@@ -2200,7 +2201,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_field = tk.Label(
+        self.l_field = ttk.Label(
             root,
             text='Index field:',
         )
@@ -2211,7 +2212,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_field = tk.Entry(root)
+        self.e_field = ttk.Entry(root)
         self.e_field.insert(END, 'dist_down')
         self.e_field.grid(
             row=1,
@@ -2219,7 +2220,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_units = tk.Label(
+        self.l_units = ttk.Label(
             root,
             text='   Units:',
         )
@@ -2232,7 +2233,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.e_units = tk.StringVar()
 
-        self.r_meters = tk.Radiobutton(
+        self.r_meters = ttk.Radiobutton(
             root,
             text='Meters',
             variable=self.e_units,
@@ -2243,7 +2244,7 @@ class GCSGraphicUserInterface(tk.Frame):
             column=2,
             pady=pad,
         )
-        self.r_feet = tk.Radiobutton(
+        self.r_feet = ttk.Radiobutton(
             root,
             text='US Feet',
             variable=self.e_units,
@@ -2255,7 +2256,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_labels = tk.Label(
+        self.l_labels = ttk.Label(
             root,
             text='Add list of columns to export (comma separated, overrides W + Z))',
         )
@@ -2266,7 +2267,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_labels = tk.Entry(root)
+        self.e_labels = ttk.Entry(root)
         self.e_labels.insert(END, '')
         self.e_labels.grid(
             row=3,
@@ -2274,7 +2275,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_r2 = tk.Label(
+        self.l_r2 = ttk.Label(
             root,
             text='R^2 threshold:',
         )
@@ -2285,7 +2286,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_r2 = tk.Entry(root)
+        self.e_r2 = ttk.Entry(root)
         self.e_r2.insert(END, 0.90)
         self.e_r2.grid(
             row=4,
@@ -2293,7 +2294,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_harms = tk.Label(
+        self.l_harms = ttk.Label(
             root,
             text='N harmonics override (optional, leave at 0):',
         )
@@ -2304,7 +2305,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.e_harms = tk.Entry(root)
+        self.e_harms = ttk.Entry(root)
         self.e_harms.insert(END, 0)
         self.e_harms.grid(
             row=5,
@@ -2312,7 +2313,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        self.l_meth = tk.Label(
+        self.l_meth = ttk.Label(
             root,
             text='Select interpolation method:',
         )
@@ -2332,7 +2333,7 @@ class GCSGraphicUserInterface(tk.Frame):
 
         self.meth = tk.StringVar()
 
-        self.e_meth = tk.OptionMenu(
+        self.e_meth = ttk.OptionMenu(
             root,
             self.meth,
             *methods2,
@@ -2344,7 +2345,7 @@ class GCSGraphicUserInterface(tk.Frame):
             pady=pad,
         )
 
-        b = tk.Button(
+        b = ttk.Button(
             root,
             text='   Run    ',
             command=lambda: export_to_river_builder(
