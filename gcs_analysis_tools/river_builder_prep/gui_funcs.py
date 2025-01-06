@@ -2,7 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
-from processing_funcs import river_builder_harmonics
+from .processing_funcs import river_builder_harmonics
 
 sys.path.append(str(Path(__file__).parent.parent))
 from utils import string_to_list

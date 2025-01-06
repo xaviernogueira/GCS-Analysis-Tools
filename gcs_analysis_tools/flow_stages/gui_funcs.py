@@ -1,10 +1,9 @@
 import os
 import logging
 
-from processing_funcs import (
+from .processing_funcs import (
     prep_small_inc,
     pdf_cdf_plotting,
-    stage_centerlines,
 )
 
 logger = logging.getLogger()

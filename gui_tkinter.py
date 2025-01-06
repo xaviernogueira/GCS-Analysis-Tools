@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 from gcs_analysis_tools.utils import init_logger
 
 from gcs_analysis_tools.lidar_to_dem.gui_funcs import lidar_prep, dem_generation
+#from gcs_analysis_tools.detrend_dem.thalweg_creation import *
 from gcs_analysis_tools.detrend_dem.gui_funcs import make_xyz_plot, make_fit_plots, detrend
 from gcs_analysis_tools.flow_stages.gui_funcs import WetterController, model_each_flow_stage, stage_centerlines
 from gcs_analysis_tools.gcs_analysis.gui_funcs import run_gcs_analyses

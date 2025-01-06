@@ -1,11 +1,8 @@
-from pathlib import Path
-import sys
 import logging
 from arcpy import HillShade_3d
 
-sys.path.append(str(Path(__file__).parent))
-from processing_funcs import lidar_footprint, define_ground_polygon, lidar_to_raster
-from las_tools_funcs import get_bare_ground_las
+from .processing_funcs import lidar_footprint, define_ground_polygon, lidar_to_raster
+from .las_tools_funcs import get_bare_ground_las
 
 def lidar_prep(
     lasbin: str,
