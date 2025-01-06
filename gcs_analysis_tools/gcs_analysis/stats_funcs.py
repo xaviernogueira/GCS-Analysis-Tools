@@ -1,5 +1,9 @@
 import logging
 import os
+import sys
+from pathlib import Path
+from typing import Union, List, Dict, Tuple, Iterable
+
 import pandas as pd
 import numpy as np
 import scipy
@@ -7,8 +11,13 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 import scipy.stats as stats
-import file_functions
-from typing import Union, List, Dict, Tuple, Iterable
+
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import (
+    prep_key_zs,
+    get_label_units,
+    float_keyz_format,
+)
 
 
 # STAGE BASED ANALYSIS FUNCTIONS
@@ -165,7 +174,7 @@ def descriptive_stats_xlxs(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
@@ -177,10 +186,10 @@ def descriptive_stats_xlxs(
         os.makedirs(out_dir)
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # prep input data
-    z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
+    z_labels = [float_keyz_format(z) + u for z in zs]
 
     # initiate excel workbook
     wb = Workbook()
@@ -426,7 +435,7 @@ def sankey_chi_squared(
             'param:detrended_dem must be valid to find data directory locations + units!'
         )
 
-    zs = file_functions.prep_key_zs(zs)
+    zs = prep_key_zs(zs)
 
     # set up directories
     out_dir = analysis_dir + '\\nesting_analysis'
@@ -435,10 +444,10 @@ def sankey_chi_squared(
         os.makedirs(out_dir)
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # prep flow stage labels
-    z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
+    z_labels = [float_keyz_format(z) + u for z in zs]
 
     if len(z_labels) == 3:
         col_labels = ['base', 'bf', 'vf']
@@ -617,10 +626,10 @@ def violin_ttest(
         os.mkdir(out_dir)
 
     # get units for labeling
-    u = file_functions.get_label_units(detrended_dem)[0]
+    u = get_label_units(detrended_dem)[0]
 
     # prep flow stage labels
-    z_labels = [file_functions.float_keyz_format(z) + u for z in zs]
+    z_labels = [float_keyz_format(z) + u for z in zs]
 
     topos = [
         'High Zs, > %s' % thresh,
@@ -669,7 +678,7 @@ def violin_ttest(
 
     logging.info(out_df)
 
-    thresh_label = file_functions.float_keyz_format(thresh) + u
+    thresh_label = float_keyz_format(thresh) + u
     out_csv = out_dir + '\\preferential_nesting_ttest.csv'
     out_df.to_csv(out_csv)
 
