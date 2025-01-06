@@ -1,6 +1,9 @@
 """Tests the functionality of the first GUI window: LiDAR to DEM."""
+import sys
 import pytest
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent))
 from gcs_analysis_tools.lidar_to_dem.gui_funcs import (
     lidar_prep,
     dem_generation,
