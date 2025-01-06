@@ -14,7 +14,7 @@ def test_lidar_prep(ROOT_DIR: Path, TEST_DATA_DIR: Path):
     # test w/ all inputs
     lasbin = str(ROOT_DIR / "LAStools" / "bin")
     lidardir = str(TEST_DATA_DIR)
-    spatial_shp = str(TEST_DATA_DIR / "lidar_prj_shp.shp")
+    spatial_shp = str(TEST_DATA_DIR / "laz_prj_shape.shp")
     lidar_prep(
         lasbin=lasbin,
         lidardir=lidardir,
