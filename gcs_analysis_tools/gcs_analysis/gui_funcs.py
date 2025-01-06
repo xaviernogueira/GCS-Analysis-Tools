@@ -2,7 +2,7 @@ import os
 import logging
 from typing import Union, List
 
-from .calculate_gcs_functs import extract_gcs
+from .calculate_gcs_funcs import extract_gcs
 from .stage_analysis_funcs import run_stage_analysis
 from .nesting_analysis_funcs import nesting_analysis
 
