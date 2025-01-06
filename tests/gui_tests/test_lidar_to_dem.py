@@ -13,7 +13,7 @@ def test_lidar_prep(ROOT_DIR: Path, TEST_DATA_DIR: Path):
     """Tests the preparation of LiDAR data for conversion to DEM."""
     # test w/ all inputs
     lasbin = str(ROOT_DIR / "LAStools" / "bin")
-    lidardir = str(TEST_DATA_DIR / "bin")
+    lidardir = str(TEST_DATA_DIR)
     spatial_shp = str(TEST_DATA_DIR / "lidar_prj_shp.shp")
     lidar_prep(
         lasbin=lasbin,
