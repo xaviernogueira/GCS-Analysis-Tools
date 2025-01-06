@@ -42,8 +42,13 @@ def lidar_footprint(
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
-
+    
+    # manually done to avoid wierd issues
+    in_spatial_ref = arcpy.spatialReference(spatialref_shp.replace(".shp", ".prj"))
+    arcpy.DefineProjection_management(spatialref_shp, in_spatial_ref)
     in_spatial_ref = arcpy.Describe(spatialref_shp).spatialReference
+    logging.info("Spatial reference defined as %s" % in_spatial_ref)
+
 
     # Convert laz files to LAS files
     for f in files_in_direct:

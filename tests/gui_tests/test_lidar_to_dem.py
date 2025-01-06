@@ -13,13 +13,12 @@ def test_lidar_prep(ROOT_DIR: Path, TEST_DATA_DIR: Path):
     """Tests the preparation of LiDAR data for conversion to DEM."""
     # test w/ all inputs
     lasbin = str(ROOT_DIR / "LAStools" / "bin")
-    lidardir = str(TEST_DATA_DIR)
     spatial_shp = str(TEST_DATA_DIR / "laz_prj_shape.shp")
     lidar_prep(
         lasbin=lasbin,
-        lidardir=lidardir,
+        lidardir=str(TEST_DATA_DIR),
         spatial_shp=spatial_shp,
-        naip_folder=lidardir,
+        naip_folder=str(TEST_DATA_DIR / "NAIP"),
         ndvi_thresh=0.4,
         aoi_shp="",
     )
@@ -29,9 +28,9 @@ def test_lidar_prep(ROOT_DIR: Path, TEST_DATA_DIR: Path):
     # test w/o aoi_shp
     lidar_prep(
         lasbin=lasbin,
-        lidardir=lidardir,
+        lidardir=str(TEST_DATA_DIR),
         spatial_shp=spatial_shp,
-        naip_folder="",
+        naip_folder=str(TEST_DATA_DIR / "NAIP"),
         ndvi_thresh=0.4,
     )
 
