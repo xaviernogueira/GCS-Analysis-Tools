@@ -1,6 +1,6 @@
 import logging
 from arcpy import HillShade_3d
-from processing_funcs import lidar_footprint, define_ground_polygon, lidar_to_raster, process_lidar
+from processing_funcs import lidar_footprint, define_ground_polygon, lidar_to_raster
 from las_tools_funcs import get_bare_ground_las
 
 def lidar_prep(
@@ -63,7 +63,7 @@ def dem_generation(
     # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
     logging.info('Processing LiDAR to remove vegetation points...')
     las_folder = lidardir + '\\las_files\\'
-    process_lidar(
+    get_bare_ground_las(
         lastoolsdir + '\\',
         las_folder,
         ground_poly,

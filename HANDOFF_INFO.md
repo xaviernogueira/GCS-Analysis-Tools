@@ -68,5 +68,8 @@ for the process functions would be cool to assure behavior in edge cases (i.e., 
 that would have been overly time consuming, and considering code will change, it made sense to verify 
 the behavior from a user input -> user output way (i.e., GUI functions only).
 
-
-For testing we use `pytest`, which should be included in the ArcPro conda environment. If it is not, try `conda install -c esri pytest`.
+Some notes:
+* For testing we use `pytest`, which should be included in the ArcPro conda environment. If it is not, try `conda install -c esri pytest`.
+* Pytest has a concept called "fixtures", which allows the same input to be reused across different test files. 
+In our case we have shared fixtures defined in `conftest.py` that are in all caps (like `TEST_DATA_DIR`). 
+These can be treated like constants, but you don't have to import them in each file, `pytest` handles it.
