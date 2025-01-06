@@ -78,11 +78,11 @@ def lidar_footprint(
         compute_stats=True,
     )
     lidar_ras = CreateConstantRaster(1, extent=raw_las_dataset)
-    lidar_footprint = arcpy.RasterToPolygon_conversion(
+    lidar_footprint = lidardir + '\\las_footprint.shp'
+    arcpy.RasterToPolygon_conversion(
         lidar_ras,
-        lidardir + '\\las_footprint.shp',
+        lidar_footprint,
     )
-
     return lidar_footprint
 
 
