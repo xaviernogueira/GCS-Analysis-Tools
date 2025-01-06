@@ -3,7 +3,8 @@ import sys
 import logging
 from pathlib import Path
 
-from processing_funcs import fit_params_txt, make_residual_plot, linear_fit_plot, \
+#sys.path.append(str(Path(__file__).parent))
+from .processing_funcs import fit_params_txt, make_residual_plot, linear_fit_plot, \
     diagnostic_quick_plot, detrend_that_raster, linear_fit, prep_xl_file
 
 sys.path.append(str(Path(__file__).parent.parent))
