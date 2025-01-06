@@ -1,7 +1,7 @@
 import os
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter import filedialog, END, E, W, DISABLED, IntVar
+from tkinter import filedialog, END, E, W, EW, DISABLED, IntVar
 from typing import List, Tuple
 from PIL import Image, ImageTk
 
