@@ -84,7 +84,6 @@ def lidar_footprint(
     arcpy.RasterToPolygon_conversion(
         lidar_ras,
         lidar_footprint,
-        spatial_reference=in_spatial_ref,
     )
 
 
@@ -107,7 +106,7 @@ def define_ground_polygon(
 
     # Find NAIP imagery in folder
     naip_imagery = [f for f in os.listdir(
-        naipdir) if os.path.isfile(os.path.join(naipdir, f))]
+        naipdir) if os.path.isfile(os.path.join(naipdir, f)) and f[-4:] == '.tif']
 
     # Initiate temp files folder
     temp_files = lidardir + '\\temp_files'
