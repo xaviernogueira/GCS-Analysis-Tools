@@ -32,13 +32,13 @@ def lidar_footprint(
     files_in_direct = [f for f in os.listdir(
         lidardir) if os.path.isfile(os.path.join(lidardir, f))]
 
-    laspath = lidardir + '\\las_files'
+    laspath = lidardir + '/las_files'
 
     if not os.path.exists(laspath):
         os.makedirs(laspath)
 
     # Initiate temp files folder formatted for LAStools
-    temp_files = lidardir + '\\temp_files'
+    temp_files = lidardir + '/temp_files'
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
@@ -56,13 +56,13 @@ def lidar_footprint(
             if lasbin[-1] != 'n':
                 lasbin = lasbin[:-1]
 
-            cmd("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
+            cmd("%s/laszip.exe -i %s/%s -o %s/%s_noprj.las" %
                 (lasbin, lidardir, f, laspath, f[:-4]))
-            logging.info("%s\\laszip.exe -i %s\\%s -o %s\\%s_noprj.las" %
+            logging.info("%s/laszip.exe -i %s/%s -o %s/%s_noprj.las" %
                          (lasbin, lidardir, f, laspath, f[:-4]))
-            cmd("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
+            cmd("%s/las2las.exe -i %s/%s_noprj.las -o %s/%s.las" %
                 (lasbin, laspath, f[:-4], laspath, f[:-4]))
-            logging.info("%s\\las2las.exe -i %s\\%s_noprj.las -o %s\\%s.las" %
+            logging.info("%s/las2las.exe -i %s/%s_noprj.las -o %s/%s.las" %
                          (lasbin, laspath, f[:-4], laspath, f[:-4]))
 
     files_in_laspath = [f for f in os.listdir(
@@ -71,14 +71,14 @@ def lidar_footprint(
     # Delete unnecessary index files
     for f in files_in_laspath:
         if f[-4:] == 'lasx':
-            os.remove(laspath + "\\%s" % f)
+            os.remove(laspath + "/%s" % f)
 
         if f[-5] == 'j':
-            os.remove(laspath + "\\%s" % f)
+            os.remove(laspath + "/%s" % f)
 
     raw_las_dataset = arcpy.CreateLasDataset_management(
         laspath,
-        lidardir + "\\raw_las_dataset.lasd",
+        lidardir + "/raw_las_dataset.lasd",
         spatial_reference=in_spatial_ref,
         compute_stats=True,
     )
@@ -106,7 +106,7 @@ def define_ground_polygon(
     to define processing settings"""
 
     # Set processing extent to the LiDAR data extent
-    lidar_footprint = lidardir + f"\\{LAS_FOOTPRINT}"
+    lidar_footprint = lidardir + LAS_FOOTPRINT
     assert Path(lidar_footprint).exists(), 'LiDAR footprint needs to created firsneeds to created first.'
     arcpy.env.extent = lidar_footprint
     in_spatial_ref = arcpy.SpatialReference(lidar_footprint.replace(".shp", ".prj"))
@@ -117,13 +117,13 @@ def define_ground_polygon(
         naipdir) if os.path.isfile(os.path.join(naipdir, f)) and f[-4:] == '.tif' and f not in out_names]
 
     # Initiate temp files folder
-    temp_files = lidardir + '\\temp_files'
+    temp_files = lidardir + '/temp_files'
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
 
     if len(naip_imagery) > 1:
-        add_to_mosaic = [naipdir + "\\" + f for f in naip_imagery]
+        add_to_mosaic = [naipdir + "/" + f for f in naip_imagery]
         naip_imagery = arcpy.MosaicToNewRaster_management(
             add_to_mosaic,
             output_location=lidardir,
@@ -132,42 +132,42 @@ def define_ground_polygon(
             number_of_bands=4,
         )
     else:
-        naip_imagery = (naipdir + "\\%s" % naip_imagery[0])
+        naip_imagery = (naipdir + "/%s" % naip_imagery[0])
         naip_imagery = arcpy.ProjectRaster_management(
             naip_imagery,
-            lidardir + "\\NAIP_prj.tif",
+            lidardir + "/NAIP_prj.tif",
             in_spatial_ref,
         )
 
     # Extract bands 1 (red) and 4 (NIR)
     red_lyr = arcpy.MakeRasterLayer_management(
         naip_imagery,
-        temp_files + "\\rd_lyr",
+        temp_files + "/rd_lyr",
         band_index=0,
     )
     nir_lyr = arcpy.MakeRasterLayer_management(
         naip_imagery,
-        temp_files + "\\nr_lyr",
+        temp_files + "/nr_lyr",
         band_index=4,
     )
 
     red_lyr = arcpy.SaveToLayerFile_management(
         red_lyr,
-        temp_files + "\\red_ras.lyr",
+        temp_files + "/red_ras.lyr",
     )
     nir_lyr = arcpy.SaveToLayerFile_management(
         nir_lyr,
-        temp_files + "\\nir_ras.lyr",
+        temp_files + "/nir_ras.lyr",
     )
 
     red_ras = arcpy.CopyRaster_management(
         red_lyr,
-        temp_files + "\\red_ras.tif",
+        temp_files + "/red_ras.tif",
         format="TIFF",
     )
     nir_ras = arcpy.CopyRaster_management(
         nir_lyr,
-        temp_files + "\\nir_ras.tif",
+        temp_files + "/nir_ras.tif",
         format="TIFF",
     )
 
@@ -175,23 +175,23 @@ def define_ground_polygon(
     nir_ras = Raster(nir_ras)
 
     # Calculate ndvi and generate polygon delineating values > ndvi_thresh
-    ndvi = lidardir + "\\NDVI.tif"
+    ndvi = lidardir + "/NDVI.tif"
     ndvi_ras = ((nir_ras - red_ras) / (nir_ras + red_ras))
     ndvi_ras.save(ndvi)
 
     veg_ras_raw = Con(Raster(ndvi) >= ndvi_thresh, 1)
-    veg_ras_raw.save(temp_files + "\\veg_ras_raw.tif")
+    veg_ras_raw.save(temp_files + "/veg_ras_raw.tif")
 
     veg_ras = MajorityFilter(
         veg_ras_raw,
         "EIGHT",
         "MAJORITY",
     )
-    veg_ras.save(temp_files + "\\veg_ras.tif")
+    veg_ras.save(temp_files + "/veg_ras.tif")
 
     veg_poly = arcpy.RasterToPolygon_conversion(
         veg_ras,
-        lidardir + "\\veg_poly_ndvi.shp",
+        lidardir + "/veg_poly_ndvi.shp",
         simplify="FALSE",
     )
 
@@ -200,24 +200,24 @@ def define_ground_polygon(
         ground_poly = arcpy.Erase_analysis(
             lidar_footprint,
             veg_poly,
-            temp_files + "\\ground_poly_full.shp",
+            temp_files + "/ground_poly_full.shp",
         )
         aoi_prj = arcpy.Project_management(
             aoi_shp,
-            temp_files + "\\aoi_prj_to_inref.shp",
+            temp_files + "/aoi_prj_to_inref.shp",
             out_coor_system=in_spatial_ref,
         )
         ground_poly = arcpy.Clip_analysis(
             ground_poly,
             aoi_prj,
-            lidardir + "\\ground_poly.shp",
+            lidardir + "/ground_poly.shp",
         )
 
     else:
         ground_poly = arcpy.Erase_analysis(
             lidar_footprint,
             veg_poly,
-            lidardir + "\\ground_poly.shp",
+            lidardir + "/ground_poly.shp",
         )
 
     ground_poly = arcpy.DefineProjection_management(
@@ -244,15 +244,15 @@ def lidar_to_raster(
     Args: Folder containing LAS files, desired cell size in meters (default is 1m), and ft spatial reference
     Returns: Raster name for use in detrending """
     # Create variables with relevant folders
-    lasdir = lidardir + '\\las_files'
-    ground_lasdir = lasdir + '\\09_ground_rm_duplicates'
+    lasdir = lidardir + '/las_files'
+    ground_lasdir = lasdir + '/09_ground_rm_duplicates'
 
     # Create addresses for generated .lasd, .tiff files
-    out_dem = lidardir + "\\las_dem.tif"
-    out_las = lasdir + '\\las_dataset.lasd'
+    out_dem = lidardir + "/las_dem.tif"
+    out_las = lasdir + '/las_dataset.lasd'
 
     # Initiate temp files folder
-    temp_files = lidardir + '\\temp_files'
+    temp_files = lidardir + '/temp_files'
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
@@ -280,7 +280,7 @@ def lidar_to_raster(
         method_str = "%s %s NO_THINNING MAXIMUM 0" % (sample_meth, tri_meth)
     logging.info('Methods: %s' % method_str)
 
-    no_prj_dem = temp_files + '\\noprj_dem.tif'
+    no_prj_dem = temp_files + '/noprj_dem.tif'
     las_dataset = arcpy.CreateLasDataset_management(
         ground_lasdir,
         out_las,

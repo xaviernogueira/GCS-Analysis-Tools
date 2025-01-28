@@ -24,7 +24,7 @@ def least_cost_centerline(
 
     try:
         # make directory for output files
-        outdir = os.path.dirname(DEM) + '\\'
+        outdir = os.path.dirname(DEM) + '/'
 
         # fill sinks in DEM raster
         logging.info('Filling sinks in DEM...')
@@ -118,11 +118,11 @@ def remove_spurs(
             line.replace('.shp', '_rm_spurs.lyr'),
         ]
 
-        for f in del_files:
-            try:
-                arcpy.Delete_management(f)
-            except Exception:
-                logging.warning(f'Could not delete intermediate file {f}')
+        # for f in del_files:
+        #     try:
+        #         arcpy.Delete_management(f)
+        #     except Exception:
+        #         logging.warning(f'Could not delete intermediate file {f}')
 
         logging.info('OK.')
 
@@ -139,7 +139,7 @@ def smooth_centerline(
     """Returns a smoothed version of the rough centerline"""
 
     outdir = os.path.dirname(rough_centerline) + '\\'
-    check_use([rough_centerline, outdir + 'no_clip_thalweg_centerline.shp'])
+    # check_use([rough_centerline, outdir + 'no_clip_thalweg_centerline.shp'])
 
     # dissolve rough centerline in case multiple pieces were made...
     centerline = arcpy.Dissolve_management(
@@ -236,12 +236,12 @@ def make_centerline(
             channel,
             source,
             lidar_extent,
-            outdir + '\\filled_DEM.tif',
-            outdir + '\\flow_dir.tif',
-            outdir + '\\lc_path.tif',
-            outdir + '\\rough_centerline.shp',
-            outdir + '\\smooth_centerline.shp',
-            outdir + '\\thalweg_centerline.shp',
+            outdir + '/filled_DEM.tif',
+            outdir + '/flow_dir.tif',
+            outdir + '/lc_path.tif',
+            outdir + '/rough_centerline.shp',
+            outdir + '/smooth_centerline.shp',
+            outdir + '/thalweg_centerline.shp',
         ],
     )
 
@@ -252,8 +252,8 @@ def make_centerline(
 
     logging.info('Deleting intermediate files...')
     del_files = [
-        rough_centerline, outdir + '\\rough_centerline.shp',
-        outdir + '\\no_clip_thalweg_centerline.shp',
+        rough_centerline, outdir + '/rough_centerline.shp',
+        outdir + '/no_clip_thalweg_centerline.shp',
     ]
 
     for f in del_files:
@@ -281,7 +281,7 @@ def create_station_lines_function(
     line_dir = os.path.dirname(line_shp)
 
     # Initiate temp files folder
-    temp_files = os.path.dirname(line_dir) + '\\temp_files'
+    temp_files = line_dir + '/temp_files'
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
@@ -342,7 +342,7 @@ def create_station_lines_function(
     logging.info('Converting points to polyline output...')
 
     line_name = os.path.basename(line_shp)
-    out_name = temp_files + '\\%s' % line_name.replace('.shp', '_XS.shp')
+    out_name = temp_files + '/%s' % line_name.replace('.shp', '_XS.shp')
 
     arcpy.PointsToLine_management(el, out_name, 'LOCATION')
     logging.info('OK.')

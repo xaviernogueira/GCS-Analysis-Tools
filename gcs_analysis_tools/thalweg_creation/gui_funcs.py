@@ -9,6 +9,8 @@ import arcpy
 from arcpy.sa import Filter 
 import pandas as pd
 
+from gcs_analysis_tools.centerline_funcs import create_station_lines_function
+
 sys.path.append(str(Path(__file__).parent.parent))
 from centerline_funcs import make_centerline
 from utils import (
@@ -41,7 +43,7 @@ def detrend_prep(
     dem_dir = os.path.dirname(dem)
 
     # Initiate temp files folder
-    temp_files = dem_dir + '\\temp_files'
+    temp_files = dem_dir + '/temp_files'
 
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
@@ -51,7 +53,7 @@ def detrend_prep(
     params = [m_spacing, smooth_dist]
 
     if not spatial_ref.linearUnitName == 'Meter':
-        params = [int(i * 3) for i in params]
+        params = [int(int(i) * 3) for i in params]   # Params is [1,6] on execution of line 56 params = [3, 666]?????
 
     filt_passes = int(filt_passes)
 
@@ -60,22 +62,22 @@ def detrend_prep(
         logging.info("Smoothing DEM w/ %sx low pass filters..." % filt_passes)
         ticker = 0
         filter_out = Filter(dem, "LOW")
-        filter_out.save(temp_files + "\\filter_out%s" % ticker)
+        filter_out.save(temp_files + "/filter_out%s" % ticker)
 
         while ticker < filt_passes:  # Apply an iterative low pass filter 15x to the raster to smooth the topography
             filter_out = Filter(
-                (temp_files + "\\filter_out%s" % ticker),
+                (temp_files + "/filter_out%s" % ticker),
                 "LOW",
             )
-            filter_out.save(temp_files + "\\filter_out%s" % (ticker + 1))
+            filter_out.save(temp_files + "/filter_out%s" % (ticker + 1))
             ticker += 1
-        smooth_ras = (dem_dir + "\\filt_ras.tif")
-        filter_out.save(dem_dir + "\\filt_ras.tif")
+        smooth_ras = (dem_dir + "/filt_ras.tif")
+        filter_out.save(dem_dir + "/filt_ras.tif")
 
         # Create least cost centerline from 15x filtered raster
         logging.info(
             "Smoothed DEM made, least-cost centerline being calculated...")
-        lidar_foot = dem_dir + '\\las_footprint.shp'
+        lidar_foot = dem_dir + 'las_footprint.shp'
 
         # check for LiDAR Footprint file
         if not os.path.exists(lidar_foot):
@@ -94,7 +96,7 @@ def detrend_prep(
 
         # Delete intermediate filtered rasters
         for ticker in range(filt_passes + 1):
-            file = (temp_files + "\\filter_out%s" % ticker)
+            file = (temp_files + "/filter_out%s" % ticker)
             if os.path.exists(file):
                 try:
                     shutil.rmtree(file)
@@ -106,7 +108,7 @@ def detrend_prep(
 
     else:
         logging.info('Generating thalweg elevation profile...')
-        centerline = dem_dir + "\\thalweg_centerline.shp"
+        centerline = dem_dir + "/thalweg_centerline.shp"
 
         # Define location of intermediate files, some of which will be deleted
         intermediates = [
@@ -115,7 +117,7 @@ def detrend_prep(
             'thalweg_station_points1.shp',
             'sp_elevation_table.dbf',
         ]
-        intermediates = [temp_files + '\\%s' % i for i in intermediates]
+        intermediates = [temp_files + '/%s' % i for i in intermediates]
 
         # Create a station point shapefile evenly sampling the thalweg centerline
         station_lines = create_station_lines_function(
@@ -150,7 +152,7 @@ def detrend_prep(
         )
 
         # Add fields to override, but first adjust detrending functions
-        elevation_table = dem_dir + '\\xyz_elevation_table.csv'
+        elevation_table = dem_dir + '/xyz_elevation_table.csv'
         elevation_table = table_to_csv(
             input_table=station_points,
             csv_filepath=elevation_table,

@@ -61,9 +61,9 @@ def dem_generation(
 
     # We carry input spatial ref over from the above process, but we should still convert from shp to ref object
     logging.info('Processing LiDAR to remove vegetation points...')
-    las_folder = lidardir + '\\las_files\\'
+    las_folder = lidardir + '/las_files/'
     get_bare_ground_las(
-        lastoolsdir + '\\',
+        lastoolsdir + '/',
         las_folder,
         ground_poly,
         cores,
@@ -95,11 +95,10 @@ def dem_generation(
     logging.info('Done')
 
     logging.info('Generating hillshade raster for the DEM...')
-    hill_out = lidardir + '\\hillshade.tif'
+    hill_out = lidardir + '/hillshade.tif'
+    dem = lidardir + '/las_dem.tif'
     HillShade_3d(
         dem,
         hill_out,
     )
     logging.info('Done')
-
-
