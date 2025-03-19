@@ -19,7 +19,9 @@ from utils import (
     err_info,
     check_use,
     get_label_units,
+    table_to_csv,
 )
+
 
 
 arcpy.env.overwriteOutput = True
@@ -197,15 +199,15 @@ def extract_gcs(
     if len(dem_dir) == 0:
         raise ValueError('Please select valid detrended DEM file')
 
-    lines_dir = dem_dir + '\\centerlines'
-    wetted_dir = dem_dir + '\\wetted_polygons'
-    temp_files = dem_dir + '\\temp_files'
-    out_dir = dem_dir + '\\gcs_tables'  # Stores output GCS tables
+    lines_dir = dem_dir + '/centerlines'
+    wetted_dir = dem_dir + '/wetted_polygons'
+    temp_files = lines_dir + '/temp_files'
+    out_dir = dem_dir + '/gcs_tables'  # Stores output GCS tables
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    og_dem = dem_dir + '\\las_dem.tif'
+    og_dem = dem_dir + '/las_dem.tif'
 
     # Get units for string labeling
     u, unit, spatial_ref = get_label_units(detrended_dem)
@@ -214,9 +216,9 @@ def extract_gcs(
         z_str = float_keyz_format(z)
         label = z_str + u
         in_list = [
-            wetted_dir + '\\wetted_poly_%s.shp' % label,
-            temp_files + '\\%s_centerline_XS.shp' % label,
-            lines_dir + '\\%s_centerline.shp' % label,
+            wetted_dir + '/wetted_poly_%s.shp' % label,
+            temp_files + '/%s_centerline_XS.shp' % label,
+            lines_dir + '/%s_centerline.shp' % label,
         ]
 
         xs_length = xs_lengths[i]
@@ -248,14 +250,14 @@ def extract_gcs(
         )
 
         # Clip cross-sections by wetted area and create width rectangles
-        clipped_xs_lines = temp_files + '\\clipped_XS_lines_%s.shp' % label
+        clipped_xs_lines = temp_files + '/clipped_XS_lines_%s.shp' % label
         arcpy.Clip_analysis(
             in_list[1],
             in_list[0],
             out_feature_class=clipped_xs_lines,
         )
 
-        width_poly_loc = lines_dir + '\\width_rectangles_%s.shp' % label
+        width_poly_loc = lines_dir + '/width_rectangles_%s.shp' % label
         arcpy.Buffer_analysis(
             clipped_xs_lines,
             width_poly_loc,
@@ -299,7 +301,7 @@ def extract_gcs(
             width_poly_loc,
             "loc_id",
             detrended_dem,
-            out_table=(temp_files + '\\stats_table_%s.dbf' % label),
+            out_table=(temp_files + '/stats_table_%s.dbf' % label),
             statistics_type="ALL",
         )
 
@@ -316,7 +318,7 @@ def extract_gcs(
             width_poly_loc,
             "loc_id",
             og_dem,
-            out_table=(temp_files + '\\no_detrend_stats_table_%s.dbf' % label),
+            out_table=(temp_files + '/no_detrend_stats_table_%s.dbf' % label),
             statistics_type="ALL",
         )
 
@@ -379,7 +381,7 @@ def extract_gcs(
             )
 
         # Convert width polygon attribute table to a csv and classify landforms
-        csv_loc = out_dir + "\\%s_gcs_table.csv" % label
+        csv_loc = out_dir + "/%s_gcs_table.csv" % label
 
         table_to_csv(
             width_poly,

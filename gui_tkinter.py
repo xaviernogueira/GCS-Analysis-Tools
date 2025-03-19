@@ -2161,7 +2161,7 @@ class GCSGraphicUserInterface(ttk.Frame):
         # Generate river builder inputs from harmonic decomposition
         ######################################################################
         root = self.tabs['River Builder prep']
-        
+
         self.l_csv = ttk.Label(
             root,
             text='In csv:',
@@ -2174,19 +2174,21 @@ class GCSGraphicUserInterface(ttk.Frame):
         )
 
         self.e_csv = ttk.Entry(root)
-        self.e_csv.insert(END, '')
+
         self.e_csv.grid(
+            sticky=E,
             row=0,
             column=2,
             pady=pad,
         )
+        self.e_csv.insert(END, '')
 
         self.b_csv = ttk.Button(
             root,
             text='Browse',
             command=lambda: browse(
                 root,
-                self.b_csv,
+                self.e_csv,
                 select='file',
                 ftypes=[
                     ('Comma-delimited text', '*.csv'),

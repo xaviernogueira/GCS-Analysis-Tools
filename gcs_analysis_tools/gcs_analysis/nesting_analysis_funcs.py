@@ -30,18 +30,18 @@ def nesting_analysis(
     # get z labels for the key zs
     zs = prep_key_zs(zs)
 
-    gcs_dir = os.path.dirname(detrended_dem) + '\\gcs_tables'
+    gcs_dir = os.path.dirname(detrended_dem) + '/gcs_tables'
     logging.info(
         f'Creating an aligned_gcs.csv table in {gcs_dir}, '
         f'which stores all flow stages: {zs}'
     )
-    # aligned_gcs_csv = prep_for_nesting_analysis(
-    #    detrended_dem,
-    #    zs=zs,
-    # )
+    aligned_gcs_csv = prep_for_nesting_analysis(
+       detrended_dem,
+       zs=zs,
+    )
 
     # NOTE: THIS IS JUST FOR TESTING SPEED
-    aligned_gcs_csv = gcs_dir + '\\aligned_gcs.csv'
+    aligned_gcs_csv = gcs_dir + '/aligned_gcs.csv'
     # TODO: REMOVE AFTER!
 
     logging.info(f'Done. Saved @ {aligned_gcs_csv}')

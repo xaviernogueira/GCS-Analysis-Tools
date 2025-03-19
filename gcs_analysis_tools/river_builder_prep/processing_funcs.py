@@ -290,7 +290,7 @@ def river_builder_harmonics(
         )
 
     # make output directory
-    out_folder = os.path.dirname(in_csv) + '//River_Builder_inputs'
+    out_folder = os.path.dirname(in_csv) + '/River_Builder_inputs'
     if not os.path.exists(out_folder):
         os.mkdir(out_folder)
 

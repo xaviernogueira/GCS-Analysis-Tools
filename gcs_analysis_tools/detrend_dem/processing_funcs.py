@@ -156,14 +156,14 @@ def detrend_that_raster(
     """Generates a detrended DEM from a the fitted xyz .csv file and an input .tif dem"""
     # Set up directory structure and environment
     out_dir = os.path.dirname(xyz_csv)
-    temp_files = out_dir + '\\temp_files'
+    temp_files = out_dir + '/temp_files'
     if not os.path.exists(temp_files):
         os.makedirs(temp_files)
 
     arcpy.env.workspace = temp_files
     arcpy.overwriteoutput = True
 
-    out_dem = out_dir + '\\ras_detren.tif'
+    out_dem = out_dir + '/ras_detren.tif'
     spatial_ref = arcpy.Describe(in_dem).spatialReference
     arcpy.env.extent = arcpy.Describe(in_dem).extent
 
@@ -214,7 +214,7 @@ def detrend_that_raster(
     if aoi_shp == '':
         detrended_dem.save(out_dem)
     else:
-        no_clip = temp_files + '\\ras_dt_nc.tif'
+        no_clip = temp_files + '/ras_dt_nc.tif'
         detrended_dem.save(no_clip)
         arcpy.Clip_management(
             no_clip,
@@ -259,7 +259,7 @@ def diagnostic_quick_plot(
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
 
-    out_png = out_dir + '\\thalweg_z_plot.png'
+    out_png = out_dir + '/thalweg_z_plot.png'
     plt.savefig(
         out_png,
         dpi=300,
@@ -313,7 +313,7 @@ def linear_fit_plot(
     # Save plot, return address
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
-    out_png = out_dir + '\\fit_plot.png'
+    out_png = out_dir + '/fit_plot.png'
     plt.savefig(out_png, dpi=300, bbox_inches='tight')
     plt.cla()
 
@@ -357,7 +357,7 @@ def make_residual_plot(
     # Save plot, return address
     fig = plt.gcf()
     fig.set_size_inches(6, 3)
-    out_png = out_dir + '\\residual_plot.png'
+    out_png = out_dir + '/residual_plot.png'
     plt.savefig(out_png, dpi=300, bbox_inches='tight')
     plt.cla()
 
@@ -372,7 +372,7 @@ def fit_params_txt(
     """Generates a text file in the same folder as the detrending plots that lists applied linear fit equations"""
 
     # Create .txt file and copy breakpoint list
-    text_dir = out_dir + '\\detrending_fit_eqs.txt'
+    text_dir = out_dir + '/detrending_fit_eqs.txt'
     text_file = open(text_dir, 'w+')
     bps_form = [i for i in bp_list]
 

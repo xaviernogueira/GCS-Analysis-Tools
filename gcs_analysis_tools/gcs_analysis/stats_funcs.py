@@ -178,9 +178,9 @@ def descriptive_stats_xlxs(
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
-    gcs_dir = dem_dir + '\\gcs_tables'
-    out_dir = analysis_dir + '\\stage_analysis'
-    stats_xl = out_dir + '\\stage_descriptive_statistics.xlsx'
+    gcs_dir = dem_dir + '/gcs_tables'
+    out_dir = analysis_dir + '/stage_analysis'
+    stats_xl = out_dir + '/stage_descriptive_statistics.xlsx'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -198,7 +198,7 @@ def descriptive_stats_xlxs(
     list_of_fields = ['W', 'Z', 'Ws_Zs', 'Ws', 'Zs']
 
     for label in z_labels:
-        stage_csv = gcs_dir + '\\%s_gcs_table.csv' % label
+        stage_csv = gcs_dir + '/%s_gcs_table.csv' % label
         stage_df = pd.read_csv(stage_csv)
 
         # create lists to store values

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def make_xyz_plot(xyz_csv):
     """Plots thalweg elevation profile is plotted but not saved"""
     # set up directory for plots
-    out_dir = os.path.dirname(xyz_csv) + '\\detrending_plots'
+    out_dir = os.path.dirname(xyz_csv) + '/detrending_plots'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -41,7 +41,7 @@ def make_xyz_plot(xyz_csv):
 def make_fit_plots(xyz_csv, breakpoints):
     """Linear fit and residuals are plotted but not saved"""
     # set up directory for plots
-    out_dir = os.path.dirname(xyz_csv) + '\\detrending_plots'
+    out_dir = os.path.dirname(xyz_csv) + '/detrending_plots'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 

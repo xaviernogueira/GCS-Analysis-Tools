@@ -92,9 +92,9 @@ def prep_for_nesting_analysis(
 
     # set up directories
     dem_dir = os.path.dirname(detrended_dem)
-    lines_dir = dem_dir + '\\centerlines'
-    gcs_dir = dem_dir + '\\gcs_tables'
-    temp_files = dem_dir + '\\temp_files'
+    lines_dir = dem_dir + '/centerlines'
+    gcs_dir = dem_dir + '/gcs_tables'
+    temp_files = lines_dir + '/temp_files'
 
     if not os.path.exists(temp_files):
         os.mkdir(temp_files)
@@ -122,20 +122,20 @@ def prep_for_nesting_analysis(
         )
 
         # keep track of temp output for deletion
-        station_lines = temp_files + f'//{z_str}{u}_centerline_XS.shp'
+        station_lines = temp_files + f'/{z_str}{u}_centerline_XS.shp'
         del_files.append(station_lines)
 
         station_points = arcpy.Intersect_analysis(
             [station_lines, line_shp],
             out_feature_class=(
-                temp_files + f"\\station_points_{z_str}{u}.shp"
+                temp_files + f"/station_points_{z_str}{u}.shp"
             ),
             join_attributes="ALL",
             output_type="POINT",
         )
 
         if z != min(zs):
-            theis_loc = temp_files + f"\\thiessen_{z_str}{u}.shp"
+            theis_loc = temp_files + f"/thiessen_{z_str}{u}.shp"
             arcpy.CreateThiessenPolygons_analysis(
                 station_points,
                 theis_loc,
@@ -168,8 +168,8 @@ def prep_for_nesting_analysis(
     max_count = 0
     min_z_str = float_keyz_format(min(zs))
     for counter, z_str in enumerate(z_labels):
-        theis_loc = temp_files + f"\\thiessen_{z_str}{u}.shp"
-        out_points = temp_files + ("\\align_points%s.shp" % counter)
+        theis_loc = temp_files + f"/thiessen_{z_str}{u}.shp"
+        out_points = temp_files + ("/align_points%s.shp" % counter)
         del_files.append(theis_loc)
         del_files.append(out_points)
 
@@ -178,7 +178,7 @@ def prep_for_nesting_analysis(
         if counter == 1:
             arcpy.Identity_analysis(
                 temp_files +
-                f"\\station_points_{min_z_str}{u}.shp",
+                f"/station_points_{min_z_str}{u}.shp",
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
@@ -186,7 +186,7 @@ def prep_for_nesting_analysis(
         elif counter > 1:
             c = int(counter - 1)
             arcpy.Identity_analysis(
-                temp_files + f"\\align_points{c}.shp",
+                temp_files + f"/align_points{c}.shp",
                 theis_loc,
                 out_feature_class=out_points,
                 join_attributes='ALL',
@@ -194,7 +194,7 @@ def prep_for_nesting_analysis(
 
     # create aligned_gcs.csv storing all the data along the baseflow centerline index
     index_field = f'loc_{min_z_str}{u}'
-    aligned_csv = gcs_dir + '\\aligned_gcs.csv'
+    aligned_csv = gcs_dir + '/aligned_gcs.csv'
 
     aligned_df = pd.read_csv(
         table_to_csv(
@@ -225,7 +225,7 @@ def prep_for_nesting_analysis(
         z_str = z_labels[i]
         join_col = f'loc_{z_str}{u}'
         stage_df = pd.read_csv(
-            gcs_dir + f'\\{z_str}{u}_gcs_table.csv',
+            gcs_dir + f'/{z_str}{u}_gcs_table.csv',
         ).set_index('dist_down')
 
         # delete excess columns
