@@ -12,7 +12,7 @@ from gcs_analysis_tools.thalweg_creation.gui_funcs import detrend_prep
 from gcs_analysis_tools.detrend_dem.gui_funcs import make_xyz_plot, make_fit_plots, detrend
 from gcs_analysis_tools.flow_stages.gui_funcs import WetterController, model_each_flow_stage, stage_centerlines
 from gcs_analysis_tools.gcs_analysis.gui_funcs import run_gcs_analyses
-from gcs_analysis_tools.river_builder_prep.gui_funcs import export_to_river_builder 
+from gcs_analysis_tools.river_builder_prep.gui_funcs import export_to_river_builder
 
 
 class GCSGraphicUserInterface(ttk.Frame):
@@ -1082,7 +1082,7 @@ class GCSGraphicUserInterface(ttk.Frame):
 
         self.remind = ttk.Label(
             root,
-            text='Create upstream flow polygon in ArcMap/Pro',
+            text='Create upstream and endpoint flow polygon in ArcMap/Pro',
         )
         self.remind.grid(
             sticky=E,
@@ -1133,6 +1133,60 @@ class GCSGraphicUserInterface(ttk.Frame):
             sticky=W,
             row=1,
             column=2,
+            pady=pad,
+        )
+
+        self.l_dest_poly = ttk.Label(
+            root,
+            text='Destination flow polygon (.shp):',
+        )
+        self.l_dest_poly.grid(
+            sticky=E,
+            row=1,
+            column=3,
+            pady=pad,
+            padx=(50, 0)
+        )
+
+        self.l_dest_poly.grid(
+            sticky=E,
+            row=1,
+            column=3,
+            pady=pad,
+        )
+
+        self.e_dest_poly = ttk.Entry(root)
+        self.e_dest_poly.grid(
+            sticky=E,
+            row=1,
+            column=4,
+            pady=pad,
+        )
+        self.e_dest_poly.insert(END, '')
+        self.e_dest_poly.grid(
+            row=1,
+            column=4,
+            pady=pad,
+            padx=5,
+        )
+
+        self.b_dest_poly = ttk.Button(
+            root,
+            text='Browse',
+            command=lambda: browse(
+                root,
+                self.e_dest_poly,
+                select='file',
+                ftypes=[
+                    ('Shapefile', '*.shp'),
+                    ('All files', '*'),
+                ],
+            ),
+        )
+        self.b_dest_poly.grid(
+            sticky=W,
+            row=1,
+            column=5,
             pady=pad,
         )
 
@@ -1285,6 +1339,7 @@ class GCSGraphicUserInterface(ttk.Frame):
             command=lambda: detrend_prep(
                 dem=self.e_dem.get(),
                 flow_poly=self.e_flow_poly.get(),
+                dest_poly=self.e_dest_poly.get(),
                 aoi_shp=self.e_extent.get(),
                 filt_passes=self.e_filt.get(),
                 smooth_dist=self.e_smooth.get(),
@@ -1317,6 +1372,7 @@ class GCSGraphicUserInterface(ttk.Frame):
             command=lambda: detrend_prep(
                 dem=self.e_dem.get(),
                 flow_poly=self.e_flow_poly.get(),
+                dest_poly=self.e_dest_poly.get(),
                 aoi_shp=self.e_extent.get(),
                 filt_passes=self.e_filt.get(),
                 smooth_dist=self.e_smooth.get(),
@@ -1441,6 +1497,7 @@ class GCSGraphicUserInterface(ttk.Frame):
                 'Residual plot w/ breakpoints: %s' % breakpoint_list,
                 res_plot,
             )
+
         self.e_show = ttk.Button(
             root,
             text='Plot!',
@@ -1649,6 +1706,7 @@ class GCSGraphicUserInterface(ttk.Frame):
             pady=pad,
         )
         controller = WetterController()
+
         def show_flow_stage_plots(named_imgs: List[Tuple[str, str]]):
             # TODO: combine this with the other simular func
             for name, img in named_imgs:

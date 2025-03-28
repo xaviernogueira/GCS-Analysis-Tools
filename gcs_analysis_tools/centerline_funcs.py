@@ -18,6 +18,7 @@ arcpy.CheckOutExtension('Spatial')
 def least_cost_centerline(
     DEM: str,
     source: str,
+    destination: str,
 ) -> str:
     """returns a rough centerline using least cost path from source"""
     check_use([DEM, source])
@@ -40,13 +41,21 @@ def least_cost_centerline(
         flow_dir.save(outdir + 'flow_dir.tif')
         logging.info('OK')
 
+        # make distance accumulation raster
+        logging.info('Computing Distance Accumulation...')
+        check_use(outdir + 'dist_acc.tif')
+        check_use(outdir + 'backlink.tif')
+        backlink = outdir + 'backlink.tif'
+        dist_acc = arcpy.sa.DistanceAccumulation(source, "", "", flow_dir, "", "", "", "", backlink)
+        logging.info('OK')
+
         # create least cost path
         logging.info('Computing least cost path...')
         check_use(outdir + 'lc_path.tif')
         lc_path_raster = arcpy.sa.CostPath(
-            source,
-            filled_DEM,
-            flow_dir,
+            destination,
+            dist_acc,
+            backlink,
             path_type='BEST_SINGLE',
             destination_field='Id',
         )
@@ -65,7 +74,7 @@ def least_cost_centerline(
         logging.info('OK')
 
         logging.info('Deleting intermediate files...')
-        del_files = [filled_DEM, flow_dir, lc_path_raster]
+        del_files = [filled_DEM, dist_acc, lc_path_raster]
 
         for f in del_files:
             try:
@@ -213,6 +222,7 @@ def make_centerline(
     channel: str,
     lidar_extent: str,
     source: str,
+    destination: str,
     smooth_distance: Union[float, int],
 ) -> str:
     """Main function for creating, smoothing, and clipping a centerline
@@ -235,6 +245,7 @@ def make_centerline(
             DEM,
             channel,
             source,
+            destination,
             lidar_extent,
             outdir + '/filled_DEM.tif',
             outdir + '/flow_dir.tif',
@@ -245,7 +256,7 @@ def make_centerline(
         ],
     )
 
-    rough_centerline = least_cost_centerline(DEM, source)
+    rough_centerline = least_cost_centerline(DEM, source, destination)
     rough_centerline = remove_spurs(rough_centerline)
     centerline = smooth_centerline(rough_centerline, smooth_distance)
     centerline = clip_centerline(centerline, channel, lidar_extent)

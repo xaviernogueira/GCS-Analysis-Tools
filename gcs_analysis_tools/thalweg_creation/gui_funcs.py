@@ -25,6 +25,7 @@ from utils import (
 def detrend_prep(
     dem: str,
     flow_poly: str,
+    dest_poly: str,
     aoi_shp: str,
     filt_passes: int,
     smooth_dist: Union[int, float],
@@ -53,7 +54,7 @@ def detrend_prep(
     params = [m_spacing, smooth_dist]
 
     if not spatial_ref.linearUnitName == 'Meter':
-        params = [int(int(i) * 3) for i in params]   # Params is [1,6] on execution of line 56 params = [3, 666]?????
+        params = [int(i * 3) for i in params]   # Params is [1,6] on execution of line 56 params = [3, 666]?????
 
     filt_passes = int(filt_passes)
 
@@ -89,8 +90,10 @@ def detrend_prep(
         make_centerline(
             smooth_ras,
             aoi_shp,
-            lidar_foot,
+            # lidar_foot,
+            aoi_shp,
             flow_poly,
+            dest_poly,
             smooth_distance=10,
         )
 
